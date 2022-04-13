@@ -31,6 +31,8 @@ type InputConstraint struct {
 type Constraint interface{}
 
 type (
+	ConstraintAny struct{}
+
 	ConstraintIsEqual          struct{ Value Value }
 	ConstraintIsNotEqual       struct{ Value Value }
 	ConstraintIsGreater        struct{ Value float64 }
@@ -225,6 +227,10 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 	var name []byte
 	if s, name = s.consumeName(); name == nil {
 		return s, nil, s.err("expected constraint name")
+	}
+
+	if string(name) == "any" {
+		return s, ConstraintAny{}, Error{}
 	}
 
 	s = s.consumeIrrelevant()

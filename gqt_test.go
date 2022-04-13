@@ -100,6 +100,7 @@ func TestParse(t *testing.T) {
 	}, {
 		`mutation {
 			a(
+				y1: any
 				i1: is = 42
 				i2: is != 42
 				i3: is > 42
@@ -128,6 +129,7 @@ func TestParse(t *testing.T) {
 					of2: is = false
 					oo2: is = {
 						oa1: is != null
+						oa2: any
 					}
 				}
 			) {b}
@@ -136,6 +138,9 @@ func TestParse(t *testing.T) {
 			Selections: []gqt.Selection{{
 				Name: "a",
 				InputConstraints: []gqt.InputConstraint{{
+					Name:       "y1",
+					Constraint: gqt.ConstraintAny{},
+				}, {
 					Name:       "i1",
 					Constraint: gqt.ConstraintIsEqual{Value: float64(42)},
 				}, {
@@ -231,6 +236,9 @@ func TestParse(t *testing.T) {
 										Value: gqt.ConstraintIsNotEqual{
 											Value: nil,
 										},
+									}, {
+										Name:  "oa2",
+										Value: gqt.ConstraintAny{},
 									}},
 								},
 							},
