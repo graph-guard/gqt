@@ -33,13 +33,15 @@ type Constraint interface{}
 type (
 	ConstraintAny struct{}
 
+	ConstraintTypeEqual    struct{ TypeName string }
+	ConstraintTypeNotEqual struct{ TypeName string }
+
 	ConstraintIsEqual          struct{ Value Value }
 	ConstraintIsNotEqual       struct{ Value Value }
 	ConstraintIsGreater        struct{ Value float64 }
 	ConstraintIsLess           struct{ Value float64 }
 	ConstraintIsGreaterOrEqual struct{ Value float64 }
 	ConstraintIsLessOrEqual    struct{ Value float64 }
-	ConstraintIsType           struct{ TypeName string }
 
 	ConstraintBytelenEqual          struct{ Value uint }
 	ConstraintBytelenNotEqual       struct{ Value uint }
@@ -341,6 +343,39 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 				"unsupported operator for 'are' constraint",
 			)
 		}
+
+	case "type":
+		if s, ok = s.consume(operatorEqual); ok {
+			// type = T
+			c = ConstraintTypeEqual{}
+		} else if s, ok = s.consume(operatorNotEqual); ok {
+			// type != T
+			c = ConstraintTypeNotEqual{}
+		} else {
+			return si, nil, s.err(
+				"unsupported operator for 'type' constraint",
+			)
+		}
+
+		s = s.consumeIrrelevant()
+
+		var typeName []byte
+		s, typeName = s.consumeName()
+		if typeName == nil {
+			return s, nil, s.err("expected type name")
+		}
+
+		switch c.(type) {
+		case ConstraintTypeEqual:
+			c = ConstraintTypeEqual{TypeName: string(typeName)}
+		case ConstraintTypeNotEqual:
+			c = ConstraintTypeNotEqual{TypeName: string(typeName)}
+		default:
+			panic(fmt.Errorf("unhandled constraint type: %T", c))
+		}
+
+		return s, c, Error{}
+
 	default:
 		return s, nil, s.err("unsupported constraint function")
 	}
@@ -512,6 +547,9 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
+
+	default:
+		panic(fmt.Errorf("unhandled constraint type: %T", c))
 	}
 
 	return s, c, Error{}

@@ -101,6 +101,8 @@ func TestParse(t *testing.T) {
 		`mutation {
 			a(
 				y1: any
+				t1: type = T
+				t2: type != T
 				i1: is = 42
 				i2: is != 42
 				i3: is > 42
@@ -140,6 +142,12 @@ func TestParse(t *testing.T) {
 				InputConstraints: []gqt.InputConstraint{{
 					Name:       "y1",
 					Constraint: gqt.ConstraintAny{},
+				}, {
+					Name:       "t1",
+					Constraint: gqt.ConstraintTypeEqual{TypeName: "T"},
+				}, {
+					Name:       "t2",
+					Constraint: gqt.ConstraintTypeNotEqual{TypeName: "T"},
 				}, {
 					Name:       "i1",
 					Constraint: gqt.ConstraintIsEqual{Value: float64(42)},
