@@ -31,6 +31,9 @@ type InputConstraint struct {
 type Constraint interface{}
 
 type (
+	ConstraintOr  []Constraint
+	ConstraintAnd []Constraint
+
 	ConstraintAny struct{}
 
 	ConstraintTypeEqual    struct{ TypeName string }
@@ -189,7 +192,7 @@ func parseSelection(s source) (n source, sel Selection, err Error) {
 			}
 			n = n.consumeIrrelevant()
 			var inputConstraint Constraint
-			if n, inputConstraint, err = parseConstraint(n); err.IsErr() {
+			if n, inputConstraint, err = parseConstraintOr(n); err.IsErr() {
 				return s, Selection{}, err
 			}
 
@@ -223,6 +226,72 @@ func parseSelection(s source) (n source, sel Selection, err Error) {
 	}
 
 	return n, sel, Error{}
+}
+
+func parseConstraintOr(s source) (ns source, c Constraint, err Error) {
+	ns = s
+	var ok bool
+	for {
+		ns = ns.consumeIrrelevant()
+
+		cb := c
+
+		s = ns
+		ns, c, err = parseConstraintAnd(ns)
+		if err.IsErr() {
+			ns = s
+			return ns, nil, err
+		}
+
+		if cb, ok := cb.(ConstraintOr); ok {
+			c = append(cb, c)
+		}
+
+		ns = ns.consumeIrrelevant()
+
+		s = ns
+		if ns, ok = ns.consume(operatorOr); !ok {
+			ns = s
+			break
+		}
+
+		if cb == nil {
+			c = ConstraintOr{c}
+		}
+	}
+	return ns, c, Error{}
+}
+
+func parseConstraintAnd(s source) (ns source, c Constraint, err Error) {
+	ns = s
+	var ok bool
+	for {
+		ns = ns.consumeIrrelevant()
+
+		cb := c
+
+		s = ns
+		ns, c, err = parseConstraint(ns)
+		if err.IsErr() {
+			ns = s
+			return
+		}
+
+		if cb, ok := cb.(ConstraintAnd); ok {
+			c = append(cb, c)
+		}
+
+		ns = ns.consumeIrrelevant()
+
+		if ns, ok = ns.consume(operatorAnd); !ok {
+			break
+		}
+
+		if cb == nil {
+			c = ConstraintAnd{c}
+		}
+	}
+	return
 }
 
 func parseConstraint(s source) (_ source, c Constraint, err Error) {
@@ -626,7 +695,7 @@ func parseValueArray(s source) (_ source, a ValueArray, err Error) {
 			break
 		}
 		var c Constraint
-		if s, c, err = parseConstraint(s); err.IsErr() {
+		if s, c, err = parseConstraintOr(s); err.IsErr() {
 			return s, ValueArray{}, err
 		}
 		a.Items = append(a.Items, c)
@@ -681,7 +750,7 @@ func parseValueObject(s source) (_ source, o ValueObject, err Error) {
 		s = s.consumeIrrelevant()
 
 		var c Constraint
-		if s, c, err = parseConstraint(s); err.IsErr() {
+		if s, c, err = parseConstraintOr(s); err.IsErr() {
 			return s, ValueObject{}, err
 		}
 		o.Fields = append(o.Fields, ObjectField{
@@ -752,6 +821,8 @@ var (
 	operatorLesserEqual  = []byte("<=")
 	operatorEqual        = []byte("=")
 	operatorNotEqual     = []byte("!=")
+	operatorOr           = []byte("||")
+	operatorAnd          = []byte("&&")
 )
 
 func (s source) expectEOF() (e Error) {

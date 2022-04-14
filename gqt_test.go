@@ -261,29 +261,55 @@ func TestParse(t *testing.T) {
 	}, {
 		`mutation {
 			a(
-				o1: is = {
-					f1: is = true
-					f2: is = false
-				}
+				a: is > 0 && is < 3
+				b: is > 0 && is < 9 && is != 5
+				c: is = 1 || is = 2
+				d: is = 1 || is = 2 || is = 3
+				e: type = String && bytelen > 3 && bytelen <= 10 ||
+					is = true ||
+					is = 1
 			) {b}
 		}`,
 		gqt.DocMutation{
 			Selections: []gqt.Selection{{
 				Name: "a",
 				InputConstraints: []gqt.InputConstraint{{
-					Name: "o1",
-					Constraint: gqt.ConstraintIsEqual{Value: gqt.ValueObject{
-						Fields: []gqt.ObjectField{
-							{
-								Name:  "f1",
-								Value: gqt.ConstraintIsEqual{Value: true},
-							},
-							{
-								Name:  "f2",
-								Value: gqt.ConstraintIsEqual{Value: false},
-							},
+					Name: "a",
+					Constraint: gqt.ConstraintAnd{
+						gqt.ConstraintIsGreater{Value: float64(0)},
+						gqt.ConstraintIsLess{Value: float64(3)},
+					},
+				}, {
+					Name: "b",
+					Constraint: gqt.ConstraintAnd{
+						gqt.ConstraintIsGreater{Value: float64(0)},
+						gqt.ConstraintIsLess{Value: float64(9)},
+						gqt.ConstraintIsNotEqual{Value: float64(5)},
+					},
+				}, {
+					Name: "c",
+					Constraint: gqt.ConstraintOr{
+						gqt.ConstraintIsEqual{Value: float64(1)},
+						gqt.ConstraintIsEqual{Value: float64(2)},
+					},
+				}, {
+					Name: "d",
+					Constraint: gqt.ConstraintOr{
+						gqt.ConstraintIsEqual{Value: float64(1)},
+						gqt.ConstraintIsEqual{Value: float64(2)},
+						gqt.ConstraintIsEqual{Value: float64(3)},
+					},
+				}, {
+					Name: "e",
+					Constraint: gqt.ConstraintOr{
+						gqt.ConstraintAnd{
+							gqt.ConstraintTypeEqual{TypeName: "String"},
+							gqt.ConstraintBytelenGreater{Value: uint(3)},
+							gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
 						},
-					}},
+						gqt.ConstraintIsEqual{Value: true},
+						gqt.ConstraintIsEqual{Value: float64(1)},
+					},
 				}},
 				Selections: []gqt.Selection{{
 					Name: "b",
