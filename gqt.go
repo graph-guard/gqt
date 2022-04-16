@@ -39,12 +39,12 @@ type (
 	ConstraintTypeEqual    struct{ TypeName string }
 	ConstraintTypeNotEqual struct{ TypeName string }
 
-	ConstraintIsEqual          struct{ Value Value }
-	ConstraintIsNotEqual       struct{ Value Value }
-	ConstraintIsGreater        struct{ Value float64 }
-	ConstraintIsLess           struct{ Value float64 }
-	ConstraintIsGreaterOrEqual struct{ Value float64 }
-	ConstraintIsLessOrEqual    struct{ Value float64 }
+	ConstraintValEqual          struct{ Value Value }
+	ConstraintValNotEqual       struct{ Value Value }
+	ConstraintValGreater        struct{ Value float64 }
+	ConstraintValLess           struct{ Value float64 }
+	ConstraintValGreaterOrEqual struct{ Value float64 }
+	ConstraintValLessOrEqual    struct{ Value float64 }
 
 	ConstraintBytelenEqual          struct{ Value uint }
 	ConstraintBytelenNotEqual       struct{ Value uint }
@@ -313,28 +313,28 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 	var ok bool
 
 	switch string(name) {
-	case "is":
+	case "val":
 		if s, ok = s.consume(operatorGreaterEqual); ok {
-			// is >= x
-			c = ConstraintIsGreaterOrEqual{}
+			// val >= x
+			c = ConstraintValGreaterOrEqual{}
 		} else if s, ok = s.consume(operatorLesserEqual); ok {
-			// is <= x
-			c = ConstraintIsLessOrEqual{}
+			// val <= x
+			c = ConstraintValLessOrEqual{}
 		} else if s, ok = s.consume(operatorEqual); ok {
-			// is = x
-			c = ConstraintIsEqual{}
+			// val = x
+			c = ConstraintValEqual{}
 		} else if s, ok = s.consume(operatorNotEqual); ok {
-			// is != x
-			c = ConstraintIsNotEqual{}
+			// val != x
+			c = ConstraintValNotEqual{}
 		} else if s, ok = s.consume(operatorGreater); ok {
-			// is > x
-			c = ConstraintIsGreater{}
+			// val > x
+			c = ConstraintValGreater{}
 		} else if s, ok = s.consume(operatorLesser); ok {
-			// is < x
-			c = ConstraintIsLess{}
+			// val < x
+			c = ConstraintValLess{}
 		} else {
 			return si, nil, s.err(
-				"unsupported operator for 'is' constraint",
+				"unsupported operator for 'val' constraint",
 			)
 		}
 
@@ -457,32 +457,32 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 	}
 
 	switch c.(type) {
-	// Is
-	case ConstraintIsEqual:
-		c = ConstraintIsEqual{Value: v}
-	case ConstraintIsNotEqual:
-		c = ConstraintIsNotEqual{Value: v}
-	case ConstraintIsGreater:
+	// Val
+	case ConstraintValEqual:
+		c = ConstraintValEqual{Value: v}
+	case ConstraintValNotEqual:
+		c = ConstraintValNotEqual{Value: v}
+	case ConstraintValGreater:
 		if v, ok := v.(float64); ok {
-			c = ConstraintIsGreater{Value: v}
+			c = ConstraintValGreater{Value: v}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
-	case ConstraintIsLess:
+	case ConstraintValLess:
 		if v, ok := v.(float64); ok {
-			c = ConstraintIsLess{Value: v}
+			c = ConstraintValLess{Value: v}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
-	case ConstraintIsGreaterOrEqual:
+	case ConstraintValGreaterOrEqual:
 		if v, ok := v.(float64); ok {
-			c = ConstraintIsGreaterOrEqual{Value: v}
+			c = ConstraintValGreaterOrEqual{Value: v}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
-	case ConstraintIsLessOrEqual:
+	case ConstraintValLessOrEqual:
 		if v, ok := v.(float64); ok {
-			c = ConstraintIsLessOrEqual{Value: v}
+			c = ConstraintValLessOrEqual{Value: v}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}

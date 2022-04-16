@@ -15,7 +15,7 @@ func TestParse(t *testing.T) {
 		`query {
 			a {
 				b(
-					x1: is = 1
+					x1: val = 1
 				) {
 					c
 					d
@@ -29,7 +29,7 @@ func TestParse(t *testing.T) {
 					Name: "b",
 					InputConstraints: []gqt.InputConstraint{{
 						Name: "x1",
-						Constraint: gqt.ConstraintIsEqual{
+						Constraint: gqt.ConstraintValEqual{
 							Value: float64(1),
 						},
 					}},
@@ -58,7 +58,7 @@ func TestParse(t *testing.T) {
 					#comment after token
 					:#comment after token
 					#comment after token
-					is#comment after token
+					val#comment after token
 					#comment after token
 					=#comment after token
 					#comment after token
@@ -85,7 +85,7 @@ func TestParse(t *testing.T) {
 					Name: "b",
 					InputConstraints: []gqt.InputConstraint{{
 						Name: "x1",
-						Constraint: gqt.ConstraintIsEqual{
+						Constraint: gqt.ConstraintValEqual{
 							Value: float64(1),
 						},
 					}},
@@ -103,14 +103,14 @@ func TestParse(t *testing.T) {
 				y1: any
 				t1: type = T
 				t2: type != T
-				i1: is = 42
-				i2: is != 42
-				i3: is > 42
-				i4: is < 42
-				i5: is >= 42
-				i6: is <= 42
-				i7: is = "text"
-				i8: is != "text"
+				i1: val = 42
+				i2: val != 42
+				i3: val > 42
+				i4: val < 42
+				i5: val >= 42
+				i6: val <= 42
+				i7: val = "text"
+				i8: val != "text"
 				l1: len = 42
 				l2: len != 42
 				l3: len > 42
@@ -123,14 +123,14 @@ func TestParse(t *testing.T) {
 				b4: bytelen < 42
 				b5: bytelen >= 42
 				b6: bytelen <= 42
-				a1: is = []
-				a2: is = [ are < 10 ]
-				a3: is = [ is = "a", is = "b" ]
-				o1: is = {
-					of1: is = true
-					of2: is = false
-					oo2: is = {
-						oa1: is != null
+				a1: val = []
+				a2: val = [ are < 10 ]
+				a3: val = [ val = "a", val = "b" ]
+				o1: val = {
+					of1: val = true
+					of2: val = false
+					oo2: val = {
+						oa1: val != null
 						oa2: any
 					}
 				}
@@ -150,28 +150,28 @@ func TestParse(t *testing.T) {
 					Constraint: gqt.ConstraintTypeNotEqual{TypeName: "T"},
 				}, {
 					Name:       "i1",
-					Constraint: gqt.ConstraintIsEqual{Value: float64(42)},
+					Constraint: gqt.ConstraintValEqual{Value: float64(42)},
 				}, {
 					Name:       "i2",
-					Constraint: gqt.ConstraintIsNotEqual{Value: float64(42)},
+					Constraint: gqt.ConstraintValNotEqual{Value: float64(42)},
 				}, {
 					Name:       "i3",
-					Constraint: gqt.ConstraintIsGreater{Value: float64(42)},
+					Constraint: gqt.ConstraintValGreater{Value: float64(42)},
 				}, {
 					Name:       "i4",
-					Constraint: gqt.ConstraintIsLess{Value: float64(42)},
+					Constraint: gqt.ConstraintValLess{Value: float64(42)},
 				}, {
 					Name:       "i5",
-					Constraint: gqt.ConstraintIsGreaterOrEqual{Value: float64(42)},
+					Constraint: gqt.ConstraintValGreaterOrEqual{Value: float64(42)},
 				}, {
 					Name:       "i6",
-					Constraint: gqt.ConstraintIsLessOrEqual{Value: float64(42)},
+					Constraint: gqt.ConstraintValLessOrEqual{Value: float64(42)},
 				}, {
 					Name:       "i7",
-					Constraint: gqt.ConstraintIsEqual{Value: "text"},
+					Constraint: gqt.ConstraintValEqual{Value: "text"},
 				}, {
 					Name:       "i8",
-					Constraint: gqt.ConstraintIsNotEqual{Value: "text"},
+					Constraint: gqt.ConstraintValNotEqual{Value: "text"},
 				}, {
 					Name:       "l1",
 					Constraint: gqt.ConstraintLenEqual{Value: uint(42)},
@@ -210,38 +210,38 @@ func TestParse(t *testing.T) {
 					Constraint: gqt.ConstraintBytelenLessOrEqual{Value: uint(42)},
 				}, {
 					Name:       "a1",
-					Constraint: gqt.ConstraintIsEqual{Value: gqt.ValueArray{}},
+					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{}},
 				}, {
 					Name: "a2",
-					Constraint: gqt.ConstraintIsEqual{Value: gqt.ValueArray{
+					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
 						Items: []gqt.Constraint{
 							gqt.ConstraintAreLess{Value: 10},
 						},
 					}},
 				}, {
 					Name: "a3",
-					Constraint: gqt.ConstraintIsEqual{Value: gqt.ValueArray{
+					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
 						Items: []gqt.Constraint{
-							gqt.ConstraintIsEqual{Value: "a"},
-							gqt.ConstraintIsEqual{Value: "b"},
+							gqt.ConstraintValEqual{Value: "a"},
+							gqt.ConstraintValEqual{Value: "b"},
 						},
 					}},
 				}, {
 					Name: "o1",
-					Constraint: gqt.ConstraintIsEqual{Value: gqt.ValueObject{
+					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueObject{
 						Fields: []gqt.ObjectField{{
 							Name:  "of1",
-							Value: gqt.ConstraintIsEqual{Value: true},
+							Value: gqt.ConstraintValEqual{Value: true},
 						}, {
 							Name:  "of2",
-							Value: gqt.ConstraintIsEqual{Value: false},
+							Value: gqt.ConstraintValEqual{Value: false},
 						}, {
 							Name: "oo2",
-							Value: gqt.ConstraintIsEqual{
+							Value: gqt.ConstraintValEqual{
 								Value: gqt.ValueObject{
 									Fields: []gqt.ObjectField{{
 										Name: "oa1",
-										Value: gqt.ConstraintIsNotEqual{
+										Value: gqt.ConstraintValNotEqual{
 											Value: nil,
 										},
 									}, {
@@ -261,13 +261,13 @@ func TestParse(t *testing.T) {
 	}, {
 		`mutation {
 			a(
-				a: is > 0 && is < 3
-				b: is > 0 && is < 9 && is != 5
-				c: is = 1 || is = 2
-				d: is = 1 || is = 2 || is = 3
+				a: val > 0 && val < 3
+				b: val > 0 && val < 9 && val != 5
+				c: val = 1 || val = 2
+				d: val = 1 || val = 2 || val = 3
 				e: type = String && bytelen > 3 && bytelen <= 10 ||
-					is = true ||
-					is = 1
+					val = true ||
+					val = 1
 			) {b}
 		}`,
 		gqt.DocMutation{
@@ -276,28 +276,28 @@ func TestParse(t *testing.T) {
 				InputConstraints: []gqt.InputConstraint{{
 					Name: "a",
 					Constraint: gqt.ConstraintAnd{
-						gqt.ConstraintIsGreater{Value: float64(0)},
-						gqt.ConstraintIsLess{Value: float64(3)},
+						gqt.ConstraintValGreater{Value: float64(0)},
+						gqt.ConstraintValLess{Value: float64(3)},
 					},
 				}, {
 					Name: "b",
 					Constraint: gqt.ConstraintAnd{
-						gqt.ConstraintIsGreater{Value: float64(0)},
-						gqt.ConstraintIsLess{Value: float64(9)},
-						gqt.ConstraintIsNotEqual{Value: float64(5)},
+						gqt.ConstraintValGreater{Value: float64(0)},
+						gqt.ConstraintValLess{Value: float64(9)},
+						gqt.ConstraintValNotEqual{Value: float64(5)},
 					},
 				}, {
 					Name: "c",
 					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintIsEqual{Value: float64(1)},
-						gqt.ConstraintIsEqual{Value: float64(2)},
+						gqt.ConstraintValEqual{Value: float64(1)},
+						gqt.ConstraintValEqual{Value: float64(2)},
 					},
 				}, {
 					Name: "d",
 					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintIsEqual{Value: float64(1)},
-						gqt.ConstraintIsEqual{Value: float64(2)},
-						gqt.ConstraintIsEqual{Value: float64(3)},
+						gqt.ConstraintValEqual{Value: float64(1)},
+						gqt.ConstraintValEqual{Value: float64(2)},
+						gqt.ConstraintValEqual{Value: float64(3)},
 					},
 				}, {
 					Name: "e",
@@ -307,8 +307,8 @@ func TestParse(t *testing.T) {
 							gqt.ConstraintBytelenGreater{Value: uint(3)},
 							gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
 						},
-						gqt.ConstraintIsEqual{Value: true},
-						gqt.ConstraintIsEqual{Value: float64(1)},
+						gqt.ConstraintValEqual{Value: true},
+						gqt.ConstraintValEqual{Value: float64(1)},
 					},
 				}},
 				Selections: []gqt.Selection{{
@@ -338,8 +338,8 @@ func TestParseErr(t *testing.T) {
 			"error at 10: redundant selection",
 		},
 		{"redundant_constraint",
-			`query { x(a: is = 3 a: is = 4) }`,
-			"error at 20: redundant constraint",
+			`query { x(a: val = 3 a: val = 4) }`,
+			"error at 21: redundant constraint",
 		},
 	} {
 		t.Run(td.name, func(t *testing.T) {
@@ -414,28 +414,28 @@ func TestParseErrUnexpectedEOF(t *testing.T) {
 			"error at 12: expected constraint name",
 		},
 		{14,
-			`query{f(x:is`,
-			"error at 12: expected constraint operator",
+			`query{f(x:val`,
+			"error at 13: expected constraint operator",
 		},
 		{15,
-			`query{f(x:is  `,
-			"error at 14: expected constraint operator",
+			`query{f(x:val  `,
+			"error at 15: expected constraint operator",
 		},
 		{16,
-			`query{f(x:is=`,
-			"error at 13: expected value",
+			`query{f(x:val=`,
+			"error at 14: expected value",
 		},
 		{17,
-			`query{f(x:is=  `,
-			"error at 15: expected value",
+			`query{f(x:val=  `,
+			"error at 16: expected value",
 		},
 		{18,
-			`query{f(x:is=1`,
-			"error at 14: expected parameter name",
+			`query{f(x:val=1`,
+			"error at 15: expected parameter name",
 		},
 		{19,
-			`query{f(x:is=1  `,
-			"error at 16: expected parameter name",
+			`query{f(x:val=1  `,
+			"error at 17: expected parameter name",
 		},
 	} {
 		t.Run("", func(t *testing.T) {
