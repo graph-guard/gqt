@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test(t *testing.T) {
+func TestF64ToUint(t *testing.T) {
 	for _, td := range []struct {
 		input    float64
 		expect   uint
@@ -17,7 +17,7 @@ func Test(t *testing.T) {
 		{1, 1, true},
 		{4294967295, 4294967295, true},
 		{1234.0, 1234, true},
-		{18446744073709551615, 18446744073709551615, true},
+		{9_007_199_254_740_992, 9_007_199_254_740_992, true},
 
 		{-1, 0, false},
 		{-0.1, 0, false},
