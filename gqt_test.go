@@ -345,6 +345,10 @@ func TestParseErr(t *testing.T) {
 			`query { x(a: val = 3 a: val = 4) }`,
 			"error at 21: redundant constraint",
 		},
+		{"map_multiple_constraints",
+			`query {x(a: val = [ ... val=0 val=1 ])}`,
+			"error at 20: map modifier on multiple constraints",
+		},
 	} {
 		t.Run(td.name, func(t *testing.T) {
 			d, err := gqt.Parse([]byte(td.input))

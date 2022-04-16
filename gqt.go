@@ -621,6 +621,7 @@ func parseValue(s source) (_ source, v Value, err Error) {
 }
 
 func parseValueArray(s source) (_ source, a ValueArray, err Error) {
+	si := s
 	var ok bool
 	if s, ok = s.consume(squareBracketLeft); !ok {
 		return s, ValueArray{}, s.err("expected array")
@@ -629,6 +630,7 @@ func parseValueArray(s source) (_ source, a ValueArray, err Error) {
 	s = s.consumeIrrelevant()
 
 	mapModifier := false
+	si = s
 	if s, ok = s.consume(operatorMap); ok {
 		mapModifier = true
 		s = s.consumeIrrelevant()
@@ -648,11 +650,11 @@ func parseValueArray(s source) (_ source, a ValueArray, err Error) {
 
 	if mapModifier {
 		if len(a.Items) > 1 {
-			return s, ValueArray{}, s.err(
+			return si, ValueArray{}, si.err(
 				"map modifier on multiple constraints",
 			)
 		} else if len(a.Items) < 1 {
-			return s, ValueArray{}, s.err(
+			return si, ValueArray{}, si.err(
 				"map modifier is missing constraint",
 			)
 		}
