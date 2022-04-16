@@ -290,7 +290,7 @@ func parseConstraintAnd(s source) (ns source, c Constraint, err Error) {
 func parseConstraint(s source) (_ source, c Constraint, err Error) {
 	var name []byte
 	if s, name = s.consumeName(); name == nil {
-		return s, nil, s.err("expected constraint name")
+		return s, nil, s.err("expected constraint subject")
 	}
 
 	if string(name) == "any" {
