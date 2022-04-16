@@ -124,7 +124,7 @@ func TestParse(t *testing.T) {
 				b5: bytelen >= 42
 				b6: bytelen <= 42
 				a1: val = []
-				a2: val = [ are < 10 ]
+				a2: val = [ ... val < 10 ]
 				a3: val = [ val = "a", val = "b" ]
 				o1: val = {
 					of1: val = true
@@ -215,7 +215,11 @@ func TestParse(t *testing.T) {
 					Name: "a2",
 					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
 						Items: []gqt.Constraint{
-							gqt.ConstraintAreLess{Value: 10},
+							gqt.ConstraintMap{
+								Constraint: gqt.ConstraintValLess{
+									Value: 10,
+								},
+							},
 						},
 					}},
 				}, {

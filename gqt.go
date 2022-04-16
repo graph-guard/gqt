@@ -33,6 +33,7 @@ type Constraint interface{}
 type (
 	ConstraintOr  []Constraint
 	ConstraintAnd []Constraint
+	ConstraintMap struct{ Constraint Constraint }
 
 	ConstraintAny struct{}
 
@@ -59,14 +60,6 @@ type (
 	ConstraintLenLess           struct{ Value uint }
 	ConstraintLenGreaterOrEqual struct{ Value uint }
 	ConstraintLenLessOrEqual    struct{ Value uint }
-
-	ConstraintAreEqual          struct{ Value Value }
-	ConstraintAreNotEqual       struct{ Value Value }
-	ConstraintAreGreater        struct{ Value float64 }
-	ConstraintAreLess           struct{ Value float64 }
-	ConstraintAreGreaterOrEqual struct{ Value float64 }
-	ConstraintAreLessOrEqual    struct{ Value float64 }
-	ConstraintAreType           struct{ TypeName string }
 )
 
 type Value interface{}
@@ -388,31 +381,6 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 
-	case "are":
-		if s, ok = s.consume(operatorGreaterEqual); ok {
-			// are >= x
-			c = ConstraintAreGreaterOrEqual{}
-		} else if s, ok = s.consume(operatorLesserEqual); ok {
-			// are <= x
-			c = ConstraintAreLessOrEqual{}
-		} else if s, ok = s.consume(operatorEqual); ok {
-			// are = x
-			c = ConstraintAreEqual{}
-		} else if s, ok = s.consume(operatorNotEqual); ok {
-			// are != x
-			c = ConstraintAreNotEqual{}
-		} else if s, ok = s.consume(operatorGreater); ok {
-			// are > x
-			c = ConstraintAreGreater{}
-		} else if s, ok = s.consume(operatorLesser); ok {
-			// are < x
-			c = ConstraintAreLess{}
-		} else {
-			return si, nil, s.err(
-				"unsupported operator for 'are' constraint",
-			)
-		}
-
 	case "type":
 		if s, ok = s.consume(operatorEqual); ok {
 			// type = T
@@ -586,37 +554,6 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 				"unexpected value type, expected unsigned integer",
 			)
 		}
-
-	// Are
-	case ConstraintAreEqual:
-		c = ConstraintAreEqual{Value: v}
-	case ConstraintAreNotEqual:
-		c = ConstraintAreNotEqual{Value: v}
-	case ConstraintAreGreater:
-		if v, ok := v.(float64); ok {
-			c = ConstraintAreGreater{Value: v}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-	case ConstraintAreLess:
-		if v, ok := v.(float64); ok {
-			c = ConstraintAreLess{Value: v}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-	case ConstraintAreGreaterOrEqual:
-		if v, ok := v.(float64); ok {
-			c = ConstraintAreGreaterOrEqual{Value: v}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-	case ConstraintAreLessOrEqual:
-		if v, ok := v.(float64); ok {
-			c = ConstraintAreLessOrEqual{Value: v}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-
 	default:
 		panic(fmt.Errorf("unhandled constraint type: %T", c))
 	}
@@ -689,6 +626,14 @@ func parseValueArray(s source) (_ source, a ValueArray, err Error) {
 		return s, ValueArray{}, s.err("expected array")
 	}
 
+	s = s.consumeIrrelevant()
+
+	mapModifier := false
+	if s, ok = s.consume(operatorMap); ok {
+		mapModifier = true
+		s = s.consumeIrrelevant()
+	}
+
 	for {
 		s = s.consumeIrrelevant()
 		if s, ok = s.consume(squareBracketRight); ok {
@@ -701,24 +646,19 @@ func parseValueArray(s source) (_ source, a ValueArray, err Error) {
 		a.Items = append(a.Items, c)
 	}
 
-	for _, item := range a.Items {
-		switch item.(type) {
-		case ConstraintAreEqual:
-		case ConstraintAreNotEqual:
-		case ConstraintAreGreater:
-		case ConstraintAreLess:
-		case ConstraintAreGreaterOrEqual:
-		case ConstraintAreLessOrEqual:
-		case ConstraintAreType:
-		default:
-			continue
-		}
+	if mapModifier {
 		if len(a.Items) > 1 {
-			return s, a, s.err("contains exclusive are constraint")
+			return s, ValueArray{}, s.err(
+				"map modifier on multiple constraints",
+			)
+		} else if len(a.Items) < 1 {
+			return s, ValueArray{}, s.err(
+				"map modifier is missing constraint",
+			)
 		}
-		break
-	}
 
+		a.Items[0] = ConstraintMap{Constraint: a.Items[0]}
+	}
 	return s, a, Error{}
 }
 
@@ -823,6 +763,7 @@ var (
 	operatorNotEqual     = []byte("!=")
 	operatorOr           = []byte("||")
 	operatorAnd          = []byte("&&")
+	operatorMap          = []byte("...")
 )
 
 func (s source) expectEOF() (e Error) {
