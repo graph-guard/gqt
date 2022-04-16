@@ -11,7 +11,6 @@
     <img src="https://godoc.org/github.com/graph-guard/gqt?status.svg" alt="GoDoc">
 </a>
 
-# GQT
-**G**raphQL **Q**uery **T**emplate
+# GraphQL Query Template Language
 
-https://go.dev/play/p/TscUm5PKq00
+This Go package provides a parser for the **G**raphQL **Q**uery **T**emplate language which is used by Graph Guard for defining [GraphQL](https://graphql.org) query templates in a human-friendly way.
