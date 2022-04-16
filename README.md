@@ -1,14 +1,14 @@
-<a href="https://github.com/graphql-shield/gqt/actions?query=workflow%3ACI">
-    <img src="https://github.com/graphql-shield/gqt/workflows/CI/badge.svg" alt="GitHub Actions: CI">
+<a href="https://github.com/graph-guard/gqt/actions?query=workflow%3ACI">
+    <img src="https://github.com/graph-guard/gqt/workflows/CI/badge.svg" alt="GitHub Actions: CI">
 </a>
-<a href="https://coveralls.io/github/graphql-shield/gqlscan">
-    <img src="https://coveralls.io/repos/github/graphql-shield/gqlscan/badge.svg" alt="Coverage Status" />
+<a href="https://coveralls.io/github/graph-guard/gqt">
+    <img src="https://coveralls.io/repos/github/graph-guard/gqt/badge.svg" alt="Coverage Status" />
 </a>
-<a href="https://goreportcard.com/report/github.com/graphql-shield/gqlscan">
-    <img src="https://goreportcard.com/badge/github.com/graphql-shield/gqlscan" alt="GoReportCard">
+<a href="https://goreportcard.com/report/github.com/graph-guard/gqt">
+    <img src="https://goreportcard.com/badge/github.com/graph-guard/gqt" alt="GoReportCard">
 </a>
-<a href="https://pkg.go.dev/github.com/graphql-shield/gqlscan">
-    <img src="https://godoc.org/github.com/graphql-shield/gqlscan?status.svg" alt="GoDoc">
+<a href="https://pkg.go.dev/github.com/graph-guard/gqt">
+    <img src="https://godoc.org/github.com/graph-guard/gqt?status.svg" alt="GoDoc">
 </a>
 
 # GQT
