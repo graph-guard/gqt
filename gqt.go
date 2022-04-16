@@ -829,6 +829,7 @@ func (s source) consumeToken() (_ source, token []byte) {
 			b == '(' ||
 			b == ')' ||
 			b == '}' ||
+			b == ']' ||
 			b == '#' {
 			break
 		}
