@@ -449,6 +449,22 @@ func TestParseErrUnexpectedEOF(t *testing.T) {
 			`query{f(x:val=[`,
 			"error at 15: expected constraint subject",
 		},
+		{21,
+			`query{f(x:val=[.`,
+			"error at 15: expected constraint subject",
+		},
+		{22,
+			`query{f(x:val=[..`,
+			"error at 15: expected constraint subject",
+		},
+		{23,
+			`query{f(x:val=[...`,
+			"error at 18: expected constraint subject",
+		},
+		{24,
+			`query{f(x:val=[...  `,
+			"error at 20: expected constraint subject",
+		},
 	} {
 		t.Run("", func(t *testing.T) {
 			r := require.New(t)
