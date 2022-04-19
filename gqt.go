@@ -93,6 +93,102 @@ type ObjectField struct {
 
 type ParameterName = string
 
+func (c ConstraintOr) Name() string {
+	return "ConstraintOr"
+}
+
+func (c ConstraintAnd) Name() string {
+	return "ConstraintAnd"
+}
+
+func (c ConstraintMap) Name() string {
+	return "ConstraintMap"
+}
+
+func (c ConstraintAny) Name() string {
+	return "ConstraintAny"
+}
+
+func (c ConstraintTypeEqual) Name() string {
+	return "ConstraintTypeEqual"
+}
+
+func (c ConstraintTypeNotEqual) Name() string {
+	return "ConstraintTypeNotEqual"
+}
+
+func (c ConstraintValEqual) Name() string {
+	return "ConstraintValEqual"
+}
+
+func (c ConstraintValNotEqual) Name() string {
+	return "ConstraintValNotEqual"
+}
+
+func (c ConstraintValGreater) Name() string {
+	return "ConstraintValGreater"
+}
+
+func (c ConstraintValLess) Name() string {
+	return "ConstraintValLess"
+}
+
+func (c ConstraintValGreaterOrEqual) Name() string {
+	return "ConstraintValGreaterOrEqual"
+}
+
+func (c ConstraintValLessOrEqual) Name() string {
+	return "ConstraintValLessOrEqual"
+}
+
+func (c ConstraintBytelenEqual) Name() string {
+	return "ConstraintBytelenEqual"
+}
+
+func (c ConstraintBytelenNotEqual) Name() string {
+	return "ConstraintBytelenNotEqual"
+}
+
+func (c ConstraintBytelenGreater) Name() string {
+	return "ConstraintBytelenGreater"
+}
+
+func (c ConstraintBytelenLess) Name() string {
+	return "ConstraintBytelenLess"
+}
+
+func (c ConstraintBytelenGreaterOrEqual) Name() string {
+	return "ConstraintBytelenGreaterOrEqual"
+}
+
+func (c ConstraintBytelenLessOrEqual) Name() string {
+	return "ConstraintBytelenLessOrEqual"
+}
+
+func (c ConstraintLenEqual) Name() string {
+	return "ConstraintLenEqual"
+}
+
+func (c ConstraintLenNotEqual) Name() string {
+	return "ConstraintLenNotEqual"
+}
+
+func (c ConstraintLenGreater) Name() string {
+	return "ConstraintLenGreater"
+}
+
+func (c ConstraintLenLess) Name() string {
+	return "ConstraintLenLess"
+}
+
+func (c ConstraintLenGreaterOrEqual) Name() string {
+	return "ConstraintLenGreaterOrEqual"
+}
+
+func (c ConstraintLenLessOrEqual) Name() string {
+	return "ConstraintLenLessOrEqual"
+}
+
 func Parse(s []byte) (Doc, Error) {
 	return parse(source{s, s})
 }
