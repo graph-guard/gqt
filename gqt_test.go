@@ -7,6 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestConstraintNames(t *testing.T) {
+
+}
+
 func TestParse(t *testing.T) {
 	for _, td := range []struct {
 		input  string

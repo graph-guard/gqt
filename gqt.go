@@ -189,6 +189,22 @@ func (c ConstraintLenLessOrEqual) Name() string {
 	return "ConstraintLenLessOrEqual"
 }
 
+func (ic InputConstraint) Key() string {
+	return ic.Name
+}
+
+func (ic InputConstraint) Content() Constraint {
+	return ic.Constraint
+}
+
+func (of ObjectField) Key() string {
+	return of.Name
+}
+
+func (of ObjectField) Content() Constraint {
+	return of.Value
+}
+
 func Parse(s []byte) (Doc, Error) {
 	return parse(source{s, s})
 }
