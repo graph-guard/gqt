@@ -205,6 +205,79 @@ func (of ObjectField) Content() Constraint {
 	return of.Value
 }
 
+func ConstraintNameAndValue(c Constraint) (string, interface{}, error) {
+	switch c.(type) {
+	case ConstraintMap:
+		cc := c.(ConstraintMap)
+		return cc.Name(), cc.Constraint, nil
+	case ConstraintAny:
+		cc := c.(ConstraintAny)
+		return cc.Name(), nil, nil
+	case ConstraintTypeEqual:
+		cc := c.(ConstraintTypeEqual)
+		return cc.Name(), cc.TypeName, nil
+	case ConstraintTypeNotEqual:
+		cc := c.(ConstraintTypeNotEqual)
+		return cc.Name(), cc.TypeName, nil
+	case ConstraintValEqual:
+		cc := c.(ConstraintValEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintValNotEqual:
+		cc := c.(ConstraintValNotEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintValGreater:
+		cc := c.(ConstraintValGreater)
+		return cc.Name(), cc.Value, nil
+	case ConstraintValLess:
+		cc := c.(ConstraintValLess)
+		return cc.Name(), cc.Value, nil
+	case ConstraintValGreaterOrEqual:
+		cc := c.(ConstraintValGreaterOrEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintValLessOrEqual:
+		cc := c.(ConstraintValLessOrEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintBytelenEqual:
+		cc := c.(ConstraintBytelenEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintBytelenNotEqual:
+		cc := c.(ConstraintBytelenNotEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintBytelenGreater:
+		cc := c.(ConstraintBytelenGreater)
+		return cc.Name(), cc.Value, nil
+	case ConstraintBytelenLess:
+		cc := c.(ConstraintBytelenLess)
+		return cc.Name(), cc.Value, nil
+	case ConstraintBytelenGreaterOrEqual:
+		cc := c.(ConstraintBytelenGreaterOrEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintBytelenLessOrEqual:
+		cc := c.(ConstraintBytelenLessOrEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintLenEqual:
+		cc := c.(ConstraintLenEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintLenNotEqual:
+		cc := c.(ConstraintLenNotEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintLenGreater:
+		cc := c.(ConstraintLenGreater)
+		return cc.Name(), cc.Value, nil
+	case ConstraintLenLess:
+		cc := c.(ConstraintLenLess)
+		return cc.Name(), cc.Value, nil
+	case ConstraintLenGreaterOrEqual:
+		cc := c.(ConstraintLenGreaterOrEqual)
+		return cc.Name(), cc.Value, nil
+	case ConstraintLenLessOrEqual:
+		cc := c.(ConstraintLenLessOrEqual)
+		return cc.Name(), cc.Value, nil
+	default:
+		return "", nil, fmt.Errorf("constraint of unknown type")
+	}
+}
+
 func Parse(s []byte) (Doc, Error) {
 	return parse(source{s, s})
 }

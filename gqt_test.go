@@ -7,8 +7,361 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConstraintNames(t *testing.T) {
+type ConstraintInterface interface {
+	Name() string
+}
 
+type KeyConstraintInterface interface {
+	Key() string
+	Content() gqt.Constraint
+}
+
+func TestConstraintNameAndValue(t *testing.T) {
+	for _, td := range []struct {
+		input gqt.Constraint
+		name  string
+		value interface{}
+		err   error
+	}{
+		{
+			input: gqt.ConstraintMap{
+				Constraint: new(gqt.Constraint),
+			},
+			name:  "ConstraintMap",
+			value: new(gqt.Constraint),
+		},
+		{
+			input: gqt.ConstraintAny{},
+			name:  "ConstraintAny",
+			value: nil,
+		},
+		{
+			input: gqt.ConstraintTypeEqual{
+				TypeName: "Int",
+			},
+			name:  "ConstraintTypeEqual",
+			value: "Int",
+		},
+		{
+			input: gqt.ConstraintTypeNotEqual{
+				TypeName: "String",
+			},
+			name:  "ConstraintTypeNotEqual",
+			value: "String",
+		},
+		{
+			input: gqt.ConstraintValEqual{
+				Value: gqt.ValueObject{
+					Fields: []gqt.ObjectField{
+						{
+							Name: "a",
+							Value: gqt.ConstraintValLessOrEqual{
+								Value: 42.0,
+							},
+						},
+					},
+				},
+			},
+			name: "ConstraintValEqual",
+			value: gqt.ValueObject{
+				Fields: []gqt.ObjectField{
+					{
+						Name: "a",
+						Value: gqt.ConstraintValLessOrEqual{
+							Value: 42.0,
+						},
+					},
+				},
+			},
+		},
+		{
+			input: gqt.ConstraintValNotEqual{
+				Value: gqt.ValueArray{
+					Items: []gqt.Constraint{
+						gqt.ConstraintTypeEqual{
+							TypeName: "Float",
+						},
+					},
+				},
+			},
+			name: "ConstraintValNotEqual",
+			value: gqt.ValueArray{
+				Items: []gqt.Constraint{
+					gqt.ConstraintTypeEqual{
+						TypeName: "Float",
+					},
+				},
+			},
+		},
+		{
+			input: gqt.ConstraintValGreater{
+				Value: 42.0,
+			},
+			name:  "ConstraintValGreater",
+			value: 42.0,
+		},
+		{
+			input: gqt.ConstraintValLess{
+				Value: 42.0,
+			},
+			name:  "ConstraintValLess",
+			value: 42.0,
+		},
+		{
+			input: gqt.ConstraintValGreaterOrEqual{
+				Value: 69.0,
+			},
+			name:  "ConstraintValGreaterOrEqual",
+			value: 69.0,
+		},
+		{
+			input: gqt.ConstraintValLessOrEqual{
+				Value: 69.0,
+			},
+			name:  "ConstraintValLessOrEqual",
+			value: 69.0,
+		},
+		{
+			input: gqt.ConstraintBytelenEqual{
+				Value: 1984,
+			},
+			name:  "ConstraintBytelenEqual",
+			value: uint(1984),
+		},
+		{
+			input: gqt.ConstraintBytelenNotEqual{
+				Value: 1984,
+			},
+			name:  "ConstraintBytelenNotEqual",
+			value: uint(1984),
+		},
+		{
+			input: gqt.ConstraintBytelenGreater{
+				Value: 282,
+			},
+			name:  "ConstraintBytelenGreater",
+			value: uint(282),
+		},
+		{
+			input: gqt.ConstraintBytelenLess{
+				Value: 282,
+			},
+			name:  "ConstraintBytelenLess",
+			value: uint(282),
+		},
+		{
+			input: gqt.ConstraintBytelenGreaterOrEqual{
+				Value: 27015,
+			},
+			name:  "ConstraintBytelenGreaterOrEqual",
+			value: uint(27015),
+		},
+		{
+			input: gqt.ConstraintBytelenLessOrEqual{
+				Value: 27015,
+			},
+			name:  "ConstraintBytelenLessOrEqual",
+			value: uint(27015),
+		},
+		{
+			input: gqt.ConstraintLenEqual{
+				Value: 997,
+			},
+			name:  "ConstraintLenEqual",
+			value: uint(997),
+		},
+		{
+			input: gqt.ConstraintLenNotEqual{
+				Value: 997,
+			},
+			name:  "ConstraintLenNotEqual",
+			value: uint(997),
+		},
+		{
+			input: gqt.ConstraintLenGreater{
+				Value: 47,
+			},
+			name:  "ConstraintLenGreater",
+			value: uint(47),
+		},
+		{
+			input: gqt.ConstraintLenLess{
+				Value: 47,
+			},
+			name:  "ConstraintLenLess",
+			value: uint(47),
+		},
+		{
+			input: gqt.ConstraintLenGreaterOrEqual{
+				Value: 404,
+			},
+			name:  "ConstraintLenGreaterOrEqual",
+			value: uint(404),
+		},
+		{
+			input: gqt.ConstraintLenLessOrEqual{
+				Value: 404,
+			},
+			name:  "ConstraintLenLessOrEqual",
+			value: uint(404),
+		},
+	} {
+		t.Run(td.name, func(t *testing.T) {
+			name, value, err := gqt.ConstraintNameAndValue(td.input)
+			require.Nil(t, err)
+			require.Equal(t, td.name, name)
+			require.Equal(t, td.value, value)
+		})
+	}
+}
+
+func TestConstraintName(t *testing.T) {
+	for _, td := range []struct {
+		input  ConstraintInterface
+		expect string
+	}{
+		{
+			input:  gqt.ConstraintOr{},
+			expect: "ConstraintOr",
+		},
+		{
+			input:  gqt.ConstraintAnd{},
+			expect: "ConstraintAnd",
+		},
+		{
+			input:  gqt.ConstraintMap{},
+			expect: "ConstraintMap",
+		},
+		{
+			input:  gqt.ConstraintAny{},
+			expect: "ConstraintAny",
+		},
+		{
+			input:  gqt.ConstraintTypeEqual{},
+			expect: "ConstraintTypeEqual",
+		},
+		{
+			input:  gqt.ConstraintTypeNotEqual{},
+			expect: "ConstraintTypeNotEqual",
+		},
+		{
+			input:  gqt.ConstraintValEqual{},
+			expect: "ConstraintValEqual",
+		},
+		{
+			input:  gqt.ConstraintValNotEqual{},
+			expect: "ConstraintValNotEqual",
+		},
+		{
+			input:  gqt.ConstraintValGreater{},
+			expect: "ConstraintValGreater",
+		},
+		{
+			input:  gqt.ConstraintValLess{},
+			expect: "ConstraintValLess",
+		},
+		{
+			input:  gqt.ConstraintValGreaterOrEqual{},
+			expect: "ConstraintValGreaterOrEqual",
+		},
+		{
+			input:  gqt.ConstraintValLessOrEqual{},
+			expect: "ConstraintValLessOrEqual",
+		},
+		{
+			input:  gqt.ConstraintBytelenEqual{},
+			expect: "ConstraintBytelenEqual",
+		},
+		{
+			input:  gqt.ConstraintBytelenNotEqual{},
+			expect: "ConstraintBytelenNotEqual",
+		},
+		{
+			input:  gqt.ConstraintBytelenGreater{},
+			expect: "ConstraintBytelenGreater",
+		},
+		{
+			input:  gqt.ConstraintBytelenLess{},
+			expect: "ConstraintBytelenLess",
+		},
+		{
+			input:  gqt.ConstraintBytelenGreaterOrEqual{},
+			expect: "ConstraintBytelenGreaterOrEqual",
+		},
+		{
+			input:  gqt.ConstraintBytelenLessOrEqual{},
+			expect: "ConstraintBytelenLessOrEqual",
+		},
+		{
+			input:  gqt.ConstraintLenEqual{},
+			expect: "ConstraintLenEqual",
+		},
+		{
+			input:  gqt.ConstraintLenNotEqual{},
+			expect: "ConstraintLenNotEqual",
+		},
+		{
+			input:  gqt.ConstraintLenGreater{},
+			expect: "ConstraintLenGreater",
+		},
+		{
+			input:  gqt.ConstraintLenLess{},
+			expect: "ConstraintLenLess",
+		},
+		{
+			input:  gqt.ConstraintLenGreaterOrEqual{},
+			expect: "ConstraintLenGreaterOrEqual",
+		},
+		{
+			input:  gqt.ConstraintLenLessOrEqual{},
+			expect: "ConstraintLenLessOrEqual",
+		},
+	} {
+		t.Run(td.expect, func(t *testing.T) {
+			name := td.input.Name()
+			require.Equal(t, td.expect, name)
+		})
+	}
+}
+
+func TestConstraintKeyAndContent(t *testing.T) {
+	for _, td := range []struct {
+		input KeyConstraintInterface
+		key   string
+		value gqt.Constraint
+	}{
+		{
+			input: gqt.InputConstraint{
+				Name: "a",
+				Constraint: gqt.ConstraintValEqual{
+					Value: 88.0,
+				},
+			},
+			key: "a",
+			value: gqt.ConstraintValEqual{
+				Value: 88.0,
+			},
+		},
+		{
+			input: gqt.ObjectField{
+				Name: "a",
+				Value: gqt.ConstraintValNotEqual{
+					Value: 88.0,
+				},
+			},
+			key: "a",
+			value: gqt.ConstraintValNotEqual{
+				Value: 88.0,
+			},
+		},
+	} {
+		t.Run("", func(t *testing.T) {
+			key := td.input.Key()
+			value := td.input.Content()
+			require.Equal(t, td.key, key)
+			require.Equal(t, td.value, value)
+		})
+	}
 }
 
 func TestParse(t *testing.T) {
