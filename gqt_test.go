@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type ConstraintInterface interface {
+type BasicConstraintInterface interface {
 	Name() string
 }
 
-type KeyConstraintInterface interface {
+type KeyValueConstraintInterface interface {
 	Key() string
 	Content() gqt.Constraint
 }
@@ -217,7 +217,7 @@ func TestConstraintNameAndValue(t *testing.T) {
 
 func TestConstraintName(t *testing.T) {
 	for _, td := range []struct {
-		input  ConstraintInterface
+		input  BasicConstraintInterface
 		expect string
 	}{
 		{
@@ -324,9 +324,9 @@ func TestConstraintName(t *testing.T) {
 	}
 }
 
-func TestConstraintKeyAndContent(t *testing.T) {
+func TestConstraintKeyAndValue(t *testing.T) {
 	for _, td := range []struct {
-		input KeyConstraintInterface
+		input KeyValueConstraintInterface
 		key   string
 		value gqt.Constraint
 	}{
