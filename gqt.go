@@ -590,9 +590,8 @@ func parseValue(s source) (_ source, v Value, err Error) {
 			return s, string(str), Error{}
 		}
 	} else if b == '[' {
-		var a ValueArray
-		s, a, err = parseValueArray(s)
-		if err.IsErr() {
+		var a any
+		if s, a, err = parseValueArray(s); err.IsErr() {
 			return
 		}
 		return s, a, Error{}
@@ -620,22 +619,32 @@ func parseValue(s source) (_ source, v Value, err Error) {
 	return si, nil, s.err("invalid value")
 }
 
-func parseValueArray(s source) (_ source, a ValueArray, err Error) {
-	si := s
+func parseValueArray(s source) (source, any, Error) {
 	var ok bool
 	if s, ok = s.consume(squareBracketLeft); !ok {
-		return s, ValueArray{}, s.err("expected array")
+		return s, nil, s.err("expected array")
 	}
 
 	s = s.consumeIrrelevant()
+	var err Error
 
-	mapModifier := false
-	si = s
 	if s, ok = s.consume(operatorMap); ok {
-		mapModifier = true
 		s = s.consumeIrrelevant()
+
+		var c Constraint
+		if s, c, err = parseConstraintOr(s); err.IsErr() {
+			return s, nil, err
+		}
+
+		s = s.consumeIrrelevant()
+		if s, ok = s.consume(squareBracketRight); !ok {
+			return s, nil, s.err("expected right square bracket")
+		}
+
+		return s, ConstraintMap{Constraint: c}, Error{}
 	}
 
+	a := ValueArray{}
 	for {
 		s = s.consumeIrrelevant()
 		if s, ok = s.consume(squareBracketRight); ok {
@@ -643,23 +652,9 @@ func parseValueArray(s source) (_ source, a ValueArray, err Error) {
 		}
 		var c Constraint
 		if s, c, err = parseConstraintOr(s); err.IsErr() {
-			return s, ValueArray{}, err
+			return s, nil, err
 		}
 		a.Items = append(a.Items, c)
-	}
-
-	if mapModifier {
-		if len(a.Items) > 1 {
-			return si, ValueArray{}, si.err(
-				"map modifier on multiple constraints",
-			)
-		} else if len(a.Items) < 1 {
-			return si, ValueArray{}, si.err(
-				"map modifier is missing constraint",
-			)
-		}
-
-		a.Items[0] = ConstraintMap{Constraint: a.Items[0]}
 	}
 	return s, a, Error{}
 }

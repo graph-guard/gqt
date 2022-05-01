@@ -213,13 +213,9 @@ func TestParse(t *testing.T) {
 					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{}},
 				}, {
 					Name: "a2",
-					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
-						Items: []gqt.Constraint{
-							gqt.ConstraintMap{
-								Constraint: gqt.ConstraintValLess{
-									Value: 10,
-								},
-							},
+					Constraint: gqt.ConstraintValEqual{Value: gqt.ConstraintMap{
+						Constraint: gqt.ConstraintValLess{
+							Value: 10,
 						},
 					}},
 				}, {
@@ -347,7 +343,7 @@ func TestParseErr(t *testing.T) {
 		},
 		{"map_multiple_constraints",
 			`query {x(a: val = [ ... val=0 val=1 ])}`,
-			"error at 20: map modifier on multiple constraints",
+			"error at 30: expected right square bracket",
 		},
 	} {
 		t.Run(td.name, func(t *testing.T) {
