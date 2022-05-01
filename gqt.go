@@ -427,7 +427,12 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 	switch c.(type) {
 	// Val
 	case ConstraintValEqual:
-		c = ConstraintValEqual{Value: v}
+		switch v.(type) {
+		case ConstraintMap:
+			c = v
+		default:
+			c = ConstraintValEqual{Value: v}
+		}
 	case ConstraintValNotEqual:
 		c = ConstraintValNotEqual{Value: v}
 	case ConstraintValGreater:

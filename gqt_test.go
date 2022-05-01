@@ -213,11 +213,11 @@ func TestParse(t *testing.T) {
 					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{}},
 				}, {
 					Name: "a2",
-					Constraint: gqt.ConstraintValEqual{Value: gqt.ConstraintMap{
+					Constraint: gqt.ConstraintMap{
 						Constraint: gqt.ConstraintValLess{
 							Value: 10,
 						},
-					}},
+					},
 				}, {
 					Name: "a3",
 					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
