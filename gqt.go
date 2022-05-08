@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-type Doc interface{}
+type Doc any
 
 type DocQuery struct {
 	Selections []Selection
@@ -28,7 +28,7 @@ type InputConstraint struct {
 	Constraint Constraint
 }
 
-type Constraint interface{}
+type Constraint any
 
 type (
 	ConstraintOr  []Constraint
@@ -62,7 +62,7 @@ type (
 	ConstraintLenLessOrEqual    struct{ Value uint }
 )
 
-type Value interface{}
+type Value any
 
 type ValueArray struct {
 	Items []Constraint
@@ -889,7 +889,7 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 	return s, nil, false
 }
 
-func f64ToUint(v interface{}) (uint, bool) {
+func f64ToUint(v any) (uint, bool) {
 	if f, ok := v.(float64); ok && !math.Signbit(f) && f == float64(uint(f)) {
 		return uint(f), true
 	}
