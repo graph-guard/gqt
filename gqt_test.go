@@ -101,8 +101,12 @@ func TestParse(t *testing.T) {
 		`mutation {
 			a(
 				y1: any
-				t1: type = T
-				t2: type != T
+				t1: type = Boolean
+				t2: type = Int
+				t3: type = Float
+				t4: type = String
+				t5: type = ID
+				t6: type = Input
 				i1: val = 42
 				i2: val != 42
 				i3: val > 42
@@ -144,10 +148,22 @@ func TestParse(t *testing.T) {
 					Constraint: gqt.ConstraintAny{},
 				}, {
 					Name:       "t1",
-					Constraint: gqt.ConstraintTypeEqual{TypeName: "T"},
+					Constraint: gqt.ConstraintTypeEqual{Type: gqt.TypeKindBoolean},
 				}, {
 					Name:       "t2",
-					Constraint: gqt.ConstraintTypeNotEqual{TypeName: "T"},
+					Constraint: gqt.ConstraintTypeEqual{Type: gqt.TypeKindInt},
+				}, {
+					Name:       "t3",
+					Constraint: gqt.ConstraintTypeEqual{Type: gqt.TypeKindFloat},
+				}, {
+					Name:       "t4",
+					Constraint: gqt.ConstraintTypeEqual{Type: gqt.TypeKindString},
+				}, {
+					Name:       "t5",
+					Constraint: gqt.ConstraintTypeEqual{Type: gqt.TypeKindID},
+				}, {
+					Name:       "t6",
+					Constraint: gqt.ConstraintTypeEqual{Type: gqt.TypeKindInput},
 				}, {
 					Name:       "i1",
 					Constraint: gqt.ConstraintValEqual{Value: float64(42)},
@@ -303,7 +319,7 @@ func TestParse(t *testing.T) {
 					Name: "e",
 					Constraint: gqt.ConstraintOr{
 						gqt.ConstraintAnd{
-							gqt.ConstraintTypeEqual{TypeName: "String"},
+							gqt.ConstraintTypeEqual{Type: gqt.TypeKindString},
 							gqt.ConstraintBytelenGreater{Value: uint(3)},
 							gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
 						},
@@ -344,6 +360,10 @@ func TestParseErr(t *testing.T) {
 		{"map_multiple_constraints",
 			`query {x(a: val = [ ... val=0 val=1 ])}`,
 			"error at 30: expected right square bracket",
+		},
+		{"unsupported_arg_type",
+			`query {x(a: type = Foo}`,
+			"error at 19: unsupported type kind",
 		},
 	} {
 		t.Run(td.name, func(t *testing.T) {

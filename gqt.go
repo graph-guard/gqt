@@ -23,6 +23,20 @@ type Selection struct {
 	Selections       []Selection
 }
 
+// TypeKind can be any of:
+type TypeKind int
+
+// Type kinds
+const (
+	_ TypeKind = iota
+	TypeKindBoolean
+	TypeKindInt
+	TypeKindFloat
+	TypeKindString
+	TypeKindID
+	TypeKindInput
+)
+
 type InputConstraint struct {
 	Name       ParameterName
 	Constraint Constraint
@@ -37,8 +51,8 @@ type (
 
 	ConstraintAny struct{}
 
-	ConstraintTypeEqual    struct{ TypeName string }
-	ConstraintTypeNotEqual struct{ TypeName string }
+	ConstraintTypeEqual    struct{ Type TypeKind }
+	ConstraintTypeNotEqual struct{ Type TypeKind }
 
 	ConstraintValEqual          struct{ Value Value }
 	ConstraintValNotEqual       struct{ Value Value }
@@ -397,16 +411,35 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 		s = s.consumeIrrelevant()
 
 		var typeName []byte
+		sBeforeName := s
 		s, typeName = s.consumeName()
 		if typeName == nil {
 			return s, nil, s.err("expected type name")
 		}
 
+		var kind TypeKind
+		switch string(typeName) {
+		case "Boolean":
+			kind = TypeKindBoolean
+		case "Int":
+			kind = TypeKindInt
+		case "Float":
+			kind = TypeKindFloat
+		case "String":
+			kind = TypeKindString
+		case "ID":
+			kind = TypeKindID
+		case "Input":
+			kind = TypeKindInput
+		default:
+			return sBeforeName, nil, sBeforeName.err("unsupported type kind")
+		}
+
 		switch c.(type) {
 		case ConstraintTypeEqual:
-			c = ConstraintTypeEqual{TypeName: string(typeName)}
+			c = ConstraintTypeEqual{Type: kind}
 		case ConstraintTypeNotEqual:
-			c = ConstraintTypeNotEqual{TypeName: string(typeName)}
+			c = ConstraintTypeNotEqual{Type: kind}
 		default:
 			panic(fmt.Errorf("unhandled constraint type: %T", c))
 		}
