@@ -30,7 +30,7 @@ func TestParse(t *testing.T) {
 					InputConstraints: []gqt.InputConstraint{{
 						Name: "x1",
 						Constraint: gqt.ConstraintValEqual{
-							Value: float64(1),
+							Value: int64(1),
 						},
 					}},
 					Selections: []gqt.Selection{{
@@ -86,7 +86,7 @@ func TestParse(t *testing.T) {
 					InputConstraints: []gqt.InputConstraint{{
 						Name: "x1",
 						Constraint: gqt.ConstraintValEqual{
-							Value: float64(1),
+							Value: int64(1),
 						},
 					}},
 					Selections: []gqt.Selection{{
@@ -107,12 +107,12 @@ func TestParse(t *testing.T) {
 				t4: type = String
 				t5: type = ID
 				t6: type = Input
-				i1: val = 42
-				i2: val != 42
+				i1: val = 42.0
+				i2: val != 42.0
 				i3: val > 42
-				i4: val < 42
+				i4: val < 42.0
 				i5: val >= 42
-				i6: val <= 42
+				i6: val <= 42.0
 				i7: val = "text"
 				i8: val != "text"
 				l1: len = 42
@@ -128,7 +128,7 @@ func TestParse(t *testing.T) {
 				b5: bytelen >= 42
 				b6: bytelen <= 42
 				a1: val = []
-				a2: val = [ ... val < 10 ]
+				a2: val = [ ... val < 10.0 ]
 				a3: val = [ val = "a", val = "b" ]
 				o1: val = {
 					of1: val = true
@@ -172,13 +172,13 @@ func TestParse(t *testing.T) {
 					Constraint: gqt.ConstraintValNotEqual{Value: float64(42)},
 				}, {
 					Name:       "i3",
-					Constraint: gqt.ConstraintValGreater{Value: float64(42)},
+					Constraint: gqt.ConstraintValGreater{Value: int64(42)},
 				}, {
 					Name:       "i4",
 					Constraint: gqt.ConstraintValLess{Value: float64(42)},
 				}, {
 					Name:       "i5",
-					Constraint: gqt.ConstraintValGreaterOrEqual{Value: float64(42)},
+					Constraint: gqt.ConstraintValGreaterOrEqual{Value: int64(42)},
 				}, {
 					Name:       "i6",
 					Constraint: gqt.ConstraintValLessOrEqual{Value: float64(42)},
@@ -231,7 +231,7 @@ func TestParse(t *testing.T) {
 					Name: "a2",
 					Constraint: gqt.ConstraintMap{
 						Constraint: gqt.ConstraintValLess{
-							Value: 10,
+							Value: 10.0,
 						},
 					},
 				}, {
@@ -277,13 +277,13 @@ func TestParse(t *testing.T) {
 	}, {
 		`mutation {
 			a(
-				a: val > 0 && val < 3
-				b: val > 0 && val < 9 && val != 5
-				c: val = 1 || val = 2
-				d: val = 1 || val = 2 || val = 3
+				a: val > 0.0 && val < 3.0
+				b: val > 0.0 && val < 9.0 && val != 5.0
+				c: val = 1.0 || val = 2.0
+				d: val = 1.0 || val = 2.0 || val = 3.0
 				e: type = String && bytelen > 3 && bytelen <= 10 ||
 					val = true ||
-					val = 1
+					val = 1.0
 			) {b}
 		}`,
 		gqt.DocMutation{

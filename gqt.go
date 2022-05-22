@@ -56,10 +56,10 @@ type (
 
 	ConstraintValEqual          struct{ Value Value }
 	ConstraintValNotEqual       struct{ Value Value }
-	ConstraintValGreater        struct{ Value float64 }
-	ConstraintValLess           struct{ Value float64 }
-	ConstraintValGreaterOrEqual struct{ Value float64 }
-	ConstraintValLessOrEqual    struct{ Value float64 }
+	ConstraintValGreater        struct{ Value any }
+	ConstraintValLess           struct{ Value any }
+	ConstraintValGreaterOrEqual struct{ Value any }
+	ConstraintValLessOrEqual    struct{ Value any }
 
 	ConstraintBytelenEqual          struct{ Value uint }
 	ConstraintBytelenNotEqual       struct{ Value uint }
@@ -469,33 +469,41 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 	case ConstraintValNotEqual:
 		c = ConstraintValNotEqual{Value: v}
 	case ConstraintValGreater:
-		if v, ok := v.(float64); ok {
-			c = ConstraintValGreater{Value: v}
+		if i, ok := v.(int64); ok {
+			c = ConstraintValGreater{Value: i}
+		} else if f, ok := v.(float64); ok {
+			c = ConstraintValGreater{Value: f}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
 	case ConstraintValLess:
-		if v, ok := v.(float64); ok {
-			c = ConstraintValLess{Value: v}
+		if i, ok := v.(int64); ok {
+			c = ConstraintValLess{Value: i}
+		} else if f, ok := v.(float64); ok {
+			c = ConstraintValLess{Value: f}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
 	case ConstraintValGreaterOrEqual:
-		if v, ok := v.(float64); ok {
-			c = ConstraintValGreaterOrEqual{Value: v}
+		if i, ok := v.(int64); ok {
+			c = ConstraintValGreaterOrEqual{Value: i}
+		} else if f, ok := v.(float64); ok {
+			c = ConstraintValGreaterOrEqual{Value: f}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
 	case ConstraintValLessOrEqual:
-		if v, ok := v.(float64); ok {
-			c = ConstraintValLessOrEqual{Value: v}
+		if i, ok := v.(int64); ok {
+			c = ConstraintValLessOrEqual{Value: i}
+		} else if f, ok := v.(float64); ok {
+			c = ConstraintValLessOrEqual{Value: f}
 		} else {
 			return s, nil, s.err("unexpected value type, expected number")
 		}
 
 	// Len
 	case ConstraintLenEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintLenEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -503,7 +511,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintLenNotEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintLenNotEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -511,7 +519,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintLenGreater:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintLenGreater{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -519,7 +527,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintLenLess:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintLenLess{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -527,7 +535,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintLenGreaterOrEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintLenGreaterOrEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -535,7 +543,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintLenLessOrEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintLenLessOrEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -545,7 +553,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 
 	// Bytelen
 	case ConstraintBytelenEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintBytelenEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -553,7 +561,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintBytelenNotEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintBytelenNotEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -561,7 +569,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintBytelenGreater:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintBytelenGreater{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -569,7 +577,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintBytelenLess:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintBytelenLess{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -577,7 +585,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintBytelenGreaterOrEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintBytelenGreaterOrEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -585,7 +593,7 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 			)
 		}
 	case ConstraintBytelenLessOrEqual:
-		if v, ok := f64ToUint(v); ok {
+		if v, ok := toUint(v); ok {
 			c = ConstraintBytelenLessOrEqual{Value: v}
 		} else {
 			return s, nil, s.err(
@@ -616,7 +624,7 @@ func parseValue(s source) (_ source, v Value, err Error) {
 		b == '7' ||
 		b == '8' ||
 		b == '9' {
-		var num float64
+		var num any
 		var ok bool
 		if s, num, ok = s.consumeNumber(); ok {
 			return s, num, Error{}
@@ -840,13 +848,15 @@ func (s source) consume(x []byte) (_ source, ok bool) {
 	return s, false
 }
 
-func (s source) consumeNumber() (_ source, number float64, ok bool) {
+func (s source) consumeNumber() (_ source, number any, ok bool) {
 	if s, token := s.consumeToken(); token != nil {
-		if f, err := strconv.ParseFloat(string(token), 64); err == nil {
+		if i, err := strconv.ParseInt(string(token), 10, 64); err == nil {
+			return s, i, true
+		} else if f, err := strconv.ParseFloat(string(token), 64); err == nil {
 			return s, f, true
 		}
 	}
-	return s, 0, false
+	return s, int64(0), false
 }
 
 func (s source) consumeToken() (_ source, token []byte) {
@@ -922,8 +932,10 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 	return s, nil, false
 }
 
-func f64ToUint(v any) (uint, bool) {
-	if f, ok := v.(float64); ok && !math.Signbit(f) && f == float64(uint(f)) {
+func toUint(v any) (uint, bool) {
+	if i, ok := v.(int64); ok && i >= 0 {
+		return uint(i), true
+	} else if f, ok := v.(float64); ok && !math.Signbit(f) && f == float64(uint(f)) {
 		return uint(f), true
 	}
 	return 0, false

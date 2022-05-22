@@ -25,7 +25,7 @@ func TestF64ToUint(t *testing.T) {
 		{0.00000000001, 0, false},
 	} {
 		t.Run(fmt.Sprintf("%f_%t", td.input, td.expectOK), func(t *testing.T) {
-			ui, ok := f64ToUint(td.input)
+			ui, ok := toUint(td.input)
 			r := require.New(t)
 			r.Equal(td.expect, ui)
 			r.Equal(td.expectOK, ok)
@@ -127,26 +127,26 @@ func TestConsumeToken(t *testing.T) {
 func TestConsumeNumber(t *testing.T) {
 	for _, td := range []struct {
 		input       source
-		expectNum   float64
+		expectNum   any
 		expectOK    bool
 		expectAfter source
 	}{
-		{src(""), 0, false, src("")},
-		{src("x"), 0, false, src("x")},
-		{src("0"), 0, true, src("0", "")},
-		{src("10"), 10, true, src("10", "")},
-		{src("-1"), -1, true, src("-1", "")},
-		{src("0.1234"), 0.1234, true, src("0.1234", "")},
-		{src("-0.1234"), -0.1234, true, src("-0.1234", "")},
-		{src("-0.1234{x"), -0.1234, true, src("-0.1234{x", "{x")},
-		{src("-0.1234(x"), -0.1234, true, src("-0.1234(x", "(x")},
-		{src("-0.1234#x"), -0.1234, true, src("-0.1234#x", "#x")},
-		{src("-0.1234,x"), -0.1234, true, src("-0.1234,x", ",x")},
-		{src("-0.1234 x"), -0.1234, true, src("-0.1234 x", " x")},
-		{src("-0.1234\tx"), -0.1234, true, src("-0.1234\tx", "\tx")},
-		{src("-0.1234\nx"), -0.1234, true, src("-0.1234\nx", "\nx")},
-		{src("-0.1234\rx"), -0.1234, true, src("-0.1234\rx", "\rx")},
-		{src("0.1234x"), 0, false, src("0.1234x")},
+		{src(""), int64(0), false, src("")},
+		{src("x"), int64(0), false, src("x")},
+		{src("0"), int64(0), true, src("0", "")},
+		{src("10.0"), float64(10), true, src("10.0", "")},
+		{src("-1"), int64(-1), true, src("-1", "")},
+		{src("0.1234"), float64(0.1234), true, src("0.1234", "")},
+		{src("-0.1234"), float64(-0.1234), true, src("-0.1234", "")},
+		{src("-0.1234{x"), float64(-0.1234), true, src("-0.1234{x", "{x")},
+		{src("-0.1234(x"), float64(-0.1234), true, src("-0.1234(x", "(x")},
+		{src("-0.1234#x"), float64(-0.1234), true, src("-0.1234#x", "#x")},
+		{src("-0.1234,x"), float64(-0.1234), true, src("-0.1234,x", ",x")},
+		{src("-0.1234 x"), float64(-0.1234), true, src("-0.1234 x", " x")},
+		{src("-0.1234\tx"), float64(-0.1234), true, src("-0.1234\tx", "\tx")},
+		{src("-0.1234\nx"), float64(-0.1234), true, src("-0.1234\nx", "\nx")},
+		{src("-0.1234\rx"), float64(-0.1234), true, src("-0.1234\rx", "\rx")},
+		{src("0.1234x"), int64(0), false, src("0.1234x")},
 	} {
 		t.Run("", func(t *testing.T) {
 			a, f, ok := td.input.consumeNumber()
