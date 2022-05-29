@@ -23,20 +23,6 @@ type Selection struct {
 	Selections       []Selection
 }
 
-// TypeKind can be any of:
-type TypeKind int
-
-// Type kinds
-const (
-	_ TypeKind = iota
-	TypeKindBoolean
-	TypeKindInt
-	TypeKindFloat
-	TypeKindString
-	TypeKindID
-	TypeKindInput
-)
-
 type InputConstraint struct {
 	Name       ParameterName
 	Constraint Constraint
@@ -50,9 +36,6 @@ type (
 	ConstraintMap struct{ Constraint Constraint }
 
 	ConstraintAny struct{}
-
-	ConstraintTypeEqual    struct{ Type TypeKind }
-	ConstraintTypeNotEqual struct{ Type TypeKind }
 
 	ConstraintValEqual          struct{ Value Value }
 	ConstraintValNotEqual       struct{ Value Value }
@@ -394,57 +377,6 @@ func parseConstraint(s source) (_ source, c Constraint, err Error) {
 				"unsupported operator for 'bytelen' constraint",
 			)
 		}
-
-	case "type":
-		if s, ok = s.consume(operatorEqual); ok {
-			// type = T
-			c = ConstraintTypeEqual{}
-		} else if s, ok = s.consume(operatorNotEqual); ok {
-			// type != T
-			c = ConstraintTypeNotEqual{}
-		} else {
-			return si, nil, s.err(
-				"unsupported operator for 'type' constraint",
-			)
-		}
-
-		s = s.consumeIrrelevant()
-
-		var typeName []byte
-		sBeforeName := s
-		s, typeName = s.consumeName()
-		if typeName == nil {
-			return s, nil, s.err("expected type name")
-		}
-
-		var kind TypeKind
-		switch string(typeName) {
-		case "Boolean":
-			kind = TypeKindBoolean
-		case "Int":
-			kind = TypeKindInt
-		case "Float":
-			kind = TypeKindFloat
-		case "String":
-			kind = TypeKindString
-		case "ID":
-			kind = TypeKindID
-		case "Input":
-			kind = TypeKindInput
-		default:
-			return sBeforeName, nil, sBeforeName.err("unsupported type kind")
-		}
-
-		switch c.(type) {
-		case ConstraintTypeEqual:
-			c = ConstraintTypeEqual{Type: kind}
-		case ConstraintTypeNotEqual:
-			c = ConstraintTypeNotEqual{Type: kind}
-		default:
-			panic(fmt.Errorf("unhandled constraint type: %T", c))
-		}
-
-		return s, c, Error{}
 
 	default:
 		return s, nil, s.err("unsupported constraint function")
