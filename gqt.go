@@ -17,10 +17,20 @@ type DocMutation struct {
 	Selections []Selection
 }
 
-type Selection struct {
+// Selection can be any of:
+//  SelectionField
+//  SelectionInlineFragment
+type Selection any
+
+type SelectionField struct {
 	Name             string
 	InputConstraints []InputConstraint
 	Selections       []Selection
+}
+
+type SelectionInlineFragment struct {
+	TypeName   string
+	Selections []Selection
 }
 
 type InputConstraint struct {
@@ -140,9 +150,18 @@ func parseSelectionSet(s source) (source, []Selection, Error) {
 		}
 
 		// Check for redundancy
-		for _, x := range selections {
-			if x.Name == selection.Name {
-				return sb, nil, sb.err("redundant selection")
+		if s, ok := selection.(SelectionField); ok {
+			for _, x := range selections {
+				if f, ok := x.(SelectionField); ok && f.Name == s.Name {
+					return sb, nil, sb.err("redundant field selection")
+				}
+			}
+		} else if s, ok := selection.(SelectionInlineFragment); ok {
+			for _, x := range selections {
+				f, ok := x.(SelectionInlineFragment)
+				if ok && f.TypeName == s.TypeName {
+					return sb, nil, sb.err("redundant type condition")
+				}
 			}
 		}
 
@@ -157,13 +176,49 @@ func parseSelectionSet(s source) (source, []Selection, Error) {
 	return s, selections, Error{}
 }
 
+// parseInlineFragment parses inline fragments starting at
+// keyword "on" after "..."
+func parseInlineFragment(
+	s source,
+) (n source, f SelectionInlineFragment, err Error) {
+	var w []byte
+	n, w = s.consumeName()
+	if len(w) != 2 || w[1] != 'n' || w[0] != 'o' {
+		return s, SelectionInlineFragment{}, s.err("expected keyword 'on'")
+	}
+
+	n = n.consumeIrrelevant()
+
+	if n, w = n.consumeName(); len(w) < 1 {
+		return n, SelectionInlineFragment{}, n.err("expected type name")
+	}
+	f.TypeName = string(w)
+
+	n = n.consumeIrrelevant()
+
+	n, f.Selections, err = parseSelectionSet(n)
+	if err.IsErr() {
+		return n, SelectionInlineFragment{}, err
+	}
+
+	return n, f, err
+}
+
 func parseSelection(s source) (n source, sel Selection, err Error) {
 	var ok bool
 	var name []byte
-	if n, name = s.consumeName(); name == nil {
-		return s, Selection{}, s.err("expected field name")
+
+	if n, ok = s.consume(operatorInlineFrag); ok {
+		// Inline fragment
+		n = n.consumeIrrelevant()
+		return parseInlineFragment(n)
 	}
-	sel.Name = string(name)
+
+	var f SelectionField
+	if n, name = s.consumeName(); name == nil {
+		return s, nil, s.err("expected field name")
+	}
+	f.Name = string(name)
 
 	n = n.consumeIrrelevant()
 
@@ -172,29 +227,29 @@ func parseSelection(s source) (n source, sel Selection, err Error) {
 			s = n
 			n = n.consumeIrrelevant()
 			if n, name = n.consumeName(); name == nil {
-				return s, Selection{}, n.err("expected parameter name")
+				return s, nil, n.err("expected parameter name")
 			}
 			n = n.consumeIrrelevant()
 			if n, ok = n.consume(column); !ok {
-				return s, Selection{}, n.err(
+				return s, nil, n.err(
 					"expected column after parameter name",
 				)
 			}
 			n = n.consumeIrrelevant()
 			var inputConstraint Constraint
 			if n, inputConstraint, err = parseConstraintOr(n); err.IsErr() {
-				return s, Selection{}, err
+				return s, nil, err
 			}
 
 			// Check for redundancy
-			for _, x := range sel.InputConstraints {
+			for _, x := range f.InputConstraints {
 				if x.Name == string(name) {
-					return s, Selection{}, s.err("redundant constraint")
+					return s, nil, s.err("redundant constraint")
 				}
 			}
 
-			sel.InputConstraints = append(
-				sel.InputConstraints,
+			f.InputConstraints = append(
+				f.InputConstraints,
 				InputConstraint{
 					Name:       ParameterName(name),
 					Constraint: inputConstraint,
@@ -210,12 +265,12 @@ func parseSelection(s source) (n source, sel Selection, err Error) {
 
 	if bytes.HasPrefix(n.s, curlyBracketLeft) {
 		n = n.consumeIrrelevant()
-		if n, sel.Selections, err = parseSelectionSet(n); err.IsErr() {
-			return s, Selection{}, err
+		if n, f.Selections, err = parseSelectionSet(n); err.IsErr() {
+			return s, nil, err
 		}
 	}
 
-	return n, sel, Error{}
+	return n, f, Error{}
 }
 
 func parseConstraintOr(s source) (ns source, c Constraint, err Error) {
@@ -728,6 +783,7 @@ var (
 	operatorOr           = []byte("||")
 	operatorAnd          = []byte("&&")
 	operatorMap          = []byte("...")
+	operatorInlineFrag   = operatorMap
 )
 
 func (s source) expectEOF() (e Error) {

@@ -23,23 +23,88 @@ func TestParse(t *testing.T) {
 			}
 		}`,
 		gqt.DocQuery{
-			Selections: []gqt.Selection{{
-				Name: "a",
-				Selections: []gqt.Selection{{
-					Name: "b",
-					InputConstraints: []gqt.InputConstraint{{
-						Name: "x1",
-						Constraint: gqt.ConstraintValEqual{
-							Value: float64(1),
+			Selections: []gqt.Selection{
+				gqt.SelectionField{
+					Name: "a",
+					Selections: []gqt.Selection{
+						gqt.SelectionField{
+							Name: "b",
+							InputConstraints: []gqt.InputConstraint{{
+								Name: "x1",
+								Constraint: gqt.ConstraintValEqual{
+									Value: float64(1),
+								},
+							}},
+							Selections: []gqt.Selection{
+								gqt.SelectionField{
+									Name: "c",
+								},
+								gqt.SelectionField{
+									Name: "d",
+								},
+							},
 						},
+					},
+				},
+			},
+		},
+	}, {
+		`query {
+			filesystemObject(id: any) {
+				name
+				... on File {
+					format
+				}
+				... on Directory {
+					objects {
+						... on File {
+							format
+						}
+					}
+				}
+			}
+		}`,
+		gqt.DocQuery{
+			Selections: []gqt.Selection{
+				gqt.SelectionField{
+					Name: "filesystemObject",
+					InputConstraints: []gqt.InputConstraint{{
+						Name:       "id",
+						Constraint: gqt.ConstraintAny{},
 					}},
-					Selections: []gqt.Selection{{
-						Name: "c",
-					}, {
-						Name: "d",
-					}},
-				}},
-			}},
+					Selections: []gqt.Selection{
+						gqt.SelectionField{
+							Name: "name",
+						},
+						gqt.SelectionInlineFragment{
+							TypeName: "File",
+							Selections: []gqt.Selection{
+								gqt.SelectionField{
+									Name: "format",
+								},
+							},
+						},
+						gqt.SelectionInlineFragment{
+							TypeName: "Directory",
+							Selections: []gqt.Selection{
+								gqt.SelectionField{
+									Name: "objects",
+									Selections: []gqt.Selection{
+										gqt.SelectionInlineFragment{
+											TypeName: "File",
+											Selections: []gqt.Selection{
+												gqt.SelectionField{
+													Name: "format",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}, { // Comments
 		`query#comment after token
@@ -79,23 +144,32 @@ func TestParse(t *testing.T) {
 		}#comment after token
 		#comment after token`,
 		gqt.DocQuery{
-			Selections: []gqt.Selection{{
-				Name: "a",
-				Selections: []gqt.Selection{{
-					Name: "b",
-					InputConstraints: []gqt.InputConstraint{{
-						Name: "x1",
-						Constraint: gqt.ConstraintValEqual{
-							Value: float64(1),
+			Selections: []gqt.Selection{
+				gqt.SelectionField{
+					Name: "a",
+					Selections: []gqt.Selection{
+						gqt.SelectionField{
+							Name: "b",
+							InputConstraints: []gqt.InputConstraint{
+								{
+									Name: "x1",
+									Constraint: gqt.ConstraintValEqual{
+										Value: float64(1),
+									},
+								},
+							},
+							Selections: []gqt.Selection{
+								gqt.SelectionField{
+									Name: "c",
+								},
+								gqt.SelectionField{
+									Name: "d",
+								},
+							},
 						},
-					}},
-					Selections: []gqt.Selection{{
-						Name: "c",
-					}, {
-						Name: "d",
-					}},
-				}},
-			}},
+					},
+				},
+			},
 		},
 	}, {
 		`mutation {
@@ -135,120 +209,172 @@ func TestParse(t *testing.T) {
 			) {b}
 		}`,
 		gqt.DocMutation{
-			Selections: []gqt.Selection{{
-				Name: "a",
-				InputConstraints: []gqt.InputConstraint{{
-					Name:       "y1",
-					Constraint: gqt.ConstraintAny{},
-				}, {
-					Name:       "i1",
-					Constraint: gqt.ConstraintValEqual{Value: float64(42)},
-				}, {
-					Name:       "i2",
-					Constraint: gqt.ConstraintValNotEqual{Value: float64(42)},
-				}, {
-					Name:       "i3",
-					Constraint: gqt.ConstraintValGreater{Value: float64(42)},
-				}, {
-					Name:       "i4",
-					Constraint: gqt.ConstraintValLess{Value: float64(42)},
-				}, {
-					Name:       "i5",
-					Constraint: gqt.ConstraintValGreaterOrEqual{Value: float64(42)},
-				}, {
-					Name:       "i6",
-					Constraint: gqt.ConstraintValLessOrEqual{Value: float64(42)},
-				}, {
-					Name:       "i7",
-					Constraint: gqt.ConstraintValEqual{Value: "text"},
-				}, {
-					Name:       "i8",
-					Constraint: gqt.ConstraintValNotEqual{Value: "text"},
-				}, {
-					Name:       "l1",
-					Constraint: gqt.ConstraintLenEqual{Value: uint(42)},
-				}, {
-					Name:       "l2",
-					Constraint: gqt.ConstraintLenNotEqual{Value: uint(42)},
-				}, {
-					Name:       "l3",
-					Constraint: gqt.ConstraintLenGreater{Value: uint(42)},
-				}, {
-					Name:       "l4",
-					Constraint: gqt.ConstraintLenLess{Value: uint(42)},
-				}, {
-					Name:       "l5",
-					Constraint: gqt.ConstraintLenGreaterOrEqual{Value: uint(42)},
-				}, {
-					Name:       "l6",
-					Constraint: gqt.ConstraintLenLessOrEqual{Value: uint(42)},
-				}, {
-					Name:       "b1",
-					Constraint: gqt.ConstraintBytelenEqual{Value: uint(42)},
-				}, {
-					Name:       "b2",
-					Constraint: gqt.ConstraintBytelenNotEqual{Value: uint(42)},
-				}, {
-					Name:       "b3",
-					Constraint: gqt.ConstraintBytelenGreater{Value: uint(42)},
-				}, {
-					Name:       "b4",
-					Constraint: gqt.ConstraintBytelenLess{Value: uint(42)},
-				}, {
-					Name:       "b5",
-					Constraint: gqt.ConstraintBytelenGreaterOrEqual{Value: uint(42)},
-				}, {
-					Name:       "b6",
-					Constraint: gqt.ConstraintBytelenLessOrEqual{Value: uint(42)},
-				}, {
-					Name:       "a1",
-					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{}},
-				}, {
-					Name: "a2",
-					Constraint: gqt.ConstraintMap{
+			Selections: []gqt.Selection{
+				gqt.SelectionField{
+					Name: "a",
+					InputConstraints: []gqt.InputConstraint{{
+						Name:       "y1",
+						Constraint: gqt.ConstraintAny{},
+					}, {
+						Name: "i1",
+						Constraint: gqt.ConstraintValEqual{
+							Value: float64(42),
+						},
+					}, {
+						Name: "i2",
+						Constraint: gqt.ConstraintValNotEqual{
+							Value: float64(42),
+						},
+					}, {
+						Name: "i3",
+						Constraint: gqt.ConstraintValGreater{
+							Value: float64(42),
+						},
+					}, {
+						Name: "i4",
 						Constraint: gqt.ConstraintValLess{
-							Value: 10,
+							Value: float64(42),
 						},
-					},
-				}, {
-					Name: "a3",
-					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
-						Items: []gqt.Constraint{
-							gqt.ConstraintValEqual{Value: "a"},
-							gqt.ConstraintValEqual{Value: "b"},
+					}, {
+						Name: "i5",
+						Constraint: gqt.ConstraintValGreaterOrEqual{
+							Value: float64(42),
 						},
-					}},
-				}, {
-					Name: "o1",
-					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueObject{
-						Fields: []gqt.ObjectField{{
-							Name:  "of1",
-							Value: gqt.ConstraintValEqual{Value: true},
-						}, {
-							Name:  "of2",
-							Value: gqt.ConstraintValEqual{Value: false},
-						}, {
-							Name: "oo2",
-							Value: gqt.ConstraintValEqual{
-								Value: gqt.ValueObject{
-									Fields: []gqt.ObjectField{{
-										Name: "oa1",
-										Value: gqt.ConstraintValNotEqual{
-											Value: nil,
-										},
-									}, {
-										Name:  "oa2",
-										Value: gqt.ConstraintAny{},
-									}},
-								},
+					}, {
+						Name: "i6",
+						Constraint: gqt.ConstraintValLessOrEqual{
+							Value: float64(42),
+						},
+					}, {
+						Name: "i7",
+						Constraint: gqt.ConstraintValEqual{
+							Value: "text",
+						},
+					}, {
+						Name: "i8",
+						Constraint: gqt.ConstraintValNotEqual{
+							Value: "text",
+						},
+					}, {
+						Name: "l1",
+						Constraint: gqt.ConstraintLenEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "l2",
+						Constraint: gqt.ConstraintLenNotEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "l3",
+						Constraint: gqt.ConstraintLenGreater{
+							Value: uint(42),
+						},
+					}, {
+						Name: "l4",
+						Constraint: gqt.ConstraintLenLess{
+							Value: uint(42),
+						},
+					}, {
+						Name: "l5",
+						Constraint: gqt.ConstraintLenGreaterOrEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "l6",
+						Constraint: gqt.ConstraintLenLessOrEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "b1",
+						Constraint: gqt.ConstraintBytelenEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "b2",
+						Constraint: gqt.ConstraintBytelenNotEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "b3",
+						Constraint: gqt.ConstraintBytelenGreater{
+							Value: uint(42),
+						},
+					}, {
+						Name: "b4",
+						Constraint: gqt.ConstraintBytelenLess{
+							Value: uint(42),
+						},
+					}, {
+						Name: "b5",
+						Constraint: gqt.ConstraintBytelenGreaterOrEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "b6",
+						Constraint: gqt.ConstraintBytelenLessOrEqual{
+							Value: uint(42),
+						},
+					}, {
+						Name: "a1",
+						Constraint: gqt.ConstraintValEqual{
+							Value: gqt.ValueArray{},
+						},
+					}, {
+						Name: "a2",
+						Constraint: gqt.ConstraintMap{
+							Constraint: gqt.ConstraintValLess{
+								Value: 10,
+							},
+						},
+					}, {
+						Name: "a3",
+						Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
+							Items: []gqt.Constraint{
+								gqt.ConstraintValEqual{Value: "a"},
+								gqt.ConstraintValEqual{Value: "b"},
 							},
 						}},
+					}, {
+						Name: "o1",
+						Constraint: gqt.ConstraintValEqual{
+							Value: gqt.ValueObject{
+								Fields: []gqt.ObjectField{
+									{
+										Name:  "of1",
+										Value: gqt.ConstraintValEqual{Value: true},
+									}, {
+										Name:  "of2",
+										Value: gqt.ConstraintValEqual{Value: false},
+									}, {
+										Name: "oo2",
+										Value: gqt.ConstraintValEqual{
+											Value: gqt.ValueObject{
+												Fields: []gqt.ObjectField{
+													{
+														Name: "oa1",
+														Value: gqt.ConstraintValNotEqual{
+															Value: nil,
+														},
+													}, {
+														Name:  "oa2",
+														Value: gqt.ConstraintAny{},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					}},
-				}},
-				Selections: []gqt.Selection{{
-					Name: "b",
-				}},
-			}},
+					Selections: []gqt.Selection{
+						gqt.SelectionField{
+							Name: "b",
+						},
+					},
+				},
+			},
 		},
 	}, {
 		`mutation {
@@ -263,49 +389,53 @@ func TestParse(t *testing.T) {
 			) {b}
 		}`,
 		gqt.DocMutation{
-			Selections: []gqt.Selection{{
-				Name: "a",
-				InputConstraints: []gqt.InputConstraint{{
+			Selections: []gqt.Selection{
+				gqt.SelectionField{
 					Name: "a",
-					Constraint: gqt.ConstraintAnd{
-						gqt.ConstraintValGreater{Value: float64(0)},
-						gqt.ConstraintValLess{Value: float64(3)},
-					},
-				}, {
-					Name: "b",
-					Constraint: gqt.ConstraintAnd{
-						gqt.ConstraintValGreater{Value: float64(0)},
-						gqt.ConstraintValLess{Value: float64(9)},
-						gqt.ConstraintValNotEqual{Value: float64(5)},
-					},
-				}, {
-					Name: "c",
-					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintValEqual{Value: float64(1)},
-						gqt.ConstraintValEqual{Value: float64(2)},
-					},
-				}, {
-					Name: "d",
-					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintValEqual{Value: float64(1)},
-						gqt.ConstraintValEqual{Value: float64(2)},
-						gqt.ConstraintValEqual{Value: float64(3)},
-					},
-				}, {
-					Name: "e",
-					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintAnd{
-							gqt.ConstraintBytelenGreater{Value: uint(3)},
-							gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
+					InputConstraints: []gqt.InputConstraint{{
+						Name: "a",
+						Constraint: gqt.ConstraintAnd{
+							gqt.ConstraintValGreater{Value: float64(0)},
+							gqt.ConstraintValLess{Value: float64(3)},
 						},
-						gqt.ConstraintValEqual{Value: true},
-						gqt.ConstraintValEqual{Value: float64(1)},
+					}, {
+						Name: "b",
+						Constraint: gqt.ConstraintAnd{
+							gqt.ConstraintValGreater{Value: float64(0)},
+							gqt.ConstraintValLess{Value: float64(9)},
+							gqt.ConstraintValNotEqual{Value: float64(5)},
+						},
+					}, {
+						Name: "c",
+						Constraint: gqt.ConstraintOr{
+							gqt.ConstraintValEqual{Value: float64(1)},
+							gqt.ConstraintValEqual{Value: float64(2)},
+						},
+					}, {
+						Name: "d",
+						Constraint: gqt.ConstraintOr{
+							gqt.ConstraintValEqual{Value: float64(1)},
+							gqt.ConstraintValEqual{Value: float64(2)},
+							gqt.ConstraintValEqual{Value: float64(3)},
+						},
+					}, {
+						Name: "e",
+						Constraint: gqt.ConstraintOr{
+							gqt.ConstraintAnd{
+								gqt.ConstraintBytelenGreater{Value: uint(3)},
+								gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
+							},
+							gqt.ConstraintValEqual{Value: true},
+							gqt.ConstraintValEqual{Value: float64(1)},
+						},
+					}},
+					Selections: []gqt.Selection{
+						gqt.SelectionField{
+							Name: "b",
+						},
 					},
-				}},
-				Selections: []gqt.Selection{{
-					Name: "b",
-				}},
-			}},
+				},
+			},
 		},
 	}} {
 		t.Run("", func(t *testing.T) {
@@ -318,15 +448,22 @@ func TestParse(t *testing.T) {
 
 }
 
-func TestParseErr(t *testing.T) {
+func TestSemanticErr(t *testing.T) {
 	for _, td := range []struct {
 		name      string
 		input     string
 		expectErr string
 	}{
-		{"redundant_selection",
+		{"redundant_field_selection",
 			`query { x x }`,
-			"error at 10: redundant selection",
+			"error at 10: redundant field selection",
+		},
+		{"redundant_type_condition",
+			`query {
+				... on T {x}
+				... on T {y}
+			}`,
+			"error at 29: redundant type condition",
 		},
 		{"redundant_constraint",
 			`query { x(a: val = 3 a: val = 4) }`,
@@ -346,7 +483,7 @@ func TestParseErr(t *testing.T) {
 	}
 }
 
-func TestParseErrUnexpectedEOF(t *testing.T) {
+func TestSyntaxErr(t *testing.T) {
 	for ti, td := range []struct {
 		index    int
 		input    string
@@ -451,6 +588,34 @@ func TestParseErrUnexpectedEOF(t *testing.T) {
 		{24,
 			`query{f(x:val=[...  `,
 			"error at 20: expected constraint subject",
+		},
+		{25,
+			`query{f{...`,
+			"error at 11: expected keyword 'on'",
+		},
+		{26,
+			`query{f{... `,
+			"error at 12: expected keyword 'on'",
+		},
+		{27,
+			`query{f{...on`,
+			"error at 13: expected type name",
+		},
+		{28,
+			`query{f{...on `,
+			"error at 14: expected type name",
+		},
+		{29,
+			`query{f{...on T`,
+			"error at 15: expected selection set",
+		},
+		{30,
+			`query{f{...on T `,
+			"error at 16: expected selection set",
+		},
+		{31,
+			`query{f{...onT{x}}}`,
+			"error at 11: expected keyword 'on'",
 		},
 	} {
 		t.Run("", func(t *testing.T) {
