@@ -213,14 +213,20 @@ var tests = []ExpectDoc{
 	Expect(`mutation {
 		a(
 			y1: any
-			i1: val = 42.0
-			i2: val != 42.0
-			i3: val > 42.0
+			i1: val = 42
+			i2: val != 42
+			i3: val > 42
 			i4: val < 42
 			i5: val >= 42
 			i6: val <= 42
-			i7: val = "text"
-			i8: val != "text"
+			i7: val = 42.0
+			i8: val != 42.0
+			i9: val > 42.0
+			i10: val < 42.0
+			i11: val >= 42.0
+			i12: val <= 42.0
+			i13: val = "text"
+			i14: val != "text"
 			l1: len = 42
 			l2: len != 42
 			l3: len > 42
@@ -255,17 +261,17 @@ var tests = []ExpectDoc{
 				}, {
 					Name: "i1",
 					Constraint: gqt.ConstraintValEqual{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i2",
 					Constraint: gqt.ConstraintValNotEqual{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i3",
 					Constraint: gqt.ConstraintValGreater{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i4",
@@ -285,10 +291,40 @@ var tests = []ExpectDoc{
 				}, {
 					Name: "i7",
 					Constraint: gqt.ConstraintValEqual{
-						Value: "text",
+						Value: float64(42),
 					},
 				}, {
 					Name: "i8",
+					Constraint: gqt.ConstraintValNotEqual{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i9",
+					Constraint: gqt.ConstraintValGreater{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i10",
+					Constraint: gqt.ConstraintValLess{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i11",
+					Constraint: gqt.ConstraintValGreaterOrEqual{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i12",
+					Constraint: gqt.ConstraintValLessOrEqual{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i13",
+					Constraint: gqt.ConstraintValEqual{
+						Value: "text",
+					},
+				}, {
+					Name: "i14",
 					Constraint: gqt.ConstraintValNotEqual{
 						Value: "text",
 					},
