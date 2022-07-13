@@ -305,7 +305,7 @@ func parseConstraintOr(s source) (ns source, c Constraint, err Error) {
 		}
 
 		if cb, ok := cb.(ConstraintOr); ok {
-			c = append(cb.Constraints, c)
+			c = ConstraintOr{Constraints: append(cb.Constraints, c)}
 		}
 
 		ns = ns.consumeIrrelevant()
@@ -339,7 +339,7 @@ func parseConstraintAnd(s source) (ns source, c Constraint, err Error) {
 		}
 
 		if cb, ok := cb.(ConstraintAnd); ok {
-			c = append(cb.Constraints, c)
+			c = ConstraintAnd{Constraints: append(cb.Constraints, c)}
 		}
 
 		ns = ns.consumeIrrelevant()
