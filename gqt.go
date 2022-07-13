@@ -41,8 +41,8 @@ type InputConstraint struct {
 type Constraint any
 
 type (
-	ConstraintOr  []Constraint
-	ConstraintAnd []Constraint
+	ConstraintOr  struct{ Constraints []Constraint }
+	ConstraintAnd struct{ Constraints []Constraint }
 	ConstraintMap struct{ Constraint Constraint }
 
 	ConstraintAny struct{}
@@ -305,7 +305,7 @@ func parseConstraintOr(s source) (ns source, c Constraint, err Error) {
 		}
 
 		if cb, ok := cb.(ConstraintOr); ok {
-			c = append(cb, c)
+			c = append(cb.Constraints, c)
 		}
 
 		ns = ns.consumeIrrelevant()
@@ -317,7 +317,7 @@ func parseConstraintOr(s source) (ns source, c Constraint, err Error) {
 		}
 
 		if cb == nil {
-			c = ConstraintOr{c}
+			c = ConstraintOr{Constraints: []Constraint{c}}
 		}
 	}
 	return ns, c, Error{}
@@ -339,7 +339,7 @@ func parseConstraintAnd(s source) (ns source, c Constraint, err Error) {
 		}
 
 		if cb, ok := cb.(ConstraintAnd); ok {
-			c = append(cb, c)
+			c = append(cb.Constraints, c)
 		}
 
 		ns = ns.consumeIrrelevant()
@@ -349,7 +349,7 @@ func parseConstraintAnd(s source) (ns source, c Constraint, err Error) {
 		}
 
 		if cb == nil {
-			c = ConstraintAnd{c}
+			c = ConstraintAnd{Constraints: []Constraint{c}}
 		}
 	}
 	return
