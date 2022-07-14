@@ -466,38 +466,50 @@ var tests = []ExpectDoc{
 				InputConstraints: []gqt.InputConstraint{{
 					Name: "a",
 					Constraint: gqt.ConstraintAnd{
-						gqt.ConstraintValGreater{Value: float64(0)},
-						gqt.ConstraintValLess{Value: float64(3)},
+						Constraints: []gqt.Constraint{
+							gqt.ConstraintValGreater{Value: float64(0)},
+							gqt.ConstraintValLess{Value: float64(3)},
+						},
 					},
 				}, {
 					Name: "b",
 					Constraint: gqt.ConstraintAnd{
-						gqt.ConstraintValGreater{Value: float64(0)},
-						gqt.ConstraintValLess{Value: float64(9)},
-						gqt.ConstraintValNotEqual{Value: float64(5)},
+						Constraints: []gqt.Constraint{
+							gqt.ConstraintValGreater{Value: float64(0)},
+							gqt.ConstraintValLess{Value: float64(9)},
+							gqt.ConstraintValNotEqual{Value: float64(5)},
+						},
 					},
 				}, {
 					Name: "c",
 					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintValEqual{Value: float64(1)},
-						gqt.ConstraintValEqual{Value: float64(2)},
+						Constraints: []gqt.Constraint{
+							gqt.ConstraintValEqual{Value: float64(1)},
+							gqt.ConstraintValEqual{Value: float64(2)},
+						},
 					},
 				}, {
 					Name: "d",
 					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintValEqual{Value: float64(1)},
-						gqt.ConstraintValEqual{Value: float64(2)},
-						gqt.ConstraintValEqual{Value: float64(3)},
+						Constraints: []gqt.Constraint{
+							gqt.ConstraintValEqual{Value: float64(1)},
+							gqt.ConstraintValEqual{Value: float64(2)},
+							gqt.ConstraintValEqual{Value: float64(3)},
+						},
 					},
 				}, {
 					Name: "e",
 					Constraint: gqt.ConstraintOr{
-						gqt.ConstraintAnd{
-							gqt.ConstraintBytelenGreater{Value: uint(3)},
-							gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
+						Constraints: []gqt.Constraint{
+							gqt.ConstraintAnd{
+								Constraints: []gqt.Constraint{
+									gqt.ConstraintBytelenGreater{Value: uint(3)},
+									gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
+								},
+							},
+							gqt.ConstraintValEqual{Value: true},
+							gqt.ConstraintValEqual{Value: float64(1)},
 						},
-						gqt.ConstraintValEqual{Value: true},
-						gqt.ConstraintValEqual{Value: float64(1)},
 					},
 				}},
 				Selections: []gqt.Selection{
