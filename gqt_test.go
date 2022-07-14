@@ -10,6 +10,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type KeyValueConstraintInterface interface {
+	Key() string
+	Content() gqt.Constraint
+}
+
+func TestConstraintKeyAndValue(t *testing.T) {
+	for _, td := range []struct {
+		input KeyValueConstraintInterface
+		key   string
+		value gqt.Constraint
+	}{
+		{
+			input: gqt.InputConstraint{
+				Name: "a",
+				Constraint: gqt.ConstraintValEqual{
+					Value: 88.0,
+				},
+			},
+			key: "a",
+			value: gqt.ConstraintValEqual{
+				Value: 88.0,
+			},
+		},
+		{
+			input: gqt.ObjectField{
+				Name: "a",
+				Value: gqt.ConstraintValNotEqual{
+					Value: 88.0,
+				},
+			},
+			key: "a",
+			value: gqt.ConstraintValNotEqual{
+				Value: 88.0,
+			},
+		},
+	} {
+		t.Run("", func(t *testing.T) {
+			key := td.input.Key()
+			value := td.input.Content()
+			require.Equal(t, td.key, key)
+			require.Equal(t, td.value, value)
+		})
+	}
+}
+
 var tests = []ExpectDoc{
 	Expect(`query {
 		a {
@@ -30,7 +75,7 @@ var tests = []ExpectDoc{
 						InputConstraints: []gqt.InputConstraint{{
 							Name: "x1",
 							Constraint: gqt.ConstraintValEqual{
-								Value: float64(1),
+								Value: int64(1),
 							},
 						}},
 						Selections: []gqt.Selection{
@@ -148,7 +193,7 @@ var tests = []ExpectDoc{
 							{
 								Name: "x1",
 								Constraint: gqt.ConstraintValEqual{
-									Value: float64(1),
+									Value: int64(1),
 								},
 							},
 						},
@@ -174,8 +219,14 @@ var tests = []ExpectDoc{
 			i4: val < 42
 			i5: val >= 42
 			i6: val <= 42
-			i7: val = "text"
-			i8: val != "text"
+			i7: val = 42.0
+			i8: val != 42.0
+			i9: val > 42.0
+			i10: val < 42.0
+			i11: val >= 42.0
+			i12: val <= 42.0
+			i13: val = "text"
+			i14: val != "text"
 			l1: len = 42
 			l2: len != 42
 			l3: len > 42
@@ -189,7 +240,7 @@ var tests = []ExpectDoc{
 			b5: bytelen >= 42
 			b6: bytelen <= 42
 			a1: val = []
-			a2: val = [ ... val < 10 ]
+			a2: val = [ ... val < 10.0 ]
 			a3: val = [ val = "a", val = "b" ]
 			o1: val = {
 				of1: val = true
@@ -210,40 +261,70 @@ var tests = []ExpectDoc{
 				}, {
 					Name: "i1",
 					Constraint: gqt.ConstraintValEqual{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i2",
 					Constraint: gqt.ConstraintValNotEqual{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i3",
 					Constraint: gqt.ConstraintValGreater{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i4",
 					Constraint: gqt.ConstraintValLess{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i5",
 					Constraint: gqt.ConstraintValGreaterOrEqual{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i6",
 					Constraint: gqt.ConstraintValLessOrEqual{
-						Value: float64(42),
+						Value: int64(42),
 					},
 				}, {
 					Name: "i7",
 					Constraint: gqt.ConstraintValEqual{
-						Value: "text",
+						Value: float64(42),
 					},
 				}, {
 					Name: "i8",
+					Constraint: gqt.ConstraintValNotEqual{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i9",
+					Constraint: gqt.ConstraintValGreater{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i10",
+					Constraint: gqt.ConstraintValLess{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i11",
+					Constraint: gqt.ConstraintValGreaterOrEqual{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i12",
+					Constraint: gqt.ConstraintValLessOrEqual{
+						Value: float64(42),
+					},
+				}, {
+					Name: "i13",
+					Constraint: gqt.ConstraintValEqual{
+						Value: "text",
+					},
+				}, {
+					Name: "i14",
 					Constraint: gqt.ConstraintValNotEqual{
 						Value: "text",
 					},
@@ -316,7 +397,7 @@ var tests = []ExpectDoc{
 					Name: "a2",
 					Constraint: gqt.ConstraintMap{
 						Constraint: gqt.ConstraintValLess{
-							Value: 10,
+							Value: 10.0,
 						},
 					},
 				}, {
@@ -370,13 +451,13 @@ var tests = []ExpectDoc{
 	}),
 	Expect(`mutation {
 		a(
-			a: val > 0 && val < 3
-			b: val > 0 && val < 9 && val != 5
-			c: val = 1 || val = 2
-			d: val = 1 || val = 2 || val = 3
+			a: val > 0.0 && val < 3.0
+			b: val > 0.0 && val < 9.0 && val != 5.0
+			c: val = 1.0 || val = 2.0
+			d: val = 1.0 || val = 2.0 || val = 3.0
 			e: bytelen > 3 && bytelen <= 10 ||
 				val = true ||
-				val = 1
+				val = 1.0
 		) {b}
 	}`, gqt.DocMutation{
 		Selections: []gqt.Selection{
