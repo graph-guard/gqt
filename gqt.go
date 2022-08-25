@@ -18,8 +18,9 @@ type DocMutation struct {
 }
 
 // Selection can be any of:
-//  SelectionField
-//  SelectionInlineFragment
+//
+//	SelectionField
+//	SelectionInlineFragment
 type Selection any
 
 type SelectionField struct {
@@ -37,6 +38,8 @@ type InputConstraint struct {
 	Name       ParameterName
 	Constraint Constraint
 }
+
+type EnumValue string
 
 type Constraint any
 
@@ -655,7 +658,6 @@ func parseValue(s source) (_ source, v Value, err Error) {
 	}
 
 	var t []byte
-	si := s
 	s, t = s.consumeToken()
 	switch string(t) {
 	case "null":
@@ -664,8 +666,9 @@ func parseValue(s source) (_ source, v Value, err Error) {
 		return s, true, Error{}
 	case "false":
 		return s, false, Error{}
+	default:
+		return s, EnumValue(t), Error{}
 	}
-	return si, nil, s.err("invalid value")
 }
 
 func parseValueArray(s source) (source, any, Error) {

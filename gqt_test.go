@@ -227,6 +227,8 @@ var tests = []ExpectDoc{
 			i12: val <= 42.0
 			i13: val = "text"
 			i14: val != "text"
+			e1: val = ENUMVAL
+			e2: val != ENUMVAL
 			l1: len = 42
 			l2: len != 42
 			l3: len > 42
@@ -327,6 +329,16 @@ var tests = []ExpectDoc{
 					Name: "i14",
 					Constraint: gqt.ConstraintValNotEqual{
 						Value: "text",
+					},
+				}, {
+					Name: "e1",
+					Constraint: gqt.ConstraintValEqual{
+						Value: gqt.EnumValue("ENUMVAL"),
+					},
+				}, {
+					Name: "e2",
+					Constraint: gqt.ConstraintValNotEqual{
+						Value: gqt.EnumValue("ENUMVAL"),
 					},
 				}, {
 					Name: "l1",
