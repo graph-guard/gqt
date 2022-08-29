@@ -179,6 +179,28 @@ var tests = []ExpectDoc{
 				#comment after token
 			}#comment after token
 			#comment after token
+			combine#comment after token
+			#comment after token
+			1#comment after token
+			#comment after token
+			{#comment after token
+			#comment after token
+				foo#comment after token
+				#comment after token
+				...#comment after token
+				#comment after token
+				on#comment after token
+				#comment after token
+				TypeCondition#comment after token
+				#comment after token
+				{#comment after token
+				#comment after token
+					f#comment after token
+					#comment after token
+				}#comment after token
+				#comment after token
+			}#comment after token
+			#comment after token
 		}#comment after token
 		#comment after token
 	}#comment after token
@@ -198,11 +220,19 @@ var tests = []ExpectDoc{
 							},
 						},
 						Selections: []gqt.Selection{
-							gqt.SelectionField{
-								Name: "c",
-							},
-							gqt.SelectionField{
-								Name: "d",
+							gqt.SelectionField{Name: "c"},
+							gqt.SelectionField{Name: "d"},
+						},
+					},
+					gqt.ConstraintCombine{
+						MaxItems: 1,
+						Items: []gqt.Selection{
+							gqt.SelectionField{Name: "foo"},
+							gqt.SelectionInlineFragment{
+								TypeName: "TypeCondition",
+								Selections: []gqt.Selection{
+									gqt.SelectionField{Name: "f"},
+								},
 							},
 						},
 					},
@@ -531,6 +561,60 @@ var tests = []ExpectDoc{
 				},
 			},
 		},
+	}), Expect(`query {
+		foo
+		combine 1 {
+			eitherThis
+			orThat
+		}
+	}`, gqt.DocQuery{
+		Selections: []gqt.Selection{
+			gqt.SelectionField{Name: "foo"},
+			gqt.ConstraintCombine{
+				MaxItems: 1,
+				Items: []gqt.Selection{
+					gqt.SelectionField{Name: "eitherThis"},
+					gqt.SelectionField{Name: "orThat"},
+				},
+			},
+		},
+	}), Expect(`query {
+		combine
+		combine 2 {
+			... on EitherThis { f1 }
+			... on Those { f2 f3 }
+			... on OrThat { f4 }
+			Those
+		}
+	}`, gqt.DocQuery{
+		Selections: []gqt.Selection{
+			gqt.SelectionField{Name: "combine"},
+			gqt.ConstraintCombine{
+				MaxItems: 2,
+				Items: []gqt.Selection{
+					gqt.SelectionInlineFragment{
+						TypeName: "EitherThis",
+						Selections: []gqt.Selection{
+							gqt.SelectionField{Name: "f1"},
+						},
+					},
+					gqt.SelectionInlineFragment{
+						TypeName: "Those",
+						Selections: []gqt.Selection{
+							gqt.SelectionField{Name: "f2"},
+							gqt.SelectionField{Name: "f3"},
+						},
+					},
+					gqt.SelectionInlineFragment{
+						TypeName: "OrThat",
+						Selections: []gqt.Selection{
+							gqt.SelectionField{Name: "f4"},
+						},
+					},
+					gqt.SelectionField{Name: "Those"},
+				},
+			},
+		},
 	})}
 
 func TestParse(t *testing.T) {
@@ -567,6 +651,59 @@ var testsSemanticErr = []ExpectErr{
 	SyntaxErr(
 		`query {x(a: val = [ ... val=0 val=1 ])}`,
 		"error at 30: expected right square bracket",
+	),
+	// Nested combine constraints
+	SyntaxErr(
+		`query { combine 1 { combine 1 { baz faz } foo bar } }`,
+		"error at 20: nested combine constraint",
+	),
+	SyntaxErr(
+		`query { combine 1 { foo combine 1 { baz faz } bar } }`,
+		"error at 24: nested combine constraint",
+	),
+	// Invalid combine limit (non-integer)
+	SyntaxErr(
+		`query { combine 1.2 { foo bar } }`,
+		"error at 16: invalid combine limit, must be an integer greater 0",
+	),
+	// Invalid combine limit (negative)
+	SyntaxErr(
+		`query { combine -1 { foo bar } }`,
+		"error at 16: invalid combine limit, must be greater 0",
+	),
+	// Invalid combine limit (zero)
+	SyntaxErr(
+		`query { combine 0 { foo bar } }`,
+		"error at 16: invalid combine limit, must be greater 0",
+	),
+	// Invalid combine limit (equals number of items)
+	SyntaxErr(
+		`query { combine 2 { foo bar } }`,
+		"error at 16: invalid combine limit, must be greater 0 and smaller 2",
+	),
+	SyntaxErr(
+		`query { combine 3 { foo bar baz } }`,
+		"error at 16: invalid combine limit, must be greater 0 and smaller 3",
+	),
+	// Invalid combine limit (exceeds the number of items)
+	SyntaxErr(
+		`query { combine 3 { foo bar } }`,
+		"error at 16: invalid combine limit, must be greater 0 and smaller 2",
+	),
+	// Combine single item
+	SyntaxErr(
+		`query { combine 1 { foo } }`,
+		"error at 20: single combine item, "+
+			"combine statements must contain at least 2 items",
+	),
+	// Redundant combine item
+	SyntaxErr(
+		`query { combine 1 { foo foo } }`,
+		"error at 24: redundant combine item",
+	),
+	SyntaxErr(
+		`query { combine 1 { foo bar foo(x: val = 2) } }`,
+		"error at 28: redundant combine item",
 	),
 }
 
@@ -709,6 +846,18 @@ var testsSyntaxErr = []ExpectErr{
 	SyntaxErr(
 		`query{f{...onT{x}}}`,
 		"error at 11: expected keyword 'on'",
+	),
+	SyntaxErr(
+		`query { combine 1`,
+		"error at 17: expected combine items list",
+	),
+	SyntaxErr(
+		`query { combine 1 x }`,
+		"error at 18: expected combine items list",
+	),
+	SyntaxErr(
+		`query { combine 1 { } }`,
+		"error at 20: expected field name",
 	),
 }
 

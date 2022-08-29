@@ -21,6 +21,7 @@ type DocMutation struct {
 //
 //	SelectionField
 //	SelectionInlineFragment
+//	ConstraintCombine
 type Selection any
 
 type SelectionField struct {
@@ -44,9 +45,13 @@ type EnumValue string
 type Constraint any
 
 type (
-	ConstraintOr  struct{ Constraints []Constraint }
-	ConstraintAnd struct{ Constraints []Constraint }
-	ConstraintMap struct{ Constraint Constraint }
+	ConstraintOr      struct{ Constraints []Constraint }
+	ConstraintAnd     struct{ Constraints []Constraint }
+	ConstraintMap     struct{ Constraint Constraint }
+	ConstraintCombine struct {
+		MaxItems uint
+		Items    []Selection
+	}
 
 	ConstraintAny struct{}
 
@@ -150,6 +155,49 @@ func parse(s source) (Doc, Error) {
 	return nil, s.err("unexpected definition")
 }
 
+// parseCombineItems assumes its left curly bracket to already be consumed
+func parseCombineItems(s source) (source, []Selection, Error) {
+	var ok bool
+	var items []Selection
+	for {
+		var err Error
+		var item Selection
+		sb := s
+		if s, item, err = parseSelection(s); err.IsErr() {
+			return sb, nil, err
+		}
+
+		if _, ok := item.(ConstraintCombine); ok {
+			return sb, nil, sb.err("nested combine constraint")
+		}
+
+		// Check for redundancy
+		if s, ok := item.(SelectionField); ok {
+			for _, x := range items {
+				if f, ok := x.(SelectionField); ok && f.Name == s.Name {
+					return sb, nil, sb.err("redundant combine item")
+				}
+			}
+		} else if s, ok := item.(SelectionInlineFragment); ok {
+			for _, x := range items {
+				f, ok := x.(SelectionInlineFragment)
+				if ok && f.TypeName == s.TypeName {
+					return sb, nil, sb.err("redundant combine item")
+				}
+			}
+		}
+
+		items = append(items, item)
+		s = s.consumeIrrelevant()
+		if s, ok = s.consume(curlyBracketRight); ok {
+			s = s.consumeIrrelevant()
+			break
+		}
+	}
+
+	return s, items, Error{}
+}
+
 func parseSelectionSet(s source) (source, []Selection, Error) {
 	var ok bool
 	s, ok = s.consume(curlyBracketLeft)
@@ -241,6 +289,65 @@ func parseSelection(s source) (n source, sel Selection, err Error) {
 
 	n = n.consumeIrrelevant()
 
+	if string(name) == string(operatorCombine) {
+		n := n.consumeIrrelevant()
+
+		nb := n
+		n, combineNum, ok := n.consumeNumber()
+		if !ok {
+			// Not a combine operator
+			goto FIELD
+		}
+		var num int64
+		if num, ok = combineNum.(int64); !ok {
+			return n, nil, nb.err(
+				"invalid combine limit, must be an integer greater 0",
+			)
+		}
+		if num < 1 {
+			return n, nil, nb.err(
+				"invalid combine limit, must be greater 0",
+			)
+		}
+		n = n.consumeIrrelevant()
+
+		n, ok = n.consume(curlyBracketLeft)
+		if !ok {
+			return n, nil, n.err(
+				"expected combine items list",
+			)
+		}
+
+		n = n.consumeIrrelevant()
+		nb2 := n
+
+		var items []Selection
+		n, items, err = parseCombineItems(n)
+		if err.IsErr() {
+			return n, nil, err
+		}
+
+		if len(items) < 2 {
+			return nb, nil, nb2.err(
+				"single combine item, " +
+					"combine statements must contain at least 2 items",
+			)
+		}
+
+		if int(num) >= len(items) {
+			return nb, nil, nb.err(
+				"invalid combine limit, must be greater 0 and smaller " +
+					strconv.Itoa(len(items)),
+			)
+		}
+
+		return n, ConstraintCombine{
+			MaxItems: uint(num),
+			Items:    items,
+		}, Error{}
+	}
+
+FIELD:
 	if n, ok = n.consume(parenthesisLeft); ok {
 		for {
 			s = n
@@ -810,6 +917,7 @@ var (
 	operatorOr           = []byte("||")
 	operatorAnd          = []byte("&&")
 	operatorMap          = []byte("...")
+	operatorCombine      = []byte("combine")
 	operatorInlineFrag   = operatorMap
 )
 
@@ -822,7 +930,7 @@ func (s source) expectEOF() (e Error) {
 }
 
 // consumeIrrelevant skips spaces, tabs, line-feeds
-// carriage-returns and comment sequences
+// carriage-returns and comment sequences.
 func (s source) consumeIrrelevant() source {
 MAIN:
 	for len(s.s) > 0 {
