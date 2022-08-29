@@ -744,6 +744,10 @@ var testsSyntaxErr = []ExpectErr{
 		"error at 8: expected field name",
 	),
 	SyntaxErr(
+		`query{  }`,
+		"error at 8: expected field name",
+	),
+	SyntaxErr(
 		`query{f`,
 		"error at 7: expected field name",
 	),
@@ -752,12 +756,20 @@ var testsSyntaxErr = []ExpectErr{
 		"error at 9: expected field name",
 	),
 	SyntaxErr(
+		`query{f{}}`,
+		"error at 8: expected field name",
+	),
+	SyntaxErr(
 		`query{f(`,
 		"error at 8: expected parameter name",
 	),
 	SyntaxErr(
 		`query{f(  `,
 		"error at 10: expected parameter name",
+	),
+	SyntaxErr(
+		`query{f()}`,
+		"error at 8: expected parameter name",
 	),
 	SyntaxErr(
 		`query{f(x`,
