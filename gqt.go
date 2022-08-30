@@ -7,14 +7,10 @@ import (
 	"strconv"
 )
 
-type Doc any
-
-type DocQuery struct {
-	Selections []Selection
-}
-
-type DocMutation struct {
-	Selections []Selection
+type Doc struct {
+	Query        []Selection
+	Mutation     []Selection
+	Subscription []Selection
 }
 
 // Selection can be any of:
@@ -114,45 +110,54 @@ func Parse(s []byte) (Doc, Error) {
 	return parse(source{s, s})
 }
 
-func parse(s source) (Doc, Error) {
+func parse(s source) (doc Doc, err Error) {
 	s = s.consumeIrrelevant()
 	if s.isEOF() {
-		return nil, s.err("expected definition")
+		return Doc{}, s.err("expected definition")
 	}
 
 	var ok bool
-	var err Error
 
-	if s, ok = s.consume(keywordQuery); ok {
+	for !s.isEOF() {
 		s = s.consumeIrrelevant()
 
-		var selections []Selection
-		if s, selections, err = parseSelectionSet(s); err.IsErr() {
-			return nil, err
+		sb := s
+		if s, ok = s.consume(keywordQuery); ok {
+			if len(doc.Query) > 0 {
+				return Doc{}, sb.err("redundant query type")
+			}
+			s = s.consumeIrrelevant()
+
+			var selections []Selection
+			if s, selections, err = parseSelectionSet(s); err.IsErr() {
+				return Doc{}, err
+			}
+			doc.Query = selections
+		} else if s, ok = s.consume(keywordMutation); ok {
+			if len(doc.Mutation) > 0 {
+				return Doc{}, sb.err("redundant mutation type")
+			}
+			s = s.consumeIrrelevant()
+			var selections []Selection
+			if s, selections, err = parseSelectionSet(s); err.IsErr() {
+				return Doc{}, err
+			}
+			doc.Mutation = selections
+		} else if s, ok = s.consume(keywordSubscription); ok {
+			if len(doc.Subscription) > 0 {
+				return Doc{}, sb.err("redundant subscription type")
+			}
+			s = s.consumeIrrelevant()
+			var selections []Selection
+			if s, selections, err = parseSelectionSet(s); err.IsErr() {
+				return Doc{}, err
+			}
+			doc.Subscription = selections
+		} else {
+			return Doc{}, s.err("unexpected definition")
 		}
-		s = s.consumeIrrelevant()
-		if err = s.expectEOF(); err.IsErr() {
-			return nil, err
-		}
-		return DocQuery{
-			Selections: selections,
-		}, Error{}
-	} else if s, ok = s.consume(keywordMutation); ok {
-		s = s.consumeIrrelevant()
-		var selections []Selection
-		if s, selections, err = parseSelectionSet(s); err.IsErr() {
-			return nil, err
-		}
-		s = s.consumeIrrelevant()
-		if err = s.expectEOF(); err.IsErr() {
-			return nil, err
-		}
-		return DocMutation{
-			Selections: selections,
-		}, Error{}
 	}
-
-	return nil, s.err("unexpected definition")
+	return doc, Error{}
 }
 
 // parseCombineItems assumes its left curly bracket to already be consumed
@@ -901,6 +906,7 @@ func (e Error) Error() string {
 var (
 	keywordQuery         = []byte("query")
 	keywordMutation      = []byte("mutation")
+	keywordSubscription  = []byte("subscription")
 	squareBracketLeft    = []byte("[")
 	squareBracketRight   = []byte("]")
 	curlyBracketLeft     = []byte("{")
@@ -920,14 +926,6 @@ var (
 	operatorCombine      = []byte("combine")
 	operatorInlineFrag   = operatorMap
 )
-
-func (s source) expectEOF() (e Error) {
-	if len(s.s) > 0 {
-		e.Index = s.index()
-		e.Msg = "expected EOF"
-	}
-	return
-}
 
 // consumeIrrelevant skips spaces, tabs, line-feeds
 // carriage-returns and comment sequences.
