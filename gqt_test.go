@@ -56,7 +56,7 @@ func TestConstraintKeyAndValue(t *testing.T) {
 }
 
 var tests = []ExpectDoc{
-	Expect(`query {
+	Expect(`mutation {
 		a {
 			b(
 				x1: val = 1
@@ -65,8 +65,78 @@ var tests = []ExpectDoc{
 				d
 			}
 		}
-	}`, gqt.DocQuery{
-		Selections: []gqt.Selection{
+	}
+	
+	query {
+		a {
+			b(
+				x1: val = 1
+			) {
+				c
+				d
+			}
+		}
+	}
+	
+	subscription {
+		a {
+			b(
+				x1: val = 1
+			) {
+				c
+				d
+			}
+		}
+	}`, gqt.Doc{
+		Mutation: []gqt.Selection{
+			gqt.SelectionField{
+				Name: "a",
+				Selections: []gqt.Selection{
+					gqt.SelectionField{
+						Name: "b",
+						InputConstraints: []gqt.InputConstraint{{
+							Name: "x1",
+							Constraint: gqt.ConstraintValEqual{
+								Value: int64(1),
+							},
+						}},
+						Selections: []gqt.Selection{
+							gqt.SelectionField{
+								Name: "c",
+							},
+							gqt.SelectionField{
+								Name: "d",
+							},
+						},
+					},
+				},
+			},
+		},
+		Query: []gqt.Selection{
+			gqt.SelectionField{
+				Name: "a",
+				Selections: []gqt.Selection{
+					gqt.SelectionField{
+						Name: "b",
+						InputConstraints: []gqt.InputConstraint{{
+							Name: "x1",
+							Constraint: gqt.ConstraintValEqual{
+								Value: int64(1),
+							},
+						}},
+						Selections: []gqt.Selection{
+							gqt.SelectionField{
+								Name: "c",
+							},
+							gqt.SelectionField{
+								Name: "d",
+							},
+						},
+					},
+				},
+			},
+		},
+		Subscription: []gqt.Selection{
 			gqt.SelectionField{
 				Name: "a",
 				Selections: []gqt.Selection{
@@ -105,8 +175,8 @@ var tests = []ExpectDoc{
 				}
 			}
 		}
-	}`, gqt.DocQuery{
-		Selections: []gqt.Selection{
+	}`, gqt.Doc{
+		Query: []gqt.Selection{
 			gqt.SelectionField{
 				Name: "filesystemObject",
 				InputConstraints: []gqt.InputConstraint{{
@@ -148,6 +218,14 @@ var tests = []ExpectDoc{
 		},
 	}),
 	Expect(`query#comment after token
+	#comment after token
+	{#comment after token
+	#comment after token
+		a#comment after token
+		#comment after token
+	}#comment after token
+	#comment after token
+	mutation#comment after token
 	#comment after token
 	{#comment after token
 	#comment after token
@@ -204,8 +282,11 @@ var tests = []ExpectDoc{
 		}#comment after token
 		#comment after token
 	}#comment after token
-	#comment after token`, gqt.DocQuery{
-		Selections: []gqt.Selection{
+	#comment after token`, gqt.Doc{
+		Query: []gqt.Selection{
+			gqt.SelectionField{Name: "a"},
+		},
+		Mutation: []gqt.Selection{
 			gqt.SelectionField{
 				Name: "a",
 				Selections: []gqt.Selection{
@@ -283,8 +364,8 @@ var tests = []ExpectDoc{
 				}
 			}
 		) {b}
-	}`, gqt.DocMutation{
-		Selections: []gqt.Selection{
+	}`, gqt.Doc{
+		Mutation: []gqt.Selection{
 			gqt.SelectionField{
 				Name: "a",
 				InputConstraints: []gqt.InputConstraint{{
@@ -501,8 +582,8 @@ var tests = []ExpectDoc{
 				val = true ||
 				val = 1.0
 		) {b}
-	}`, gqt.DocMutation{
-		Selections: []gqt.Selection{
+	}`, gqt.Doc{
+		Mutation: []gqt.Selection{
 			gqt.SelectionField{
 				Name: "a",
 				InputConstraints: []gqt.InputConstraint{{
@@ -567,8 +648,8 @@ var tests = []ExpectDoc{
 			eitherThis
 			orThat
 		}
-	}`, gqt.DocQuery{
-		Selections: []gqt.Selection{
+	}`, gqt.Doc{
+		Query: []gqt.Selection{
 			gqt.SelectionField{Name: "foo"},
 			gqt.ConstraintCombine{
 				MaxItems: 1,
@@ -586,8 +667,8 @@ var tests = []ExpectDoc{
 			... on OrThat { f4 }
 			Those
 		}
-	}`, gqt.DocQuery{
-		Selections: []gqt.Selection{
+	}`, gqt.Doc{
+		Query: []gqt.Selection{
 			gqt.SelectionField{Name: "combine"},
 			gqt.ConstraintCombine{
 				MaxItems: 2,
@@ -629,6 +710,21 @@ func TestParse(t *testing.T) {
 }
 
 var testsSemanticErr = []ExpectErr{
+	// Redundant query type
+	SyntaxErr(
+		`query { x } query { y }`,
+		"error at 12: redundant query type",
+	),
+	// Redundant mutation type
+	SyntaxErr(
+		`mutation { x } mutation { y }`,
+		"error at 15: redundant mutation type",
+	),
+	// Redundant subscription type
+	SyntaxErr(
+		`subscription { x } subscription { y }`,
+		"error at 19: redundant subscription type",
+	),
 	// Redundant field selection
 	SyntaxErr(
 		`query { x x }`,
@@ -713,7 +809,7 @@ func TestSemanticErr(t *testing.T) {
 			d, err := gqt.Parse([]byte(td.Input))
 			require.True(t, err.IsErr())
 			require.Equal(t, td.ExpectedError, err.Error())
-			require.Nil(t, d)
+			require.Equal(t, gqt.Doc{}, d)
 		})
 	}
 }
@@ -880,7 +976,7 @@ func TestSyntaxErr(t *testing.T) {
 			d, err := gqt.Parse([]byte(td.Input))
 			r.True(err.IsErr())
 			r.Equal(td.ExpectedError, err.Error())
-			r.Nil(d)
+			r.Equal(gqt.Doc{}, d)
 		})
 	}
 }
