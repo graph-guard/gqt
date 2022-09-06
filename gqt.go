@@ -336,7 +336,7 @@ func Parse(
 	} else if string(tok) == "subscription" {
 		o.Type = OperationTypeSubscription
 	} else {
-		return nil, newError(
+		return nil, errUnexp(
 			si, "expected query, mutation, or subscription "+
 				"operation definition",
 		)
@@ -352,7 +352,7 @@ func Parse(
 	return o, Error{}
 }
 
-func newError(s source, msg string) Error {
+func errUnexp(s source, msg string) Error {
 	prefix := "unexpected token, "
 	if s.Index >= len(s.s) {
 		prefix = "unexpected end of file, "
@@ -360,6 +360,13 @@ func newError(s source, msg string) Error {
 	return Error{
 		Location: s.Location,
 		Msg:      prefix + msg,
+	}
+}
+
+func errMsg(s source, msg string) Error {
+	return Error{
+		Location: s.Location,
+		Msg:      msg,
 	}
 }
 
@@ -374,8 +381,11 @@ func ParseSelectionSet(s source) (source, []Selection, Error) {
 	var ok bool
 	si := s
 	if s, ok = s.consume("{"); !ok {
-		return s, nil, newError(s, "expected selection set")
+		return s, nil, errUnexp(s, "expected selection set")
 	}
+
+	fields := map[string]struct{}{}
+	typeConds := map[string]struct{}{}
 
 	var selections []Selection
 	for {
@@ -383,7 +393,7 @@ func ParseSelectionSet(s source) (source, []Selection, Error) {
 		var name []byte
 
 		if s.isEOF() {
-			return s, nil, newError(s, "expected selection")
+			return s, nil, errUnexp(s, "expected selection")
 		}
 
 		if s, ok = s.consume("}"); ok {
@@ -395,18 +405,31 @@ func ParseSelectionSet(s source) (source, []Selection, Error) {
 		if _, ok := s.consume("..."); ok {
 			var err Error
 			var fragInline SelectionInlineFrag
+			sBefore := s
 			if s, fragInline, err = ParseInlineFrag(s); err.IsErr() {
 				return s, nil, err
 			}
+
+			if _, ok := typeConds[fragInline.TypeCondition]; ok {
+				return sBefore, nil, errMsg(sBefore, "redeclared type condition")
+			}
+			typeConds[fragInline.TypeCondition] = struct{}{}
+
 			selections = append(selections, fragInline)
 			continue
 		}
 
+		sBeforeName := s
 		sel := &SelectionField{Location: s.Location}
 		if s, name = s.consumeName(); name == nil {
-			return s, nil, newError(s, "expected selection")
+			return s, nil, errUnexp(s, "expected selection")
 		}
 		sel.Name = string(name)
+
+		if _, ok := fields[sel.Name]; ok {
+			return sBeforeName, nil, errMsg(sBeforeName, "redeclared field")
+		}
+		fields[sel.Name] = struct{}{}
 
 		s = s.consumeIgnored()
 
@@ -442,7 +465,7 @@ func ParseInlineFrag(s source) (source, SelectionInlineFrag, Error) {
 	l := s.Location
 	var ok bool
 	if s, ok = s.consume("..."); !ok {
-		return s, SelectionInlineFrag{}, newError(s, "expected '...'")
+		return s, SelectionInlineFrag{}, errUnexp(s, "expected '...'")
 	}
 
 	inlineFrag := SelectionInlineFrag{Location: l}
@@ -452,7 +475,7 @@ func ParseInlineFrag(s source) (source, SelectionInlineFrag, Error) {
 	sp := s
 	s, tok = s.consumeToken()
 	if string(tok) != "on" {
-		return sp, SelectionInlineFrag{}, newError(sp, "expected keyword 'on'")
+		return sp, SelectionInlineFrag{}, errUnexp(sp, "expected keyword 'on'")
 	}
 
 	s = s.consumeIgnored()
@@ -460,7 +483,7 @@ func ParseInlineFrag(s source) (source, SelectionInlineFrag, Error) {
 	var name []byte
 	s, name = s.consumeName()
 	if len(name) < 1 {
-		return s, SelectionInlineFrag{}, newError(s, "expected type condition")
+		return s, SelectionInlineFrag{}, errUnexp(s, "expected type condition")
 	}
 	inlineFrag.TypeCondition = string(name)
 
@@ -479,8 +502,10 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 	si := s
 	var ok bool
 	if s, ok = s.consume("("); !ok {
-		return s, nil, newError(s, "expected opening parenthesis")
+		return s, nil, errUnexp(s, "expected opening parenthesis")
 	}
+
+	names := map[string]struct{}{}
 
 	var arguments []*Argument
 	for {
@@ -488,7 +513,7 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 		var name []byte
 
 		if s.isEOF() {
-			return s, nil, newError(s, "expected argument")
+			return s, nil, errUnexp(s, "expected argument")
 		}
 
 		if s, ok = s.consume(")"); ok {
@@ -497,11 +522,18 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 
 		s = s.consumeIgnored()
 
+		sBeforeName := s
 		arg := Argument{Location: s.Location}
 		if s, name = s.consumeName(); name == nil {
-			return s, nil, newError(s, "expected argument name")
+			return s, nil, errUnexp(s, "expected argument name")
 		}
 		arg.Name = string(name)
+
+		if _, ok := names[arg.Name]; ok {
+			return sBeforeName, nil, errMsg(sBeforeName, "redeclared argument")
+		}
+
+		names[arg.Name] = struct{}{}
 
 		s = s.consumeIgnored()
 
@@ -510,12 +542,12 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 			s = s.consumeIgnored()
 
 			if s, ok = s.consume("$"); !ok {
-				return s, nil, newError(s, "expected variable name")
+				return s, nil, errUnexp(s, "expected variable name")
 			}
 
 			var name []byte
 			if s, name = s.consumeName(); name == nil {
-				return s, nil, newError(s, "expected variable name")
+				return s, nil, errUnexp(s, "expected variable name")
 			}
 
 			arg.AssociatedVariableName = string(name)
@@ -529,7 +561,7 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 			var expr Expression
 			var err Error
 			if s, expr, err = ParseExprLogicalOr(s); err.IsErr() {
-				return s, nil, newError(s, "expected constraint expression")
+				return s, nil, errUnexp(s, "expected constraint expression")
 			}
 			arg.Constraint = expr
 		}
@@ -539,7 +571,7 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 
 		if s, ok = s.consume(","); !ok {
 			if s, ok = s.consume(")"); !ok {
-				return s, nil, newError(s, "expected comma or end of argument list")
+				return s, nil, errUnexp(s, "expected comma or end of argument list")
 			}
 			break
 		}
@@ -569,7 +601,7 @@ func ParseValue(s source) (source, Expression, Error) {
 		}
 
 		if s, ok = s.consume(")"); !ok {
-			return s, nil, newError(s, "missing closing parenthesis")
+			return s, nil, errUnexp(s, "missing closing parenthesis")
 		}
 
 		s = s.consumeIgnored()
@@ -580,7 +612,7 @@ func ParseValue(s source) (source, Expression, Error) {
 
 		var name []byte
 		if s, name = s.consumeName(); name == nil {
-			return s, nil, newError(s, "expected variable name")
+			return s, nil, errUnexp(s, "expected variable name")
 		}
 
 		v.Name = string(name)
@@ -612,7 +644,7 @@ func ParseValue(s source) (source, Expression, Error) {
 
 			if s, ok = s.consume(","); !ok {
 				if s, ok = s.consume("]"); !ok {
-					return s, nil, newError(s, "expected comma or end of array")
+					return s, nil, errUnexp(s, "expected comma or end of array")
 				}
 				break
 			}
@@ -636,7 +668,7 @@ func ParseValue(s source) (source, Expression, Error) {
 	case "null":
 		return s, &ValueNull{Location: l}, Error{}
 	case "":
-		return s, nil, newError(s, "invalid value")
+		return s, nil, errUnexp(s, "invalid value")
 	default:
 		return s, &ValueEnum{Location: l, Value: string(str)}, Error{}
 	}
