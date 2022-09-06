@@ -2,8 +2,8 @@
 query {
   x(a: true)
   y(
-    a: false
-    b: != true
+    a: false,
+    b: != true,
   )
 }
 ```

@@ -410,7 +410,7 @@ func ParseSelectionSet(s source) (source, []Selection, Error) {
 
 		s = s.consumeIgnored()
 
-		if s.s[s.Index] == '(' {
+		if s.peek1('(') {
 			var err Error
 			s, sel.Arguments, err = ParseArguments(s)
 			if err.IsErr() {
@@ -420,7 +420,7 @@ func ParseSelectionSet(s source) (source, []Selection, Error) {
 
 		s = s.consumeIgnored()
 
-		if s.s[s.Index] == '{' {
+		if s.peek1('{') {
 			var err Error
 			s, sel.Selections, err = ParseSelectionSet(s)
 			if err.IsErr() {
@@ -535,6 +535,15 @@ func ParseArguments(s source) (source, []*Argument, Error) {
 		}
 
 		arguments = append(arguments, &arg)
+		s = s.consumeIgnored()
+
+		if s, ok = s.consume(","); !ok {
+			if s, ok = s.consume(")"); !ok {
+				return s, nil, newError(s, "expected comma or end of argument list")
+			}
+			break
+		}
+		s = s.consumeIgnored()
 	}
 
 	if len(arguments) < 1 {
@@ -566,6 +575,19 @@ func ParseValue(s source) (source, Expression, Error) {
 		s = s.consumeIgnored()
 
 		return s, e, Error{}
+	} else if s, ok = s.consume("$"); ok {
+		v := &Variable{Location: l}
+
+		var name []byte
+		if s, name = s.consumeName(); name == nil {
+			return s, nil, newError(s, "expected variable name")
+		}
+
+		v.Name = string(name)
+
+		s = s.consumeIgnored()
+
+		return s, v, Error{}
 	} else if s, str, ok = s.consumeString(); ok {
 		return s, &ValueString{Location: l, Value: string(str)}, Error{}
 	} else if s, num, ok = s.consumeNumber(); ok {
@@ -588,13 +610,13 @@ func ParseValue(s source) (source, Expression, Error) {
 
 			s = s.consumeIgnored()
 
-			if s.s[s.Index] != ']' {
-				s, ok = s.consume(",")
-				if !ok {
-					return s, nil, newError(s, "expected comma")
+			if s, ok = s.consume(","); !ok {
+				if s, ok = s.consume("]"); !ok {
+					return s, nil, newError(s, "expected comma or end of array")
 				}
-				s = s.consumeIgnored()
+				break
 			}
+			s = s.consumeIgnored()
 		}
 
 		s = s.consumeIgnored()
@@ -1061,6 +1083,10 @@ func (s source) String() string {
 
 func (s source) isEOF() bool {
 	return s.Index >= len(s.s)
+}
+
+func (s source) peek1(b byte) bool {
+	return s.Index < len(s.s) && s.s[s.Index] == b
 }
 
 // consumeIgnored skips spaces, tabs, line-feeds

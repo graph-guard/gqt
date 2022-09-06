@@ -2,8 +2,8 @@
 query {
   x(a: "")
   y(
-    a: "bar"
-    b: != "bazz"
+    a: "bar",
+    b: != "bazz",
   )
 }
 ```
