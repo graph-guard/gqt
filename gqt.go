@@ -1,895 +1,1038 @@
 package gqt
 
 import (
-	"bytes"
 	"fmt"
-	"math"
 	"strconv"
 )
 
-type Doc struct {
-	Query        []Selection
-	Mutation     []Selection
-	Subscription []Selection
-}
+type OperationType int8
 
-// Selection can be any of:
-//
-//	SelectionField
-//	SelectionInlineFragment
-//	ConstraintCombine
-type Selection any
-
-type SelectionField struct {
-	Name             string
-	InputConstraints []InputConstraint
-	Selections       []Selection
-}
-
-type SelectionInlineFragment struct {
-	TypeName   string
-	Selections []Selection
-}
-
-type InputConstraint struct {
-	Name       ParameterName
-	Constraint Constraint
-}
-
-type EnumValue string
-
-type Constraint any
-
-type (
-	ConstraintOr      struct{ Constraints []Constraint }
-	ConstraintAnd     struct{ Constraints []Constraint }
-	ConstraintMap     struct{ Constraint Constraint }
-	ConstraintCombine struct {
-		MaxItems uint
-		Items    []Selection
-	}
-
-	ConstraintAny struct{}
-
-	ConstraintValEqual          struct{ Value Value }
-	ConstraintValNotEqual       struct{ Value Value }
-	ConstraintValGreater        struct{ Value any }
-	ConstraintValLess           struct{ Value any }
-	ConstraintValGreaterOrEqual struct{ Value any }
-	ConstraintValLessOrEqual    struct{ Value any }
-
-	ConstraintBytelenEqual          struct{ Value uint }
-	ConstraintBytelenNotEqual       struct{ Value uint }
-	ConstraintBytelenGreater        struct{ Value uint }
-	ConstraintBytelenLess           struct{ Value uint }
-	ConstraintBytelenGreaterOrEqual struct{ Value uint }
-	ConstraintBytelenLessOrEqual    struct{ Value uint }
-
-	ConstraintLenEqual          struct{ Value uint }
-	ConstraintLenNotEqual       struct{ Value uint }
-	ConstraintLenGreater        struct{ Value uint }
-	ConstraintLenLess           struct{ Value uint }
-	ConstraintLenGreaterOrEqual struct{ Value uint }
-	ConstraintLenLessOrEqual    struct{ Value uint }
+const (
+	_ OperationType = iota
+	OperationTypeQuery
+	OperationTypeMutation
+	OperationTypeSubscription
 )
 
-type Value any
-
-type ValueArray struct {
-	Items []Constraint
+func (t OperationType) String() string {
+	switch t {
+	case OperationTypeQuery:
+		return "query"
+	case OperationTypeMutation:
+		return "mutation"
+	case OperationTypeSubscription:
+		return "subscription"
+	}
+	return ""
 }
 
-type ValueObject struct {
-	Fields []ObjectField
-}
-
-type ObjectField struct {
-	Name  string
-	Value Constraint
-}
-
-type ParameterName = string
-
-func (ic InputConstraint) Key() string {
-	return ic.Name
-}
-
-func (ic InputConstraint) Content() Constraint {
-	return ic.Constraint
-}
-
-func (of ObjectField) Key() string {
-	return of.Name
-}
-
-func (of ObjectField) Content() Constraint {
-	return of.Value
-}
-
-func Parse(s []byte) (Doc, Error) {
-	return parse(source{s, s})
-}
-
-func parse(s source) (doc Doc, err Error) {
-	s = s.consumeIrrelevant()
-	if s.isEOF() {
-		return Doc{}, s.err("expected definition")
+type (
+	Location struct {
+		Index, Line, Column int
 	}
 
-	var ok bool
-
-	for !s.isEOF() {
-		s = s.consumeIrrelevant()
-
-		sb := s
-		if s, ok = s.consume(keywordQuery); ok {
-			if len(doc.Query) > 0 {
-				return Doc{}, sb.err("redundant query type")
-			}
-			s = s.consumeIrrelevant()
-
-			var selections []Selection
-			if s, selections, err = parseSelectionSet(s); err.IsErr() {
-				return Doc{}, err
-			}
-			doc.Query = selections
-		} else if s, ok = s.consume(keywordMutation); ok {
-			if len(doc.Mutation) > 0 {
-				return Doc{}, sb.err("redundant mutation type")
-			}
-			s = s.consumeIrrelevant()
-			var selections []Selection
-			if s, selections, err = parseSelectionSet(s); err.IsErr() {
-				return Doc{}, err
-			}
-			doc.Mutation = selections
-		} else if s, ok = s.consume(keywordSubscription); ok {
-			if len(doc.Subscription) > 0 {
-				return Doc{}, sb.err("redundant subscription type")
-			}
-			s = s.consumeIrrelevant()
-			var selections []Selection
-			if s, selections, err = parseSelectionSet(s); err.IsErr() {
-				return Doc{}, err
-			}
-			doc.Subscription = selections
-		} else {
-			return Doc{}, s.err("unexpected definition")
-		}
-	}
-	return doc, Error{}
-}
-
-// parseCombineItems assumes its left curly bracket to already be consumed
-func parseCombineItems(s source) (source, []Selection, Error) {
-	var ok bool
-	var items []Selection
-	for {
-		var err Error
-		var item Selection
-		sb := s
-		if s, item, err = parseSelection(s); err.IsErr() {
-			return sb, nil, err
-		}
-
-		if _, ok := item.(ConstraintCombine); ok {
-			return sb, nil, sb.err("nested combine constraint")
-		}
-
-		// Check for redundancy
-		if s, ok := item.(SelectionField); ok {
-			for _, x := range items {
-				if f, ok := x.(SelectionField); ok && f.Name == s.Name {
-					return sb, nil, sb.err("redundant combine item")
-				}
-			}
-		} else if s, ok := item.(SelectionInlineFragment); ok {
-			for _, x := range items {
-				f, ok := x.(SelectionInlineFragment)
-				if ok && f.TypeName == s.TypeName {
-					return sb, nil, sb.err("redundant combine item")
-				}
-			}
-		}
-
-		items = append(items, item)
-		s = s.consumeIrrelevant()
-		if s, ok = s.consume(curlyBracketRight); ok {
-			s = s.consumeIrrelevant()
-			break
-		}
+	Operation struct {
+		Location
+		Type       OperationType
+		Selections []Selection
 	}
 
-	return s, items, Error{}
+	// Selection can be either of:
+	//
+	//	SelectionField
+	//	SelectionMax
+	//	SelectionInlineFrag
+	Selection any
+
+	SelectionField struct {
+		Location
+		Name       string
+		Arguments  []*Argument
+		Selections []Selection
+	}
+
+	Argument struct {
+		Location
+		Name                   string
+		AssociatedVariableName string
+		Constraint             Expression
+	}
+
+	// Expression can be either of:
+	//
+	//	ValueInt
+	//	ValueFloat
+	//	ValueString
+	//	ValueTrue
+	//	ValueFalse
+	//	ValueNull
+	//	ValueEnum
+	//	ValueArray
+	//	ValueObject
+	//	ExprModulo
+	//	ExprDivision
+	//	ExprMultiplication
+	//	ExprAddition
+	//	ExprSubtraction
+	//	ExprEqual
+	//	ExprNotEqual
+	//  ExprLessOrEqual
+	//  ExprGreaterOrEqual
+	//  ExprLess
+	//  ExprGreater
+	//	ExprLogicalNegation
+	//	Variable
+	//	ExprParentheses
+	//  ExprConstrEquals
+	//  ExprConstrNotEquals
+	//  ExprConstrLess
+	//  ExprConstrLessOrEqual
+	//  ExprConstrGreater
+	//  ExprConstrGreaterOrEqual
+	//  ExprConstrLenEquals
+	//  ExprConstrLenNotEquals
+	//  ExprConstrLenLess
+	//  ExprConstrLenLessOrEqual
+	//  ExprConstrLenGreater
+	//  ExprConstrLenGreaterOrEqual
+	//	ExprLogicalAnd
+	//	ExprLogicalOr
+	Expression any
+
+	ExprConstrEquals struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrNotEquals struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLess struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLessOrEqual struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrGreater struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrGreaterOrEqual struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLenEquals struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLenNotEquals struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLenLess struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLenLessOrEqual struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLenGreater struct {
+		Location
+		Value Expression
+	}
+
+	ExprConstrLenGreaterOrEqual struct {
+		Location
+		Value Expression
+	}
+
+	ExprParentheses struct {
+		Location
+		Expression Expression
+	}
+
+	ExprLogicalNegation struct {
+		Location
+		Expression Expression
+	}
+
+	ExprModulo struct {
+		Location
+		Dividend Expression
+		Divisor  Expression
+	}
+
+	ExprDivision struct {
+		Location
+		Dividend Expression
+		Divisor  Expression
+	}
+
+	ExprMultiplication struct {
+		Location
+		Multiplicant  Expression
+		Multiplicator Expression
+	}
+
+	ExprAddition struct {
+		Location
+		AddendLeft  Expression
+		AddendRight Expression
+	}
+
+	ExprSubtraction struct {
+		Location
+		Minuend    Expression
+		Subtrahend Expression
+	}
+
+	ExprEqual struct {
+		Location
+		Left  Expression
+		Right Expression
+	}
+
+	ExprNotEqual struct {
+		Location
+		Left  Expression
+		Right Expression
+	}
+
+	ExprLess struct {
+		Location
+		Left  Expression
+		Right Expression
+	}
+
+	ExprLessOrEqual struct {
+		Location
+		Left  Expression
+		Right Expression
+	}
+
+	ExprGreater struct {
+		Location
+		Left  Expression
+		Right Expression
+	}
+
+	ExprGreaterOrEqual struct {
+		Location
+		Left  Expression
+		Right Expression
+	}
+
+	ExprLogicalAnd struct {
+		Location
+		Expressions []Expression
+	}
+
+	ExprLogicalOr struct {
+		Location
+		Expressions []Expression
+	}
+
+	ValueInt struct {
+		Location
+		Value int64
+	}
+
+	ValueFloat struct {
+		Location
+		Value float64
+	}
+
+	ValueString struct {
+		Location
+		Value string
+	}
+
+	ValueTrue struct {
+		Location
+	}
+
+	ValueFalse struct {
+		Location
+	}
+
+	ValueNull struct {
+		Location
+	}
+
+	ValueEnum struct {
+		Location
+		Value string
+	}
+
+	ValueArray struct {
+		Location
+		Items []Expression
+	}
+
+	ValueObject struct {
+		Location
+		Fields []ObjectField
+	}
+
+	ObjectField struct {
+		Location
+		Name  string
+		Value Expression
+	}
+
+	Variable struct {
+		Location
+		Name string
+	}
+
+	SelectionMax struct {
+		Location
+		Limit      int
+		Selections []Selection
+	}
+
+	SelectionInlineFrag struct {
+		Location
+		TypeCondition string
+		Selections    []Selection
+	}
+)
+
+func Parse(
+	src []byte,
+) (*Operation, Error) {
+	s := source{
+		Location: Location{
+			Line:   1,
+			Column: 1,
+		},
+		s: src,
+	}
+
+	s = s.consumeIgnored()
+	o := &Operation{Location: s.Location}
+
+	var tok []byte
+	si := s
+	s, tok = s.consumeToken()
+
+	if string(tok) == "query" {
+		o.Type = OperationTypeQuery
+	} else if string(tok) == "mutation" {
+		o.Type = OperationTypeMutation
+	} else if string(tok) == "subscription" {
+		o.Type = OperationTypeSubscription
+	} else {
+		return nil, newError(
+			si, "expected query, mutation, or subscription "+
+				"operation definition",
+		)
+	}
+
+	s = s.consumeIgnored()
+	var err Error
+	s, o.Selections, err = ParseSelectionSet(s)
+	if err.IsErr() {
+		return nil, err
+	}
+
+	return o, Error{}
 }
 
-func parseSelectionSet(s source) (source, []Selection, Error) {
+func newError(s source, msg string) Error {
+	prefix := "unexpected token, "
+	if s.Index >= len(s.s) {
+		prefix = "unexpected end of file, "
+	}
+	return Error{
+		Location: s.Location,
+		Msg:      prefix + msg,
+	}
+}
+
+func newErrorNoPrefix(s source, msg string) Error {
+	return Error{
+		Location: s.Location,
+		Msg:      msg,
+	}
+}
+
+func ParseSelectionSet(s source) (source, []Selection, Error) {
 	var ok bool
-	s, ok = s.consume(curlyBracketLeft)
-	if !ok {
-		return s, nil, s.err("expected selection set")
+	si := s
+	if s, ok = s.consume("{"); !ok {
+		return s, nil, newError(s, "expected selection set")
 	}
 
 	var selections []Selection
-
-	s = s.consumeIrrelevant()
 	for {
-		var err Error
-		var selection Selection
-		sb := s
-		if s, selection, err = parseSelection(s); err.IsErr() {
-			return sb, nil, err
+		s = s.consumeIgnored()
+		var name []byte
+
+		if s.isEOF() {
+			return s, nil, newError(s, "expected selection")
 		}
 
-		// Check for redundancy
-		if s, ok := selection.(SelectionField); ok {
-			for _, x := range selections {
-				if f, ok := x.(SelectionField); ok && f.Name == s.Name {
-					return sb, nil, sb.err("redundant field selection")
-				}
-			}
-		} else if s, ok := selection.(SelectionInlineFragment); ok {
-			for _, x := range selections {
-				f, ok := x.(SelectionInlineFragment)
-				if ok && f.TypeName == s.TypeName {
-					return sb, nil, sb.err("redundant type condition")
-				}
-			}
-		}
-
-		selections = append(selections, selection)
-		s = s.consumeIrrelevant()
-		if s, ok = s.consume(curlyBracketRight); ok {
-			s = s.consumeIrrelevant()
+		if s, ok = s.consume("}"); ok {
 			break
 		}
+
+		s = s.consumeIgnored()
+
+		if _, ok := s.consume("..."); ok {
+			var err Error
+			var fragInline SelectionInlineFrag
+			if s, fragInline, err = ParseInlineFrag(s); err.IsErr() {
+				return s, nil, err
+			}
+			selections = append(selections, fragInline)
+			continue
+		}
+
+		sel := &SelectionField{Location: s.Location}
+		if s, name = s.consumeName(); name == nil {
+			return s, nil, newError(s, "expected selection")
+		}
+		sel.Name = string(name)
+
+		s = s.consumeIgnored()
+
+		if s.s[s.Index] == '(' {
+			var err Error
+			s, sel.Arguments, err = ParseArguments(s)
+			if err.IsErr() {
+				return s, nil, err
+			}
+		}
+
+		s = s.consumeIgnored()
+
+		if s.s[s.Index] == '{' {
+			var err Error
+			s, sel.Selections, err = ParseSelectionSet(s)
+			if err.IsErr() {
+				return s, nil, err
+			}
+		}
+
+		selections = append(selections, sel)
+	}
+
+	if len(selections) < 1 {
+		return si, nil, newErrorNoPrefix(si, "empty selection set")
 	}
 
 	return s, selections, Error{}
 }
 
-// parseInlineFragment parses inline fragments starting at
-// keyword "on" after "..."
-func parseInlineFragment(
-	s source,
-) (n source, f SelectionInlineFragment, err Error) {
-	var w []byte
-	n, w = s.consumeName()
-	if len(w) != 2 || w[1] != 'n' || w[0] != 'o' {
-		return s, SelectionInlineFragment{}, s.err("expected keyword 'on'")
+func ParseInlineFrag(s source) (source, SelectionInlineFrag, Error) {
+	l := s.Location
+	var ok bool
+	if s, ok = s.consume("..."); !ok {
+		return s, SelectionInlineFrag{}, newError(s, "expected '...'")
 	}
 
-	n = n.consumeIrrelevant()
+	inlineFrag := SelectionInlineFrag{Location: l}
+	s = s.consumeIgnored()
 
-	if n, w = n.consumeName(); len(w) < 1 {
-		return n, SelectionInlineFragment{}, n.err("expected type name")
-	}
-	f.TypeName = string(w)
-
-	n = n.consumeIrrelevant()
-
-	n, f.Selections, err = parseSelectionSet(n)
-	if err.IsErr() {
-		return n, SelectionInlineFragment{}, err
+	var tok []byte
+	sp := s
+	s, tok = s.consumeToken()
+	if string(tok) != "on" {
+		return sp, SelectionInlineFrag{}, newError(sp, "expected keyword 'on'")
 	}
 
-	return n, f, err
+	s = s.consumeIgnored()
+
+	var name []byte
+	s, name = s.consumeName()
+	if len(name) < 1 {
+		return s, SelectionInlineFrag{}, newError(s, "expected type condition")
+	}
+	inlineFrag.TypeCondition = string(name)
+
+	s = s.consumeIgnored()
+	var sels []Selection
+	var err Error
+	if s, sels, err = ParseSelectionSet(s); err.IsErr() {
+		return s, SelectionInlineFrag{}, err
+	}
+
+	inlineFrag.Selections = sels
+	return s, inlineFrag, Error{}
 }
 
-func parseSelection(s source) (n source, sel Selection, err Error) {
+func ParseArguments(s source) (source, []*Argument, Error) {
+	si := s
 	var ok bool
-	var name []byte
-
-	if n, ok = s.consume(operatorInlineFrag); ok {
-		// Inline fragment
-		n = n.consumeIrrelevant()
-		return parseInlineFragment(n)
+	if s, ok = s.consume("("); !ok {
+		return s, nil, newError(s, "expected opening parenthesis")
 	}
 
-	var f SelectionField
-	if n, name = s.consumeName(); name == nil {
-		return s, nil, s.err("expected field name")
+	var arguments []*Argument
+	for {
+		s = s.consumeIgnored()
+		var name []byte
+
+		if s.isEOF() {
+			return s, nil, newError(s, "expected argument")
+		}
+
+		if s, ok = s.consume(")"); ok {
+			break
+		}
+
+		s = s.consumeIgnored()
+
+		arg := Argument{Location: s.Location}
+		if s, name = s.consumeName(); name == nil {
+			return s, nil, newError(s, "expected argument name")
+		}
+		arg.Name = string(name)
+
+		s = s.consumeIgnored()
+
+		if s, ok = s.consume("="); ok {
+			// Has an associated variable name
+			s = s.consumeIgnored()
+
+			if s, ok = s.consume("$"); !ok {
+				return s, nil, newError(s, "expected variable name")
+			}
+
+			var name []byte
+			if s, name = s.consumeName(); name == nil {
+				return s, nil, newError(s, "expected variable name")
+			}
+
+			arg.AssociatedVariableName = string(name)
+			s = s.consumeIgnored()
+		}
+
+		if s, ok = s.consume(":"); ok {
+			s = s.consumeIgnored()
+
+			// Has a constraint
+			var expr Expression
+			var err Error
+			if s, expr, err = ParseExprLogicalOr(s); err.IsErr() {
+				return s, nil, newError(s, "expected constraint expression")
+			}
+			arg.Constraint = expr
+		}
+
+		arguments = append(arguments, &arg)
 	}
-	f.Name = string(name)
 
-	n = n.consumeIrrelevant()
+	if len(arguments) < 1 {
+		return si, nil, newErrorNoPrefix(si, "empty argument list")
+	}
 
-	if string(name) == string(operatorCombine) {
-		n := n.consumeIrrelevant()
+	return s, arguments, Error{}
+}
 
-		nb := n
-		n, combineNum, ok := n.consumeNumber()
-		if !ok {
-			// Not a combine operator
-			goto FIELD
-		}
-		var num int64
-		if num, ok = combineNum.(int64); !ok {
-			return n, nil, nb.err(
-				"invalid combine limit, must be an integer greater 0",
-			)
-		}
-		if num < 1 {
-			return n, nil, nb.err(
-				"invalid combine limit, must be greater 0",
-			)
-		}
-		n = n.consumeIrrelevant()
+func ParseValue(s source) (source, Expression, Error) {
+	l := s.Location
 
-		n, ok = n.consume(curlyBracketLeft)
-		if !ok {
-			return n, nil, n.err(
-				"expected combine items list",
-			)
-		}
+	var str []byte
+	var num any
+	var ok bool
+	if s, ok = s.consume("("); ok {
+		e := &ExprParentheses{Location: l}
 
-		n = n.consumeIrrelevant()
-		nb2 := n
-
-		var items []Selection
-		n, items, err = parseCombineItems(n)
+		var err Error
+		s, e.Expression, err = ParseExprLogicalOr(s)
 		if err.IsErr() {
-			return n, nil, err
+			return s, nil, err
 		}
 
-		if len(items) < 2 {
-			return nb, nil, nb2.err(
-				"single combine item, " +
-					"combine statements must contain at least 2 items",
-			)
+		if s, ok = s.consume(")"); !ok {
+			return s, nil, newError(s, "missing closing parenthesis")
 		}
 
-		if int(num) >= len(items) {
-			return nb, nil, nb.err(
-				"invalid combine limit, must be greater 0 and smaller " +
-					strconv.Itoa(len(items)),
-			)
-		}
+		s = s.consumeIgnored()
 
-		return n, ConstraintCombine{
-			MaxItems: uint(num),
-			Items:    items,
-		}, Error{}
-	}
+		return s, e, Error{}
+	} else if s, str, ok = s.consumeString(); ok {
+		return s, &ValueString{Location: l, Value: string(str)}, Error{}
+	} else if s, num, ok = s.consumeNumber(); ok {
+		return s, num, Error{}
+	} else if s, ok = s.consume("["); ok {
+		e := &ValueArray{Location: l}
 
-FIELD:
-	if n, ok = n.consume(parenthesisLeft); ok {
 		for {
-			s = n
-			n = n.consumeIrrelevant()
-			if n, name = n.consumeName(); name == nil {
-				return s, nil, n.err("expected parameter name")
+			var err Error
+			if s, ok = s.consume("]"); ok {
+				break
 			}
-			n = n.consumeIrrelevant()
-			if n, ok = n.consume(column); !ok {
-				return s, nil, n.err(
-					"expected column after parameter name",
-				)
-			}
-			n = n.consumeIrrelevant()
-			var inputConstraint Constraint
-			if n, inputConstraint, err = parseConstraintOr(n); err.IsErr() {
+
+			var expr Expression
+			if s, expr, err = ParseExprLogicalOr(s); err.IsErr() {
 				return s, nil, err
 			}
 
-			// Check for redundancy
-			for _, x := range f.InputConstraints {
-				if x.Name == string(name) {
-					return s, nil, s.err("redundant constraint")
-				}
-			}
+			e.Items = append(e.Items, expr)
 
-			f.InputConstraints = append(
-				f.InputConstraints,
-				InputConstraint{
-					Name:       ParameterName(name),
-					Constraint: inputConstraint,
-				},
-			)
-			n = n.consumeIrrelevant()
-			if n, ok = n.consume(parenthesisRight); ok {
-				n = n.consumeIrrelevant()
-				break
+			s = s.consumeIgnored()
+
+			if s.s[s.Index] != ']' {
+				s, ok = s.consume(",")
+				if !ok {
+					return s, nil, newError(s, "expected comma")
+				}
+				s = s.consumeIgnored()
 			}
 		}
+
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume("{"); ok {
+		//TODO
+		// e := &ValueObject{}
+		panic("object aren't supported yet")
 	}
 
-	if bytes.HasPrefix(n.s, curlyBracketLeft) {
-		n = n.consumeIrrelevant()
-		if n, f.Selections, err = parseSelectionSet(n); err.IsErr() {
+	s, str = s.consumeName()
+	switch string(str) {
+	case "true":
+		return s, &ValueTrue{Location: l}, Error{}
+	case "false":
+		return s, &ValueFalse{Location: l}, Error{}
+	case "null":
+		return s, &ValueNull{Location: l}, Error{}
+	case "":
+		return s, nil, newError(s, "invalid value")
+	default:
+		return s, &ValueEnum{Location: l, Value: string(str)}, Error{}
+	}
+}
+
+func ParseExprUnary(s source) (source, Expression, Error) {
+	l := s.Location
+	var ok bool
+	var err Error
+	if s, ok = s.consume("!"); ok {
+		e := &ExprLogicalNegation{Location: l}
+		s, e.Expression, err = ParseValue(s)
+		if err.IsErr() {
 			return s, nil, err
 		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
 	}
-
-	return n, f, Error{}
+	return ParseValue(s)
 }
 
-func parseConstraintOr(s source) (ns source, c Constraint, err Error) {
-	ns = s
-	var ok bool
-	for {
-		ns = ns.consumeIrrelevant()
+func ParseExprMultiplicative(s source) (source, Expression, Error) {
+	l := s.Location
 
-		cb := c
-
-		s = ns
-		ns, c, err = parseConstraintAnd(ns)
-		if err.IsErr() {
-			ns = s
-			return ns, nil, err
-		}
-
-		if cb, ok := cb.(ConstraintOr); ok {
-			c = ConstraintOr{Constraints: append(cb.Constraints, c)}
-		}
-
-		ns = ns.consumeIrrelevant()
-
-		s = ns
-		if ns, ok = ns.consume(operatorOr); !ok {
-			ns = s
-			break
-		}
-
-		if cb == nil {
-			c = ConstraintOr{Constraints: []Constraint{c}}
-		}
-	}
-	return ns, c, Error{}
-}
-
-func parseConstraintAnd(s source) (ns source, c Constraint, err Error) {
-	ns = s
-	var ok bool
-	for {
-		ns = ns.consumeIrrelevant()
-
-		cb := c
-
-		s = ns
-		ns, c, err = parseConstraint(ns)
-		if err.IsErr() {
-			ns = s
-			return
-		}
-
-		if cb, ok := cb.(ConstraintAnd); ok {
-			c = ConstraintAnd{Constraints: append(cb.Constraints, c)}
-		}
-
-		ns = ns.consumeIrrelevant()
-
-		if ns, ok = ns.consume(operatorAnd); !ok {
-			break
-		}
-
-		if cb == nil {
-			c = ConstraintAnd{Constraints: []Constraint{c}}
-		}
-	}
-	return
-}
-
-func parseConstraint(s source) (_ source, c Constraint, err Error) {
-	var name []byte
-	if s, name = s.consumeName(); name == nil {
-		return s, nil, s.err("expected constraint subject")
-	}
-
-	if string(name) == "any" {
-		return s, ConstraintAny{}, Error{}
-	}
-
-	s = s.consumeIrrelevant()
-	if s.isEOF() {
-		return s, nil, s.err("expected constraint operator")
-	}
-
-	si := s
-	var ok bool
-
-	switch string(name) {
-	case "val":
-		if s, ok = s.consume(operatorGreaterEqual); ok {
-			// val >= x
-			c = ConstraintValGreaterOrEqual{}
-		} else if s, ok = s.consume(operatorLesserEqual); ok {
-			// val <= x
-			c = ConstraintValLessOrEqual{}
-		} else if s, ok = s.consume(operatorEqual); ok {
-			// val = x
-			c = ConstraintValEqual{}
-		} else if s, ok = s.consume(operatorNotEqual); ok {
-			// val != x
-			c = ConstraintValNotEqual{}
-		} else if s, ok = s.consume(operatorGreater); ok {
-			// val > x
-			c = ConstraintValGreater{}
-		} else if s, ok = s.consume(operatorLesser); ok {
-			// val < x
-			c = ConstraintValLess{}
-		} else {
-			return si, nil, s.err(
-				"unsupported operator for 'val' constraint",
-			)
-		}
-
-	case "len":
-		if s, ok = s.consume(operatorGreaterEqual); ok {
-			// len >= x
-			c = ConstraintLenGreaterOrEqual{}
-		} else if s, ok = s.consume(operatorLesserEqual); ok {
-			// len <= x
-			c = ConstraintLenLessOrEqual{}
-		} else if s, ok = s.consume(operatorEqual); ok {
-			// len = x
-			c = ConstraintLenEqual{}
-		} else if s, ok = s.consume(operatorNotEqual); ok {
-			// len != x
-			c = ConstraintLenNotEqual{}
-		} else if s, ok = s.consume(operatorGreater); ok {
-			// len > x
-			c = ConstraintLenGreater{}
-		} else if s, ok = s.consume(operatorLesser); ok {
-			// len < x
-			c = ConstraintLenLess{}
-		} else {
-			return si, nil, s.err(
-				"unsupported operator for 'len' constraint",
-			)
-		}
-
-	case "bytelen":
-		if s, ok = s.consume(operatorGreaterEqual); ok {
-			// bytelen >= x
-			c = ConstraintBytelenGreaterOrEqual{}
-		} else if s, ok = s.consume(operatorLesserEqual); ok {
-			// bytelen <= x
-			c = ConstraintBytelenLessOrEqual{}
-		} else if s, ok = s.consume(operatorEqual); ok {
-			// bytelen = x
-			c = ConstraintBytelenEqual{}
-		} else if s, ok = s.consume(operatorNotEqual); ok {
-			// bytelen != x
-			c = ConstraintBytelenNotEqual{}
-		} else if s, ok = s.consume(operatorGreater); ok {
-			// bytelen > x
-			c = ConstraintBytelenGreater{}
-		} else if s, ok = s.consume(operatorLesser); ok {
-			// bytelen < x
-			c = ConstraintBytelenLess{}
-		} else {
-			return si, nil, s.err(
-				"unsupported operator for 'bytelen' constraint",
-			)
-		}
-
-	default:
-		return s, nil, s.err("unsupported constraint function")
-	}
-
-	s = s.consumeIrrelevant()
-
-	var v Value
-	if s, v, err = parseValue(s); err.IsErr() {
+	var left Expression
+	var err Error
+	s, left, err = ParseExprUnary(s)
+	if err.IsErr() {
 		return s, nil, err
 	}
 
-	switch c.(type) {
-	// Val
-	case ConstraintValEqual:
-		switch v.(type) {
-		case ConstraintMap:
-			c = v
-		default:
-			c = ConstraintValEqual{Value: v}
-		}
-	case ConstraintValNotEqual:
-		c = ConstraintValNotEqual{Value: v}
-	case ConstraintValGreater:
-		if i, ok := v.(int64); ok {
-			c = ConstraintValGreater{Value: i}
-		} else if f, ok := v.(float64); ok {
-			c = ConstraintValGreater{Value: f}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-	case ConstraintValLess:
-		if i, ok := v.(int64); ok {
-			c = ConstraintValLess{Value: i}
-		} else if f, ok := v.(float64); ok {
-			c = ConstraintValLess{Value: f}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-	case ConstraintValGreaterOrEqual:
-		if i, ok := v.(int64); ok {
-			c = ConstraintValGreaterOrEqual{Value: i}
-		} else if f, ok := v.(float64); ok {
-			c = ConstraintValGreaterOrEqual{Value: f}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
-	case ConstraintValLessOrEqual:
-		if i, ok := v.(int64); ok {
-			c = ConstraintValLessOrEqual{Value: i}
-		} else if f, ok := v.(float64); ok {
-			c = ConstraintValLessOrEqual{Value: f}
-		} else {
-			return s, nil, s.err("unexpected value type, expected number")
-		}
+	s = s.consumeIgnored()
 
-	// Len
-	case ConstraintLenEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintLenEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintLenNotEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintLenNotEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintLenGreater:
-		if v, ok := toUint(v); ok {
-			c = ConstraintLenGreater{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintLenLess:
-		if v, ok := toUint(v); ok {
-			c = ConstraintLenLess{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintLenGreaterOrEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintLenGreaterOrEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintLenLessOrEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintLenLessOrEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-
-	// Bytelen
-	case ConstraintBytelenEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintBytelenEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintBytelenNotEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintBytelenNotEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintBytelenGreater:
-		if v, ok := toUint(v); ok {
-			c = ConstraintBytelenGreater{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintBytelenLess:
-		if v, ok := toUint(v); ok {
-			c = ConstraintBytelenLess{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintBytelenGreaterOrEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintBytelenGreaterOrEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	case ConstraintBytelenLessOrEqual:
-		if v, ok := toUint(v); ok {
-			c = ConstraintBytelenLessOrEqual{Value: v}
-		} else {
-			return s, nil, s.err(
-				"unexpected value type, expected unsigned integer",
-			)
-		}
-	default:
-		panic(fmt.Errorf("unhandled constraint type: %T", c))
-	}
-
-	return s, c, Error{}
-}
-
-func parseValue(s source) (_ source, v Value, err Error) {
-	if s.isEOF() {
-		return s, nil, s.err("expected value")
-	}
-
-	if b := s.s[0]; b == '-' ||
-		b == '+' ||
-		b == '0' ||
-		b == '1' ||
-		b == '2' ||
-		b == '3' ||
-		b == '4' ||
-		b == '5' ||
-		b == '6' ||
-		b == '7' ||
-		b == '8' ||
-		b == '9' {
-		var num any
-		var ok bool
-		if s, num, ok = s.consumeNumber(); ok {
-			return s, num, Error{}
-		}
-	} else if b == '"' {
-		var str []byte
-		var ok bool
-		if s, str, ok = s.consumeString(); ok {
-			return s, string(str), Error{}
-		}
-	} else if b == '[' {
-		var a any
-		if s, a, err = parseValueArray(s); err.IsErr() {
-			return
-		}
-		return s, a, Error{}
-	} else if b == '{' {
-		var o ValueObject
-		s, o, err = parseValueObject(s)
+	var ok bool
+	if s, ok = s.consume("*"); ok {
+		e := &ExprMultiplication{Location: l, Multiplicant: left}
+		s, e.Multiplicator, err = ParseExprUnary(s)
 		if err.IsErr() {
-			return
+			return s, nil, err
 		}
-		s = s.consumeIrrelevant()
-		return s, o, Error{}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume("/"); ok {
+		e := &ExprDivision{Location: l, Dividend: left}
+		s, e.Divisor, err = ParseExprUnary(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume("%"); ok {
+		e := &ExprModulo{Location: l, Dividend: left}
+		s, e.Divisor, err = ParseExprUnary(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
 	}
-
-	var t []byte
-	s, t = s.consumeToken()
-	switch string(t) {
-	case "null":
-		return s, nil, Error{}
-	case "true":
-		return s, true, Error{}
-	case "false":
-		return s, false, Error{}
-	default:
-		return s, EnumValue(t), Error{}
-	}
+	s = s.consumeIgnored()
+	return s, left, Error{}
 }
 
-func parseValueArray(s source) (source, any, Error) {
-	var ok bool
-	if s, ok = s.consume(squareBracketLeft); !ok {
-		return s, nil, s.err("expected array")
-	}
+func ParseExprAdditive(s source) (source, Expression, Error) {
+	l := s.Location
 
-	s = s.consumeIrrelevant()
+	var left Expression
 	var err Error
-
-	if s, ok = s.consume(operatorMap); ok {
-		s = s.consumeIrrelevant()
-
-		var c Constraint
-		if s, c, err = parseConstraintOr(s); err.IsErr() {
-			return s, nil, err
-		}
-
-		s = s.consumeIrrelevant()
-		if s, ok = s.consume(squareBracketRight); !ok {
-			return s, nil, s.err("expected right square bracket")
-		}
-
-		return s, ConstraintMap{Constraint: c}, Error{}
+	s, left, err = ParseExprMultiplicative(s)
+	if err.IsErr() {
+		return s, nil, err
 	}
 
-	a := ValueArray{}
-	for {
-		s = s.consumeIrrelevant()
-		if s, ok = s.consume(squareBracketRight); ok {
-			break
-		}
-		var c Constraint
-		if s, c, err = parseConstraintOr(s); err.IsErr() {
-			return s, nil, err
-		}
-		a.Items = append(a.Items, c)
-	}
-	return s, a, Error{}
-}
+	s = s.consumeIgnored()
 
-func parseValueObject(s source) (_ source, o ValueObject, err Error) {
 	var ok bool
-	if s, ok = s.consume(curlyBracketLeft); !ok {
-		return s, ValueObject{}, s.err("expected object")
+	if s, ok = s.consume("+"); ok {
+		e := &ExprAddition{Location: l, AddendLeft: left}
+		s, e.AddendRight, err = ParseExprAdditive(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume("-"); ok {
+		e := &ExprSubtraction{Location: l, Minuend: left}
+		s, e.Subtrahend, err = ParseExprAdditive(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	}
+	s = s.consumeIgnored()
+	return s, left, Error{}
+}
+
+func ParseExprRelational(s source) (source, Expression, Error) {
+	l := s.Location
+
+	var left Expression
+	var err Error
+	s, left, err = ParseExprAdditive(s)
+	if err.IsErr() {
+		return s, nil, err
 	}
 
+	s = s.consumeIgnored()
+
+	var ok bool
+	if s, ok = s.consume("<="); ok {
+		e := &ExprLessOrEqual{Location: l, Left: left}
+		s, e.Right, err = ParseExprAdditive(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume(">="); ok {
+		e := &ExprGreaterOrEqual{Location: l, Left: left}
+		s, e.Right, err = ParseExprAdditive(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume("<"); ok {
+		e := &ExprLess{Location: l, Left: left}
+		s, e.Right, err = ParseExprAdditive(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	} else if s, ok = s.consume(">"); ok {
+		e := &ExprGreater{Location: l, Left: left}
+		s, e.Right, err = ParseExprAdditive(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	}
+	s = s.consumeIgnored()
+	return s, left, Error{}
+}
+
+func ParseExprEquality(s source) (source, Expression, Error) {
+	e := &ExprEqual{Location: s.Location}
+
+	var err Error
+	s, e.Left, err = ParseExprRelational(s)
+	if err.IsErr() {
+		return s, nil, err
+	}
+
+	s = s.consumeIgnored()
+
+	var ok bool
+	if s, ok = s.consume("=="); ok {
+		s, e.Right, err = ParseExprRelational(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	}
+	if s, ok = s.consume("!="); ok {
+		s, e.Right, err = ParseExprRelational(s)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		s = s.consumeIgnored()
+		return s, e, Error{}
+	}
+	s = s.consumeIgnored()
+	return s, e.Left, Error{}
+}
+
+func ParseExprLogicalOr(s source) (source, Expression, Error) {
+	e := &ExprLogicalOr{Location: s.Location}
+
+	var err Error
 	for {
-		s = s.consumeIrrelevant()
-		if s, ok = s.consume(curlyBracketRight); ok {
-			break
+		var expr Expression
+		if s, expr, err = ParseExprLogicalAnd(s); err.IsErr() {
+			return s, nil, err
+		}
+		e.Expressions = append(e.Expressions, expr)
+
+		s = s.consumeIgnored()
+
+		var ok bool
+		if s, ok = s.consume("||"); !ok {
+			if len(e.Expressions) < 2 {
+				return s, e.Expressions[0], Error{}
+			}
+			return s, e, Error{}
 		}
 
-		var name []byte
-		if s, name = s.consumeName(); name == nil {
-			return s, ValueObject{}, s.err("expected field name")
+		s = s.consumeIgnored()
+	}
+}
+
+func ParseExprLogicalAnd(s source) (source, Expression, Error) {
+	e := &ExprLogicalAnd{Location: s.Location}
+
+	var err Error
+	for {
+		var expr Expression
+		if s, expr, err = ParseExprConstr(s); err.IsErr() {
+			return s, nil, err
+		}
+		e.Expressions = append(e.Expressions, expr)
+
+		s = s.consumeIgnored()
+
+		var ok bool
+		if s, ok = s.consume("&&"); !ok {
+			if len(e.Expressions) < 2 {
+				return s, e.Expressions[0], Error{}
+			}
+			return s, e, Error{}
 		}
 
-		s = s.consumeIrrelevant()
+		s = s.consumeIgnored()
+	}
+}
 
-		if s, ok = s.consume(column); !ok {
-			return s, ValueObject{}, s.err(
-				"expected column after object field name",
-			)
+func ParseExprConstr(s source) (source, Expression, Error) {
+	l := s.Location
+	var ok bool
+	if s, ok = s.consume("!="); ok {
+		s = s.consumeIgnored()
+
+		var expr Expression
+		var err Error
+		if s, expr, err = ParseExprEquality(s); err.IsErr() {
+			return s, nil, err
 		}
 
-		s = s.consumeIrrelevant()
+		s = s.consumeIgnored()
 
-		var c Constraint
-		if s, c, err = parseConstraintOr(s); err.IsErr() {
-			return s, ValueObject{}, err
+		return s, &ExprConstrNotEquals{
+			Location: l,
+			Value:    expr,
+		}, Error{}
+	} else if s, ok = s.consume("<="); ok {
+		s = s.consumeIgnored()
+
+		var expr Expression
+		var err Error
+		if s, expr, err = ParseExprEquality(s); err.IsErr() {
+			return s, nil, err
 		}
-		o.Fields = append(o.Fields, ObjectField{
-			Name:  string(name),
-			Value: c,
-		})
+
+		s = s.consumeIgnored()
+
+		return s, &ExprConstrLessOrEqual{
+			Location: l,
+			Value:    expr,
+		}, Error{}
+	} else if s, ok = s.consume(">="); ok {
+		s = s.consumeIgnored()
+
+		var expr Expression
+		var err Error
+		if s, expr, err = ParseExprEquality(s); err.IsErr() {
+			return s, nil, err
+		}
+
+		s = s.consumeIgnored()
+
+		return s, &ExprConstrGreaterOrEqual{
+			Location: l,
+			Value:    expr,
+		}, Error{}
+	} else if s, ok = s.consume("<"); ok {
+		s = s.consumeIgnored()
+
+		var expr Expression
+		var err Error
+		if s, expr, err = ParseExprEquality(s); err.IsErr() {
+			return s, nil, err
+		}
+
+		s = s.consumeIgnored()
+
+		return s, &ExprConstrLess{
+			Location: l,
+			Value:    expr,
+		}, Error{}
+	} else if s, ok = s.consume(">"); ok {
+		s = s.consumeIgnored()
+
+		var expr Expression
+		var err Error
+		if s, expr, err = ParseExprEquality(s); err.IsErr() {
+			return s, nil, err
+		}
+
+		s = s.consumeIgnored()
+
+		return s, &ExprConstrGreater{
+			Location: l,
+			Value:    expr,
+		}, Error{}
+	} else if s, ok = s.consume("len"); ok {
+		s = s.consumeIgnored()
+
+		if s, ok = s.consume("!="); ok {
+			s = s.consumeIgnored()
+
+			var expr Expression
+			var err Error
+			if s, expr, err = ParseExprEquality(s); err.IsErr() {
+				return s, nil, err
+			}
+
+			s = s.consumeIgnored()
+
+			return s, &ExprConstrLenNotEquals{
+				Location: l,
+				Value:    expr,
+			}, Error{}
+		} else if s, ok = s.consume("<="); ok {
+			s = s.consumeIgnored()
+
+			var expr Expression
+			var err Error
+			if s, expr, err = ParseExprEquality(s); err.IsErr() {
+				return s, nil, err
+			}
+
+			s = s.consumeIgnored()
+
+			return s, &ExprConstrLenLessOrEqual{
+				Location: l,
+				Value:    expr,
+			}, Error{}
+		} else if s, ok = s.consume(">="); ok {
+			s = s.consumeIgnored()
+
+			var expr Expression
+			var err Error
+			if s, expr, err = ParseExprEquality(s); err.IsErr() {
+				return s, nil, err
+			}
+
+			s = s.consumeIgnored()
+
+			return s, &ExprConstrLenGreaterOrEqual{
+				Location: l,
+				Value:    expr,
+			}, Error{}
+		} else if s, ok = s.consume("<"); ok {
+			s = s.consumeIgnored()
+
+			var expr Expression
+			var err Error
+			if s, expr, err = ParseExprEquality(s); err.IsErr() {
+				return s, nil, err
+			}
+
+			s = s.consumeIgnored()
+
+			return s, &ExprConstrLenLess{
+				Location: l,
+				Value:    expr,
+			}, Error{}
+		} else if s, ok = s.consume(">"); ok {
+			s = s.consumeIgnored()
+
+			var expr Expression
+			var err Error
+			if s, expr, err = ParseExprEquality(s); err.IsErr() {
+				return s, nil, err
+			}
+
+			s = s.consumeIgnored()
+
+			return s, &ExprConstrLenGreater{
+				Location: l,
+				Value:    expr,
+			}, Error{}
+		}
+
+		var expr Expression
+		var err Error
+		if s, expr, err = ParseExprEquality(s); err.IsErr() {
+			return s, nil, err
+		}
+
+		s = s.consumeIgnored()
+
+		return s, &ExprConstrGreater{
+			Location: l,
+			Value:    expr,
+		}, Error{}
 	}
 
-	if len(o.Fields) < 1 {
-		return s, ValueObject{}, s.err("empty object")
+	var expr Expression
+	var err Error
+	if s, expr, err = ParseExprEquality(s); err.IsErr() {
+		return s, nil, err
 	}
 
-	return s, o, Error{}
-}
+	s = s.consumeIgnored()
 
-type source struct {
-	original []byte
-	s        []byte
-}
-
-func (s source) isEOF() bool {
-	return len(s.s) < 1
-}
-
-func (s source) index() int {
-	return len(s.original) - len(s.s)
-}
-
-func (s source) err(msg string) Error {
-	return Error{
-		Index: len(s.original) - len(s.s),
-		Msg:   msg,
-	}
+	return s, &ExprConstrEquals{
+		Location: l,
+		Value:    expr,
+	}, Error{}
 }
 
 type Error struct {
-	Index int
-	Msg   string
+	Location
+	Msg string
 }
 
 func (e Error) IsErr() bool {
@@ -897,55 +1040,58 @@ func (e Error) IsErr() bool {
 }
 
 func (e Error) Error() string {
-	if e.Msg == "" {
+	if !e.IsErr() {
 		return ""
 	}
-	return fmt.Sprintf("error at %d: %s", e.Index, e.Msg)
+	return fmt.Sprintf("%d:%d: %s", e.Line, e.Column, e.Msg)
 }
 
-var (
-	keywordQuery         = []byte("query")
-	keywordMutation      = []byte("mutation")
-	keywordSubscription  = []byte("subscription")
-	squareBracketLeft    = []byte("[")
-	squareBracketRight   = []byte("]")
-	curlyBracketLeft     = []byte("{")
-	curlyBracketRight    = []byte("}")
-	parenthesisLeft      = []byte("(")
-	parenthesisRight     = []byte(")")
-	column               = []byte(":")
-	operatorGreater      = []byte(">")
-	operatorLesser       = []byte("<")
-	operatorGreaterEqual = []byte(">=")
-	operatorLesserEqual  = []byte("<=")
-	operatorEqual        = []byte("=")
-	operatorNotEqual     = []byte("!=")
-	operatorOr           = []byte("||")
-	operatorAnd          = []byte("&&")
-	operatorMap          = []byte("...")
-	operatorCombine      = []byte("combine")
-	operatorInlineFrag   = operatorMap
-)
+type source struct {
+	Location
+	s []byte
+}
 
-// consumeIrrelevant skips spaces, tabs, line-feeds
+func (s source) String() string {
+	c := s.s[s.Index:]
+	if len(c) > 10 {
+		c = c[:10]
+	}
+	return fmt.Sprintf("%d:%d: %q", s.Line, s.Column, c)
+}
+
+func (s source) isEOF() bool {
+	return s.Index >= len(s.s)
+}
+
+// consumeIgnored skips spaces, tabs, line-feeds
 // carriage-returns and comment sequences.
-func (s source) consumeIrrelevant() source {
+func (s source) consumeIgnored() source {
 MAIN:
-	for len(s.s) > 0 {
-		if s.s[0] == '#' {
-			s.s = s.s[1:]
-			for len(s.s) > 0 {
-				if s.s[0] == '\n' {
+	for s.Index < len(s.s) {
+		switch s.s[s.Index] {
+		case '#':
+			s.Index++
+			s.Column++
+			for s.Index < len(s.s) {
+				if s.s[s.Index] == '\n' {
+					s.Index++
+					s.Line++
+					s.Column = 1
 					continue MAIN
+				} else if s.s[s.Index] < 0x20 {
+					return s
 				}
-				s.s = s.s[1:]
+				s.Index++
+				s.Column++
 			}
-		} else if s.s[0] == ' ' ||
-			s.s[0] == '\n' ||
-			s.s[0] == '\t' ||
-			s.s[0] == '\r' ||
-			s.s[0] == ',' {
-			s.s = s.s[1:]
+		case ' ', '\t', '\r':
+			s.Index++
+			s.Column++
+			continue
+		case '\n':
+			s.Index++
+			s.Line++
+			s.Column = 1
 			continue
 		}
 		break
@@ -953,103 +1099,113 @@ MAIN:
 	return s
 }
 
-func (s source) consume(x []byte) (_ source, ok bool) {
-	if bytes.HasPrefix(s.s, x) {
-		s.s = s.s[len(x):]
-		return s, true
+func (s source) consume(x string) (_ source, ok bool) {
+	si, i := s, 0
+	for ; s.Index < len(s.s); i++ {
+		if i >= len(x) {
+			return s, true
+		}
+		if s.s[s.Index] != x[i] {
+			return si, false
+		}
+		if s.s[s.Index] == '\n' {
+			s.Index++
+			s.Line++
+			s.Column = 1
+		} else {
+			s.Index++
+			s.Column++
+		}
 	}
-	return s, false
+	return s, i >= len(x)
 }
 
 func (s source) consumeNumber() (_ source, number any, ok bool) {
+	loc := s.Location
 	if s, token := s.consumeToken(); token != nil {
 		if i, err := strconv.ParseInt(string(token), 10, 64); err == nil {
-			return s, i, true
+			return s, &ValueInt{
+				Location: loc,
+				Value:    i,
+			}, true
 		} else if f, err := strconv.ParseFloat(string(token), 64); err == nil {
-			return s, f, true
+			return s, &ValueFloat{
+				Location: loc,
+				Value:    f,
+			}, true
 		}
 	}
-	return s, int64(0), false
+	return s, number, false
 }
 
 func (s source) consumeToken() (_ source, token []byte) {
-	i, ii := s.s, s.index()
-	if len(s.s) < 1 {
-		return s, nil
-	}
-	for len(s.s) > 0 {
-		if b := s.s[0]; b == ' ' ||
-			b == '\n' ||
-			b == '\t' ||
-			b == '\r' ||
-			b == ',' ||
-			b == '{' ||
-			b == '(' ||
-			b == ')' ||
-			b == '}' ||
-			b == ']' ||
-			b == '#' {
+	i, ii := s.s[s.Index:], s.Index
+	for s.Index < len(s.s) {
+		if b := s.s[s.Index]; b < 0x20 ||
+			b == ' ' || b == '\n' || b == '\t' ||
+			b == '\r' || b == ',' || b == '{' ||
+			b == '}' || b == '(' || b == ')' ||
+			b == ']' || b == '[' || b == '#' {
 			break
 		}
-		s.s = s.s[1:]
+		s.Index++
+		s.Column++
 	}
-	return s, i[:s.index()-ii]
+	return s, i[:s.Index-ii]
 }
 
 func (s source) consumeName() (_ source, name []byte) {
-	i, ii := s.s, s.index()
-	if len(s.s) < 1 {
+	ii := s.Index
+	if s.Index >= len(s.s) {
 		return s, nil
 	}
-	if b := s.s[0]; b == '_' ||
+	if b := s.s[s.Index]; b == '_' ||
 		(b >= 'a' && b <= 'z') ||
 		(b >= 'A' && b <= 'Z') {
-		s.s = s.s[1:]
+		s.Index++
+		s.Column++
 	} else {
 		return s, nil
 	}
-	for len(s.s) > 0 && (s.s[0] == '_' ||
-		(s.s[0] >= 'a' && s.s[0] <= 'z') ||
-		(s.s[0] >= 'A' && s.s[0] <= 'Z') ||
-		(s.s[0] >= '0' && s.s[0] <= '9')) {
-		s.s = s.s[1:]
+	for s.Index < len(s.s) && (s.s[s.Index] == '_' ||
+		(s.s[s.Index] >= 'a' && s.s[s.Index] <= 'z') ||
+		(s.s[s.Index] >= 'A' && s.s[s.Index] <= 'Z') ||
+		(s.s[s.Index] >= '0' && s.s[s.Index] <= '9')) {
+		s.Index++
+		s.Column++
 	}
-	return s, i[:s.index()-ii]
+	return s, s.s[ii:s.Index]
 }
 
 func (s source) consumeString() (n source, str []byte, ok bool) {
 	escaped := false
 	n = s
 
-	if len(n.s) < 1 || n.s[0] != '"' {
+	if n.Index >= len(n.s) || n.s[n.Index] != '"' {
 		return s, nil, false
 	}
-	n.s = n.s[1:]
-	ii := n
+	n.Index++
+	n.Column++
+	ii := n.Index
 
-	for ; len(n.s) > 0; n.s = n.s[1:] {
-		if n.s[0] < 0x20 {
+	for n.Index < len(n.s) {
+		switch {
+		case n.s[n.Index] < 0x20:
 			return s, nil, false
-		} else if n.s[0] == '"' {
+		case n.s[n.Index] == '"':
 			if escaped {
 				escaped = false
 			} else {
-				str = ii.s[:n.index()-ii.index()]
-				n.s = n.s[1:]
+				str = n.s[ii:n.Index]
+				n.Index++
+				n.Column++
 				return n, str, true
 			}
-		} else if n.s[0] == '\\' {
+		case n.s[n.Index] == '\\':
 			escaped = !escaped
 		}
+		n.Index++
+		n.Column++
 	}
 	return s, nil, false
-}
-
-func toUint(v any) (uint, bool) {
-	if i, ok := v.(int64); ok && i >= 0 {
-		return uint(i), true
-	} else if f, ok := v.(float64); ok && !math.Signbit(f) && f == float64(uint(f)) {
-		return uint(f), true
-	}
-	return 0, false
 }
