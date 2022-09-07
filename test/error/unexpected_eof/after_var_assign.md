@@ -1,7 +1,7 @@
 ```graphql
-query { f(a=$
+query { f(a=
 ```
 
 ```
-1:14: unexpected end of file, expected variable name
+1:13: unexpected end of file, expected variable name
 ```

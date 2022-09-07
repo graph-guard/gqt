@@ -619,6 +619,8 @@ func ParseValue(
 	if s, ok = s.consume("("); ok {
 		e := &ExprParentheses{Location: l}
 
+		s = s.consumeIgnored()
+
 		var err Error
 		s, e.Expression, err = ParseExprLogicalOr(s, varNames)
 		if err.IsErr() {
@@ -630,7 +632,6 @@ func ParseValue(
 		}
 
 		s = s.consumeIgnored()
-
 		return s, e, Error{}
 	} else if s, ok = s.consume("$"); ok {
 		v := &Variable{Location: l}
@@ -798,9 +799,13 @@ func ParseExprUnary(
 	var err Error
 	if s, ok = s.consume("!"); ok {
 		e := &ExprLogicalNegation{Location: l}
+
+		s = s.consumeIgnored()
+
 		if s, e.Expression, err = ParseValue(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
@@ -824,26 +829,39 @@ func ParseExprMultiplicative(
 	var ok bool
 	if s, ok = s.consume("*"); ok {
 		e := &ExprMultiplication{Location: l, Multiplicant: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Multiplicator, err = ParseExprUnary(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume("/"); ok {
 		e := &ExprDivision{Location: l, Dividend: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Divisor, err = ParseExprUnary(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume("%"); ok {
 		e := &ExprModulo{Location: l, Dividend: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Divisor, err = ParseExprUnary(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
+
 	s = s.consumeIgnored()
 	return s, left, Error{}
 }
@@ -865,16 +883,24 @@ func ParseExprAdditive(
 	var ok bool
 	if s, ok = s.consume("+"); ok {
 		e := &ExprAddition{Location: l, AddendLeft: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.AddendRight, err = ParseExprMultiplicative(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume("-"); ok {
 		e := &ExprSubtraction{Location: l, Minuend: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Subtrahend, err = ParseExprMultiplicative(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
@@ -899,30 +925,46 @@ func ParseExprRelational(
 	var ok bool
 	if s, ok = s.consume("<="); ok {
 		e := &ExprLessOrEqual{Location: l, Left: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume(">="); ok {
 		e := &ExprGreaterOrEqual{Location: l, Left: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume("<"); ok {
 		e := &ExprLess{Location: l, Left: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume(">"); ok {
 		e := &ExprGreater{Location: l, Left: left}
+
+		s = s.consumeIgnored()
+
 		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
@@ -934,10 +976,11 @@ func ParseExprEquality(
 	s source,
 	varNames map[string]struct{},
 ) (source, Expression, Error) {
-	e := &ExprEqual{Location: s.Location}
+	l := s.Location
 
 	var err Error
-	if s, e.Left, err = ParseExprRelational(s, varNames); err.IsErr() {
+	var exprLeft Expression
+	if s, exprLeft, err = ParseExprRelational(s, varNames); err.IsErr() {
 		return s, nil, err
 	}
 
@@ -945,6 +988,10 @@ func ParseExprEquality(
 
 	var ok bool
 	if s, ok = s.consume("=="); ok {
+		e := &ExprEqual{Location: l, Left: exprLeft}
+
+		s = s.consumeIgnored()
+
 		if s, e.Right, err = ParseExprRelational(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
@@ -952,14 +999,20 @@ func ParseExprEquality(
 		return s, e, Error{}
 	}
 	if s, ok = s.consume("!="); ok {
+		e := &ExprNotEqual{Location: l, Left: exprLeft}
+
+		s = s.consumeIgnored()
+
 		if s, e.Right, err = ParseExprRelational(s, varNames); err.IsErr() {
 			return s, nil, err
 		}
+
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
+
 	s = s.consumeIgnored()
-	return s, e.Left, Error{}
+	return s, exprLeft, Error{}
 }
 
 func ParseExprLogicalOr(
