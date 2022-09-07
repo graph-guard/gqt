@@ -319,7 +319,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"0",
 		true,
-		&ValueInt{
+		&Int{
 			Location: startLoc(),
 			Value:    0,
 		},
@@ -329,7 +329,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"10.0",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    10.0,
 		},
@@ -339,7 +339,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-1",
 		true,
-		&ValueInt{
+		&Int{
 			Location: startLoc(),
 			Value:    -1,
 		},
@@ -349,7 +349,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"0.1234",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    0.1234,
 		},
@@ -359,7 +359,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -369,7 +369,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234{x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -379,7 +379,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234}x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -389,7 +389,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234(x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -399,7 +399,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234)x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -409,7 +409,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234[x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -419,7 +419,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234]x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -429,7 +429,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234#x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -439,7 +439,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234,x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -449,7 +449,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234 x",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -459,7 +459,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234\tx",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -469,7 +469,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234\nx",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
@@ -479,7 +479,7 @@ func TestConsumeNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234\rx",
 		true,
-		&ValueFloat{
+		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},

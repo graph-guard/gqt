@@ -65,35 +65,35 @@ func writeYAML(
 			}
 			written += n
 		}
-	case *ValueInt:
+	case *Int:
 		if wrf("- Int[%d:%d](%v)", v.Line, v.Column, v.Value) {
 			return
 		}
-	case *ValueFloat:
+	case *Float:
 		if wrf("- Float[%d:%d](%v)", v.Line, v.Column, v.Value) {
 			return
 		}
-	case *ValueString:
+	case *String:
 		if wrf("- String[%d:%d](%q)", v.Line, v.Column, v.Value) {
 			return
 		}
-	case *ValueTrue:
+	case *True:
 		if wrf("- True[%d:%d]", v.Line, v.Column) {
 			return
 		}
-	case *ValueFalse:
+	case *False:
 		if wrf("- False[%d:%d]", v.Line, v.Column) {
 			return
 		}
-	case *ValueNull:
+	case *Null:
 		if wrf("- Null[%d:%d]", v.Line, v.Column) {
 			return
 		}
-	case *ValueEnum:
+	case *Enum:
 		if wrf("- Enum[%d:%d](%s)", v.Line, v.Column, v.Value) {
 			return
 		}
-	case *ValueArray:
+	case *Array:
 		colon := ""
 		if len(v.Items) > 0 {
 			colon = ":"
@@ -110,21 +110,49 @@ func writeYAML(
 			}
 			written += n
 		}
-	case *ValueObject:
-		// TODO
-		// colon := ""
-		// if len(v.Fields) > 0 {
-		// 	colon = ":"
-		// }
-		// if wrf(
-		// 	"Object[%d:%d](%d fields)%s",
-		// 	v.Line, v.Column, len(v.Fields), colon,
-		// ) {
-		// 	return
-		// }
-		// if wrBR() {
-		// 	return
-		// }
+	case *Object:
+		colon := ""
+		if len(v.Fields) > 0 {
+			colon = ":"
+		}
+		if wrf(
+			"- Object[%d:%d](%d fields)%s",
+			v.Line, v.Column, len(v.Fields), colon,
+		) {
+			return
+		}
+		for _, field := range v.Fields {
+			if n, err = writeYAML(w, indent+1, field); err != nil {
+				return
+			}
+			written += n
+		}
+	case *ObjectField:
+		colon := ""
+		if v.Constraint != nil {
+			colon = ":"
+		}
+		if v.AssociatedVariableName != "" {
+			if wrf(
+				"- ObjectField[%d:%d](%s=$%s)%s",
+				v.Line, v.Column, v.Name, v.AssociatedVariableName, colon,
+			) {
+				return
+			}
+		} else {
+			if wrf(
+				"- ObjectField[%d:%d](%s)%s",
+				v.Line, v.Column, v.Name, colon,
+			) {
+				return
+			}
+		}
+		if v.Constraint != nil {
+			if n, err = writeYAML(w, indent+1, v.Constraint); err != nil {
+				return
+			}
+			written += n
+		}
 	case *ExprModulo:
 		if wrf("- Modulo[%d:%d]:", v.Line, v.Column) {
 			return
