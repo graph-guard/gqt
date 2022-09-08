@@ -1,6 +1,7 @@
 package gqt
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 )
@@ -379,6 +380,13 @@ func newErrorNoPrefix(s source, msg string) Error {
 	}
 }
 
+type expect int8
+
+const (
+	expectConstraint expect = 0
+	expectValue      expect = 1
+)
+
 func ParseSelectionSet(
 	s source,
 	varNames map[string]struct{},
@@ -440,7 +448,8 @@ func ParseSelectionSet(
 
 		if s.peek1('(') {
 			var err Error
-			if s, sel.Arguments, err = ParseArguments(s, varNames); err.IsErr() {
+			s, sel.Arguments, err = ParseArguments(s, varNames)
+			if err.IsErr() {
 				return s, nil, err
 			}
 		}
@@ -449,7 +458,8 @@ func ParseSelectionSet(
 
 		if s.peek1('{') {
 			var err Error
-			if s, sel.Selections, err = ParseSelectionSet(s, varNames); err.IsErr() {
+			s, sel.Selections, err = ParseSelectionSet(s, varNames)
+			if err.IsErr() {
 				return s, nil, err
 			}
 		}
@@ -578,7 +588,8 @@ func ParseArguments(
 			// Has a constraint
 			var expr Expression
 			var err Error
-			if s, expr, err = ParseExprLogicalOr(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprLogicalOr(s, varNames, expectConstraint)
+			if err.IsErr() {
 				return s, nil, err
 			}
 			arg.Constraint = expr
@@ -606,6 +617,7 @@ func ParseArguments(
 func ParseValue(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 
@@ -616,13 +628,14 @@ func ParseValue(
 	var str []byte
 	var num any
 	var ok bool
+	var err Error
 	if s, ok = s.consume("("); ok {
 		e := &ExprParentheses{Location: l}
 
 		s = s.consumeIgnored()
 
 		var err Error
-		s, e.Expression, err = ParseExprLogicalOr(s, varNames)
+		s, e.Expression, err = ParseExprLogicalOr(s, varNames, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -648,9 +661,15 @@ func ParseValue(
 		return s, v, Error{}
 	} else if s, str, ok = s.consumeString(); ok {
 		return s, &String{Location: l, Value: string(str)}, Error{}
-	} else if s, num, ok = s.consumeNumber(); ok {
+	}
+
+	if s, num, err = s.ParseNumber(); err.IsErr() {
+		return s, nil, err
+	} else if num != nil {
 		return s, num, Error{}
-	} else if s, ok = s.consume("["); ok {
+	}
+
+	if s, ok = s.consume("["); ok {
 		e := &Array{Location: l}
 
 		for {
@@ -660,7 +679,8 @@ func ParseValue(
 			}
 
 			var expr Expression
-			if s, expr, err = ParseExprLogicalOr(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprLogicalOr(s, varNames, expectConstraint)
+			if err.IsErr() {
 				return s, nil, err
 			}
 
@@ -750,7 +770,8 @@ func ParseValue(
 				// Has a constraint
 				var expr Expression
 				var err Error
-				if s, expr, err = ParseExprLogicalOr(s, varNames); err.IsErr() {
+				s, expr, err = ParseExprLogicalOr(s, varNames, expectConstraint)
+				if err.IsErr() {
 					return s, nil, err
 				}
 				fld.Constraint = expr
@@ -793,6 +814,7 @@ func ParseValue(
 func ParseExprUnary(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 	var ok bool
@@ -802,121 +824,125 @@ func ParseExprUnary(
 
 		s = s.consumeIgnored()
 
-		if s, e.Expression, err = ParseValue(s, varNames); err.IsErr() {
+		s, e.Expression, err = ParseValue(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
-	return ParseValue(s, varNames)
+	return ParseValue(s, varNames, expect)
 }
 
 func ParseExprMultiplicative(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 
-	var left Expression
+	var result Expression
 	var err Error
-	if s, left, err = ParseExprUnary(s, varNames); err.IsErr() {
+	s, result, err = ParseExprUnary(s, varNames, expect)
+	if err.IsErr() {
 		return s, nil, err
 	}
 
-	s = s.consumeIgnored()
-
-	var ok bool
-	if s, ok = s.consume("*"); ok {
-		e := &ExprMultiplication{Location: l, Multiplicant: left}
-
+	for {
 		s = s.consumeIgnored()
-
-		if s, e.Multiplicator, err = ParseExprUnary(s, varNames); err.IsErr() {
-			return s, nil, err
+		var selected int
+		s, selected = s.consumeEitherOf3("*", "/", "%")
+		switch selected {
+		case 0:
+			e := &ExprMultiplication{Location: l, Multiplicant: result}
+			s = s.consumeIgnored()
+			s, e.Multiplicator, err = ParseExprUnary(s, varNames, expect)
+			if err.IsErr() {
+				return s, nil, err
+			}
+			s = s.consumeIgnored()
+			result = e
+		case 1:
+			e := &ExprDivision{Location: l, Dividend: result}
+			s = s.consumeIgnored()
+			s, e.Divisor, err = ParseExprUnary(s, varNames, expect)
+			if err.IsErr() {
+				return s, nil, err
+			}
+			s = s.consumeIgnored()
+			result = e
+		case 2:
+			e := &ExprModulo{Location: l, Dividend: result}
+			s = s.consumeIgnored()
+			s, e.Divisor, err = ParseExprUnary(s, varNames, expect)
+			if err.IsErr() {
+				return s, nil, err
+			}
+			s = s.consumeIgnored()
+			result = e
+		default:
+			s = s.consumeIgnored()
+			return s, result, Error{}
 		}
-
-		s = s.consumeIgnored()
-		return s, e, Error{}
-	} else if s, ok = s.consume("/"); ok {
-		e := &ExprDivision{Location: l, Dividend: left}
-
-		s = s.consumeIgnored()
-
-		if s, e.Divisor, err = ParseExprUnary(s, varNames); err.IsErr() {
-			return s, nil, err
-		}
-
-		s = s.consumeIgnored()
-		return s, e, Error{}
-	} else if s, ok = s.consume("%"); ok {
-		e := &ExprModulo{Location: l, Dividend: left}
-
-		s = s.consumeIgnored()
-
-		if s, e.Divisor, err = ParseExprUnary(s, varNames); err.IsErr() {
-			return s, nil, err
-		}
-
-		s = s.consumeIgnored()
-		return s, e, Error{}
 	}
-
-	s = s.consumeIgnored()
-	return s, left, Error{}
 }
 
 func ParseExprAdditive(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 
-	var left Expression
+	var result Expression
 	var err Error
-	if s, left, err = ParseExprMultiplicative(s, varNames); err.IsErr() {
+	s, result, err = ParseExprMultiplicative(s, varNames, expect)
+	if err.IsErr() {
 		return s, nil, err
 	}
 
-	s = s.consumeIgnored()
-
-	var ok bool
-	if s, ok = s.consume("+"); ok {
-		e := &ExprAddition{Location: l, AddendLeft: left}
-
+	for {
 		s = s.consumeIgnored()
-
-		if s, e.AddendRight, err = ParseExprMultiplicative(s, varNames); err.IsErr() {
-			return s, nil, err
+		var selected int
+		s, selected = s.consumeEitherOf3("+", "-", "")
+		switch selected {
+		case 0:
+			e := &ExprAddition{Location: l, AddendLeft: result}
+			s = s.consumeIgnored()
+			s, e.AddendRight, err = ParseExprMultiplicative(s, varNames, expect)
+			if err.IsErr() {
+				return s, nil, err
+			}
+			s = s.consumeIgnored()
+			result = e
+		case 1:
+			e := &ExprSubtraction{Location: l, Minuend: result}
+			s = s.consumeIgnored()
+			s, e.Subtrahend, err = ParseExprMultiplicative(s, varNames, expect)
+			if err.IsErr() {
+				return s, nil, err
+			}
+			s = s.consumeIgnored()
+			result = e
+		default:
+			s = s.consumeIgnored()
+			return s, result, Error{}
 		}
-
-		s = s.consumeIgnored()
-		return s, e, Error{}
-	} else if s, ok = s.consume("-"); ok {
-		e := &ExprSubtraction{Location: l, Minuend: left}
-
-		s = s.consumeIgnored()
-
-		if s, e.Subtrahend, err = ParseExprMultiplicative(s, varNames); err.IsErr() {
-			return s, nil, err
-		}
-
-		s = s.consumeIgnored()
-		return s, e, Error{}
 	}
-	s = s.consumeIgnored()
-	return s, left, Error{}
 }
 
 func ParseExprRelational(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 
 	var left Expression
 	var err Error
-	if s, left, err = ParseExprAdditive(s, varNames); err.IsErr() {
+	s, left, err = ParseExprAdditive(s, varNames, expect)
+	if err.IsErr() {
 		return s, nil, err
 	}
 
@@ -928,7 +954,8 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
+		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -939,7 +966,8 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
+		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -950,7 +978,8 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
+		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -961,7 +990,8 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = ParseExprAdditive(s, varNames); err.IsErr() {
+		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -975,12 +1005,14 @@ func ParseExprRelational(
 func ParseExprEquality(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 
 	var err Error
 	var exprLeft Expression
-	if s, exprLeft, err = ParseExprRelational(s, varNames); err.IsErr() {
+	s, exprLeft, err = ParseExprRelational(s, varNames, expect)
+	if err.IsErr() {
 		return s, nil, err
 	}
 
@@ -992,7 +1024,8 @@ func ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = ParseExprRelational(s, varNames); err.IsErr() {
+		s, e.Right, err = ParseExprRelational(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 		s = s.consumeIgnored()
@@ -1003,7 +1036,8 @@ func ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = ParseExprRelational(s, varNames); err.IsErr() {
+		s, e.Right, err = ParseExprRelational(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1018,13 +1052,15 @@ func ParseExprEquality(
 func ParseExprLogicalOr(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	e := &ExprLogicalOr{Location: s.Location}
 
 	var err Error
 	for {
 		var expr Expression
-		if s, expr, err = ParseExprLogicalAnd(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprLogicalAnd(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 		e.Expressions = append(e.Expressions, expr)
@@ -1046,13 +1082,15 @@ func ParseExprLogicalOr(
 func ParseExprLogicalAnd(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	e := &ExprLogicalAnd{Location: s.Location}
 
 	var err Error
 	for {
 		var expr Expression
-		if s, expr, err = ParseExprConstr(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprConstr(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 		e.Expressions = append(e.Expressions, expr)
@@ -1074,15 +1112,29 @@ func ParseExprLogicalAnd(
 func ParseExprConstr(
 	s source,
 	varNames map[string]struct{},
+	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 	var ok bool
+	var expr Expression
+	var err Error
+
+	if expect == expectValue {
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		if err.IsErr() {
+			return s, nil, err
+		}
+
+		s = s.consumeIgnored()
+
+		return s, expr, Error{}
+	}
+
 	if s, ok = s.consume("!="); ok {
 		s = s.consumeIgnored()
 
-		var expr Expression
-		var err Error
-		if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1095,9 +1147,8 @@ func ParseExprConstr(
 	} else if s, ok = s.consume("<="); ok {
 		s = s.consumeIgnored()
 
-		var expr Expression
-		var err Error
-		if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1110,9 +1161,8 @@ func ParseExprConstr(
 	} else if s, ok = s.consume(">="); ok {
 		s = s.consumeIgnored()
 
-		var expr Expression
-		var err Error
-		if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1125,9 +1175,8 @@ func ParseExprConstr(
 	} else if s, ok = s.consume("<"); ok {
 		s = s.consumeIgnored()
 
-		var expr Expression
-		var err Error
-		if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1140,9 +1189,8 @@ func ParseExprConstr(
 	} else if s, ok = s.consume(">"); ok {
 		s = s.consumeIgnored()
 
-		var expr Expression
-		var err Error
-		if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1160,7 +1208,8 @@ func ParseExprConstr(
 
 			var expr Expression
 			var err Error
-			if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			if err.IsErr() {
 				return s, nil, err
 			}
 
@@ -1173,9 +1222,8 @@ func ParseExprConstr(
 		} else if s, ok = s.consume("<="); ok {
 			s = s.consumeIgnored()
 
-			var expr Expression
-			var err Error
-			if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			if err.IsErr() {
 				return s, nil, err
 			}
 
@@ -1188,9 +1236,8 @@ func ParseExprConstr(
 		} else if s, ok = s.consume(">="); ok {
 			s = s.consumeIgnored()
 
-			var expr Expression
-			var err Error
-			if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			if err.IsErr() {
 				return s, nil, err
 			}
 
@@ -1203,9 +1250,8 @@ func ParseExprConstr(
 		} else if s, ok = s.consume("<"); ok {
 			s = s.consumeIgnored()
 
-			var expr Expression
-			var err Error
-			if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			if err.IsErr() {
 				return s, nil, err
 			}
 
@@ -1218,9 +1264,8 @@ func ParseExprConstr(
 		} else if s, ok = s.consume(">"); ok {
 			s = s.consumeIgnored()
 
-			var expr Expression
-			var err Error
-			if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			if err.IsErr() {
 				return s, nil, err
 			}
 
@@ -1232,9 +1277,8 @@ func ParseExprConstr(
 			}, Error{}
 		}
 
-		var expr Expression
-		var err Error
-		if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+		s, expr, err = ParseExprEquality(s, varNames, expect)
+		if err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1246,9 +1290,8 @@ func ParseExprConstr(
 		}, Error{}
 	}
 
-	var expr Expression
-	var err Error
-	if s, expr, err = ParseExprEquality(s, varNames); err.IsErr() {
+	s, expr, err = ParseExprEquality(s, varNames, expectValue)
+	if err.IsErr() {
 		return s, nil, err
 	}
 
@@ -1258,6 +1301,56 @@ func ParseExprConstr(
 		Location: l,
 		Value:    expr,
 	}, Error{}
+}
+
+func (s source) ParseNumber() (_ source, number any, err Error) {
+	si := s
+	if s.Index >= len(s.s) {
+		return si, nil, Error{}
+	}
+
+	if s.s[s.Index] == '-' || s.s[s.Index] == '+' {
+		s.Index++
+		s.Column++
+	}
+
+	for s.Index < len(s.s) {
+		if (s.s[s.Index] < '0' || s.s[s.Index] > '9') &&
+			s.s[s.Index] != '.' &&
+			s.s[s.Index] != 'e' &&
+			s.s[s.Index] != 'E' {
+			break
+		}
+		if s.s[s.Index] == 'e' || s.s[s.Index] == 'E' {
+			s.Index++
+			s.Column++
+			if s.Index >= len(s.s) {
+				return si, nil, errMsg(s, "exponent has no digits")
+			}
+			s, _ = s.consumeEitherOf3("+", "-", "")
+			if !s.isDigit() {
+				return si, nil, errMsg(s, "exponent has no digits")
+			}
+		}
+
+		s.Index++
+		s.Column++
+	}
+	str := string(s.s[si.Index:s.Index])
+	if str == "" {
+		return si, nil, Error{}
+	} else if v, err := strconv.ParseInt(str, 10, 64); err == nil {
+		return s, &Int{
+			Location: si.Location,
+			Value:    v,
+		}, Error{}
+	} else if v, err := strconv.ParseFloat(str, 64); err == nil {
+		return s, &Float{
+			Location: si.Location,
+			Value:    v,
+		}, Error{}
+	}
+	return si, nil, Error{}
 }
 
 type Error struct {
@@ -1291,6 +1384,11 @@ func (s source) String() string {
 
 func (s source) isEOF() bool {
 	return s.Index >= len(s.s)
+}
+
+func (s source) isDigit() bool {
+	return s.Index < len(s.s) &&
+		s.s[s.Index] >= '0' && s.s[s.Index] <= '9'
 }
 
 func (s source) peek1(b byte) bool {
@@ -1333,6 +1431,52 @@ MAIN:
 	return s
 }
 
+func (s source) consumeEitherOf3(a, b, c string) (_ source, selected int) {
+	selected = -1
+	if s.Index >= len(s.s) {
+		return s, selected
+	}
+	x := s.s[s.Index:]
+	if a != "" && bytes.HasPrefix(x, []byte(a)) {
+		selected = 0
+		for i := len(a); len(x) > 0 && i > 0; i-- {
+			s.Index++
+			if x[0] == '\n' {
+				s.Line++
+				s.Column = 1
+			} else {
+				s.Column++
+			}
+			x = x[1:]
+		}
+	} else if b != "" && bytes.HasPrefix(x, []byte(b)) {
+		selected = 1
+		for i := len(b); len(x) > 0 && i > 0; i-- {
+			s.Index++
+			if x[0] == '\n' {
+				s.Line++
+				s.Column = 1
+			} else {
+				s.Column++
+			}
+			x = x[1:]
+		}
+	} else if c != "" && bytes.HasPrefix(x, []byte(c)) {
+		selected = 2
+		for i := len(c); len(x) > 0 && i > 0; i-- {
+			s.Index++
+			if x[0] == '\n' {
+				s.Line++
+				s.Column = 1
+			} else {
+				s.Column++
+			}
+			x = x[1:]
+		}
+	}
+	return s, selected
+}
+
 func (s source) consume(x string) (_ source, ok bool) {
 	si, i := s, 0
 	for ; s.Index < len(s.s); i++ {
@@ -1352,24 +1496,6 @@ func (s source) consume(x string) (_ source, ok bool) {
 		}
 	}
 	return s, i >= len(x)
-}
-
-func (s source) consumeNumber() (_ source, number any, ok bool) {
-	loc := s.Location
-	if s, token := s.consumeToken(); token != nil {
-		if i, err := strconv.ParseInt(string(token), 10, 64); err == nil {
-			return s, &Int{
-				Location: loc,
-				Value:    i,
-			}, true
-		} else if f, err := strconv.ParseFloat(string(token), 64); err == nil {
-			return s, &Float{
-				Location: loc,
-				Value:    f,
-			}, true
-		}
-	}
-	return s, number, false
 }
 
 func (s source) consumeToken() (_ source, token []byte) {

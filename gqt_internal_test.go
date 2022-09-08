@@ -10,14 +10,15 @@ import (
 
 func TestConsumeIgnored(t *testing.T) {
 	type T struct {
-		Input  string
-		Expect Location
+		Location Location
+		Input    string
+		Expect   Location
 	}
 
 	run := test.New(t, func(t *testing.T, x T) {
 		a := source{
 			s:        []byte(x.Input),
-			Location: startLoc(),
+			Location: x.Location,
 		}.consumeIgnored()
 		expect := source{
 			s:        []byte(x.Input),
@@ -26,15 +27,56 @@ func TestConsumeIgnored(t *testing.T) {
 		require.Equal(t, expect, a)
 	})
 
-	run(T{"", Location{0, 1, 1}})
-	run(T{"  ", Location{2, 1, 3}})
-	run(T{"xyz", Location{0, 1, 1}})
-	run(T{"#xyz", Location{4, 1, 5}})
-	run(T{"#xyz\n", Location{5, 2, 1}})
-	run(T{"#xyz\nabc", Location{5, 2, 1}})
-	run(T{" \t\n\rxyz", Location{4, 2, 2}})
-	run(T{" \t\n\r#comment\n\n#another comment \nxyz ", Location{32, 5, 1}})
-	run(T{string([]byte{0x00, '1', '2', '3'}), Location{0, 1, 1}})
+	run(T{
+		startLoc(),
+		"",
+		Location{0, 1, 1},
+	})
+	run(T{
+		startLoc(),
+		"  ",
+		Location{2, 1, 3},
+	})
+	run(T{
+		startLoc(),
+		"xyz",
+		Location{0, 1, 1},
+	})
+	run(T{
+		startLoc(),
+		"#xyz",
+		Location{4, 1, 5},
+	})
+	run(T{
+		startLoc(),
+		"#xyz\n",
+		Location{5, 2, 1},
+	})
+	run(T{
+		startLoc(),
+		"#xyz\nabc",
+		Location{5, 2, 1},
+	})
+	run(T{
+		startLoc(),
+		" \t\n\rxyz",
+		Location{4, 2, 2},
+	})
+	run(T{
+		startLoc(),
+		" \t\n\r#comment\n\n#another comment \nxyz ",
+		Location{32, 5, 1},
+	})
+	run(T{
+		startLoc(),
+		string([]byte{0x00, '1', '2', '3'}),
+		Location{0, 1, 1},
+	})
+	run(T{
+		Location{14, 4, 1},
+		" \t\n\r#comment\n\n#another comment \nxyz ",
+		Location{32, 5, 1},
+	})
 }
 
 func TestConsume(t *testing.T) {
@@ -49,7 +91,7 @@ func TestConsume(t *testing.T) {
 	run := test.New(t, func(t *testing.T, x T) {
 		a, ok := source{
 			s:        []byte(x.Input),
-			Location: startLoc(),
+			Location: x.Location,
 		}.consume(x.Consume)
 		expect := source{
 			s:        []byte(x.Input),
@@ -123,6 +165,97 @@ func TestConsume(t *testing.T) {
 		"abc\n",
 		true,
 		Location{4, 2, 1},
+	})
+	run(T{
+		Location{4, 2, 1},
+		"abc\ndefg",
+		"def",
+		true,
+		Location{7, 2, 4},
+	})
+}
+
+func TestConsumeEitherOf3(t *testing.T) {
+	type T struct {
+		Location       Location
+		Input          string
+		Consume        [3]string
+		ExpectSelected int
+		ExpectAfter    Location
+	}
+
+	run := test.New(t, func(t *testing.T, x T) {
+		a, selected := source{
+			s:        []byte(x.Input),
+			Location: x.Location,
+		}.consumeEitherOf3(x.Consume[0], x.Consume[1], x.Consume[2])
+		expect := source{s: []byte(x.Input), Location: x.ExpectAfter}
+		require.Equal(t, x.ExpectSelected, selected)
+		require.Equal(t, expect, a)
+	})
+
+	run(T{
+		startLoc(),
+		"",
+		[3]string{"", "", ""},
+		-1,
+		Location{0, 1, 1},
+	})
+	run(T{
+		startLoc(),
+		"",
+		[3]string{"a", "", ""},
+		-1,
+		Location{0, 1, 1},
+	})
+	run(T{
+		startLoc(),
+		"",
+		[3]string{"a", "b", "c"},
+		-1,
+		Location{0, 1, 1},
+	})
+	run(T{
+		startLoc(),
+		"a",
+		[3]string{"a", "", ""},
+		0,
+		Location{1, 1, 2},
+	})
+	run(T{
+		startLoc(),
+		"apple",
+		[3]string{"applepie", "honey", "smoke"},
+		-1,
+		Location{0, 1, 1},
+	})
+	run(T{
+		startLoc(),
+		"apple",
+		[3]string{"tomato", "applepie", "app"},
+		2,
+		Location{3, 1, 4},
+	})
+	run(T{
+		startLoc(),
+		"\n\n\n",
+		[3]string{"\n", "\n\n", "\n\n\n"},
+		0,
+		Location{1, 2, 1},
+	})
+	run(T{
+		startLoc(),
+		"\n\n\n",
+		[3]string{"", "\n", ""},
+		1,
+		Location{1, 2, 1},
+	})
+	run(T{
+		Location{4, 3, 2},
+		"\nx\nx\nx",
+		[3]string{"", "", "\nx"},
+		2,
+		Location{6, 4, 2},
 	})
 }
 
@@ -271,219 +404,332 @@ func TestConsumeToken(t *testing.T) {
 
 }
 
-func TestConsumeNumber(t *testing.T) {
+func TestParseNumber(t *testing.T) {
 	type T struct {
 		Location    Location
 		Input       string
-		ExpectOK    bool
 		ExpectNum   any
+		ExpectErr   Error
 		ExpectAfter Location
 	}
 
 	run := test.New(t, func(t *testing.T, x T) {
-		a, n, ok := source{
+		a, n, err := source{
 			s:        []byte(x.Input),
 			Location: x.Location,
-		}.consumeNumber()
-		require.Equal(t, x.ExpectOK, ok)
+		}.ParseNumber()
 		require.Equal(t, x.ExpectNum, n)
 		expect := source{
 			s:        []byte(x.Input),
 			Location: x.ExpectAfter,
 		}
+		require.Equal(t, x.ExpectErr, err)
 		require.Equal(t, expect, a)
 	})
 
 	run(T{
 		startLoc(),
 		"",
-		false,
 		nil,
+		Error{},
 		Location{0, 1, 1},
 	})
 	run(T{
 		startLoc(),
 		"x",
-		false,
 		nil,
+		Error{},
 		Location{0, 1, 1},
 	})
 	run(T{
 		startLoc(),
 		"0.1234x",
-		false,
-		nil,
-		Location{0, 1, 1},
+		&Float{
+			Location: startLoc(),
+			Value:    0.1234,
+		},
+		Error{},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
 		"0",
-		true,
 		&Int{
 			Location: startLoc(),
 			Value:    0,
 		},
+		Error{},
 		Location{1, 1, 2},
 	})
 	run(T{
 		startLoc(),
 		"10.0",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    10.0,
 		},
+		Error{},
 		Location{4, 1, 5},
 	})
 	run(T{
 		startLoc(),
 		"-1",
-		true,
 		&Int{
 			Location: startLoc(),
 			Value:    -1,
 		},
+		Error{},
 		Location{2, 1, 3},
 	})
 	run(T{
 		startLoc(),
 		"0.1234",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    0.1234,
 		},
+		Error{},
 		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234{x",
-		true,
+		"6E+5",
 		&Float{
 			Location: startLoc(),
-			Value:    -0.1234,
+			Value:    6e+5,
 		},
-		Location{7, 1, 8},
+		Error{},
+		Location{4, 1, 5},
+	})
+	run(T{
+		startLoc(),
+		"6E",
+		nil,
+		Error{
+			Location: Location{2, 1, 3},
+			Msg:      "exponent has no digits",
+		},
+		startLoc(),
+	})
+	run(T{
+		startLoc(),
+		"6E ",
+		nil,
+		Error{
+			Location: Location{2, 1, 3},
+			Msg:      "exponent has no digits",
+		},
+		startLoc(),
+	})
+	run(T{
+		startLoc(),
+		"6Ee",
+		nil,
+		Error{
+			Location: Location{2, 1, 3},
+			Msg:      "exponent has no digits",
+		},
+		startLoc(),
+	})
+	run(T{
+		startLoc(),
+		"6E-",
+		nil,
+		Error{
+			Location: Location{3, 1, 4},
+			Msg:      "exponent has no digits",
+		},
+		startLoc(),
+	})
+	run(T{
+		startLoc(),
+		"6E- ",
+		nil,
+		Error{
+			Location: Location{3, 1, 4},
+			Msg:      "exponent has no digits",
+		},
+		startLoc(),
+	})
+	run(T{
+		startLoc(),
+		"6E-e",
+		nil,
+		Error{
+			Location: Location{3, 1, 4},
+			Msg:      "exponent has no digits",
+		},
+		startLoc(),
 	})
 	run(T{
 		startLoc(),
 		"-0.1234}x",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Location{7, 1, 8},
-	})
-	run(T{
-		startLoc(),
-		"-0.1234(x",
-		true,
-		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
-		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234)x",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Location{7, 1, 8},
-	})
-	run(T{
-		startLoc(),
-		"-0.1234[x",
-		true,
-		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
-		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234]x",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
+		Location{7, 1, 8},
+	})
+	run(T{
+		startLoc(),
+		"-0.1234||",
+		&Float{
+			Location: startLoc(),
+			Value:    -0.1234,
+		},
+		Error{},
+		Location{7, 1, 8},
+	})
+	run(T{
+		startLoc(),
+		"-0.1234&&",
+		&Float{
+			Location: startLoc(),
+			Value:    -0.1234,
+		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234#x",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234,x",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234 x",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234\tx",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234\nx",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
 		"-0.1234\rx",
-		true,
 		&Float{
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
+		Error{},
 		Location{7, 1, 8},
+	})
+	run(T{
+		Location{2, 1, 3},
+		"  2-321 ",
+		&Int{
+			Location: Location{2, 1, 3},
+			Value:    2,
+		},
+		Error{},
+		Location{3, 1, 4},
+	})
+	run(T{
+		Location{2, 1, 3},
+		"  2+321 ",
+		&Int{
+			Location: Location{2, 1, 3},
+			Value:    2,
+		},
+		Error{},
+		Location{3, 1, 4},
+	})
+	run(T{
+		Location{2, 1, 3},
+		"  2*321",
+		&Int{
+			Location: Location{2, 1, 3},
+			Value:    2,
+		},
+		Error{},
+		Location{3, 1, 4},
+	})
+	run(T{
+		Location{2, 1, 3},
+		"  2/321",
+		&Int{
+			Location: Location{2, 1, 3},
+			Value:    2,
+		},
+		Error{},
+		Location{3, 1, 4},
+	})
+	run(T{
+		Location{2, 1, 3},
+		"  2%321",
+		&Int{
+			Location: Location{2, 1, 3},
+			Value:    2,
+		},
+		Error{},
+		Location{3, 1, 4},
 	})
 }
 

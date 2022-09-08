@@ -3,7 +3,8 @@ query {
   a(
     a: > 1 + 4,
     b: > 1 + 4 * 2,
-    c: > ( 1 + 4 ) * 2,
+    c: > ( 1 + 4 ) * 2 / 10.4,
+    d: > 11 % 2 - -10,
   )
 }
 ```
@@ -26,12 +27,20 @@ Operation[1:1](query):
               - Int[4:18](2)
       - Argument[5:5](c):
         - ConstrGreater[5:8]:
-          - Multiplication[5:10]:
-            - Parentheses[5:10]:
-              - ConstrEquals[5:12]:
+          - Division[5:10]:
+            - Multiplication[5:10]:
+              - Parentheses[5:10]:
                 - Addition[5:12]:
                   - Int[5:12](1)
                   - Int[5:16](4)
-            - Int[5:22](2)
+              - Int[5:22](2)
+            - Float[5:26](10.4)
+      - Argument[6:5](d):
+        - ConstrGreater[6:8]:
+          - Subtraction[6:10]:
+            - Modulo[6:10]:
+              - Int[6:10](11)
+              - Int[6:15](2)
+            - Int[6:19](-10)
 
 ```
