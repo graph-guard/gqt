@@ -61,15 +61,16 @@ type (
 
 	// Expression can be either of:
 	//
-	//	ValueInt
-	//	ValueFloat
-	//	ValueString
-	//	ValueTrue
-	//	ValueFalse
-	//	ValueNull
-	//	ValueEnum
-	//	ValueArray
-	//	ValueObject
+	//	Variable
+	//	Int
+	//	Float
+	//	String
+	//	True
+	//	False
+	//	Null
+	//	Enum
+	//	Array
+	//	Object
 	//	ExprModulo
 	//	ExprDivision
 	//	ExprMultiplication
@@ -77,28 +78,29 @@ type (
 	//	ExprSubtraction
 	//	ExprEqual
 	//	ExprNotEqual
-	//  ExprLessOrEqual
-	//  ExprGreaterOrEqual
 	//  ExprLess
 	//  ExprGreater
-	//	ExprLogicalNegation
-	//	Variable
+	//  ExprLessOrEqual
+	//  ExprGreaterOrEqual
 	//	ExprParentheses
 	//  ExprConstrEquals
 	//  ExprConstrNotEquals
 	//  ExprConstrLess
-	//  ExprConstrLessOrEqual
 	//  ExprConstrGreater
+	//  ExprConstrLessOrEqual
 	//  ExprConstrGreaterOrEqual
 	//  ExprConstrLenEquals
 	//  ExprConstrLenNotEquals
 	//  ExprConstrLenLess
-	//  ExprConstrLenLessOrEqual
 	//  ExprConstrLenGreater
+	//  ExprConstrLenLessOrEqual
 	//  ExprConstrLenGreaterOrEqual
 	//	ExprLogicalAnd
 	//	ExprLogicalOr
-	Expression any
+	//	ExprLogicalNegation
+	Expression interface {
+		Type() string
+	}
 
 	ExprConstrEquals struct {
 		Location
@@ -313,6 +315,58 @@ type (
 	}
 )
 
+func (e *ExprParentheses) Type() string {
+	if e.Expression != nil {
+		return e.Expression.Type()
+	}
+	return ""
+}
+
+func (e *ExprConstrEquals) Type() string            { return "constraint" }
+func (e *ExprConstrNotEquals) Type() string         { return "constraint" }
+func (e *ExprConstrLess) Type() string              { return "constraint" }
+func (e *ExprConstrLessOrEqual) Type() string       { return "constraint" }
+func (e *ExprConstrGreater) Type() string           { return "constraint" }
+func (e *ExprConstrGreaterOrEqual) Type() string    { return "constraint" }
+func (e *ExprConstrLenEquals) Type() string         { return "constraint" }
+func (e *ExprConstrLenNotEquals) Type() string      { return "constraint" }
+func (e *ExprConstrLenLess) Type() string           { return "constraint" }
+func (e *ExprConstrLenLessOrEqual) Type() string    { return "constraint" }
+func (e *ExprConstrLenGreater) Type() string        { return "constraint" }
+func (e *ExprConstrLenGreaterOrEqual) Type() string { return "constraint" }
+
+func (*ExprLogicalNegation) Type() string { return "boolean" }
+func (*ExprModulo) Type() string          { return "number" }
+func (*ExprDivision) Type() string        { return "number" }
+func (*ExprMultiplication) Type() string  { return "number" }
+func (*ExprAddition) Type() string        { return "number" }
+func (*ExprSubtraction) Type() string     { return "number" }
+func (*Int) Type() string                 { return "number" }
+func (*Float) Type() string               { return "number" }
+
+func (*True) Type() string               { return "boolean" }
+func (*False) Type() string              { return "boolean" }
+func (*ExprEqual) Type() string          { return "boolean" }
+func (*ExprNotEqual) Type() string       { return "boolean" }
+func (*ExprLess) Type() string           { return "boolean" }
+func (*ExprLessOrEqual) Type() string    { return "boolean" }
+func (*ExprGreater) Type() string        { return "boolean" }
+func (*ExprGreaterOrEqual) Type() string { return "boolean" }
+func (*ExprLogicalAnd) Type() string     { return "boolean" }
+func (*ExprLogicalOr) Type() string      { return "boolean" }
+
+func (*String) Type() string { return "string" }
+
+func (*Null) Type() string { return "null" }
+
+func (*Enum) Type() string { return "enum" }
+
+func (*Array) Type() string { return "array" }
+
+func (*Object) Type() string { return "object" }
+
+func (*Variable) Type() string { return "variable" }
+
 func Parse(
 	src []byte,
 ) (*Operation, Error) {
@@ -363,6 +417,13 @@ func errUnexp(s source, msg string) Error {
 	return Error{
 		Location: s.Location,
 		Msg:      prefix + msg,
+	}
+}
+
+func errTypef(s source, format string, v ...any) Error {
+	return Error{
+		Location: s.Location,
+		Msg:      fmt.Sprintf("mismatching types: "+format, v...),
 	}
 }
 
@@ -666,7 +727,14 @@ func ParseValue(
 	if s, num, err = s.ParseNumber(); err.IsErr() {
 		return s, nil, err
 	} else if num != nil {
-		return s, num, Error{}
+		switch v := num.(type) {
+		case *Int:
+			return s, v, Error{}
+		case *Float:
+			return s, v, Error{}
+		default:
+			panic(fmt.Errorf("unexpected number type: %#v", num))
+		}
 	}
 
 	if s, ok = s.consume("["); ok {
@@ -990,9 +1058,14 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
+		si := s
 		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isNumeric(e.Right) {
+			return s, nil, errTypef(si, "can't use %s as number", e.Type())
 		}
 
 		s = s.consumeIgnored()
@@ -1147,9 +1220,16 @@ func ParseExprConstr(
 	} else if s, ok = s.consume("<="); ok {
 		s = s.consumeIgnored()
 
+		si := s
 		s, expr, err = ParseExprEquality(s, varNames, expectValue)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isNumeric(expr) {
+			return s, nil, errTypef(
+				si, "can't use %s as number", expr.Type(),
+			)
 		}
 
 		s = s.consumeIgnored()
@@ -1161,9 +1241,16 @@ func ParseExprConstr(
 	} else if s, ok = s.consume(">="); ok {
 		s = s.consumeIgnored()
 
+		si := s
 		s, expr, err = ParseExprEquality(s, varNames, expectValue)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isNumeric(expr) {
+			return s, nil, errTypef(
+				si, "can't use %s as number", expr.Type(),
+			)
 		}
 
 		s = s.consumeIgnored()
@@ -1175,9 +1262,16 @@ func ParseExprConstr(
 	} else if s, ok = s.consume("<"); ok {
 		s = s.consumeIgnored()
 
+		si := s
 		s, expr, err = ParseExprEquality(s, varNames, expectValue)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isNumeric(expr) {
+			return s, nil, errTypef(
+				si, "can't use %s as number", expr.Type(),
+			)
 		}
 
 		s = s.consumeIgnored()
@@ -1189,9 +1283,16 @@ func ParseExprConstr(
 	} else if s, ok = s.consume(">"); ok {
 		s = s.consumeIgnored()
 
+		si := s
 		s, expr, err = ParseExprEquality(s, varNames, expectValue)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isNumeric(expr) {
+			return s, nil, errTypef(
+				si, "can't use %s as number", expr.Type(),
+			)
 		}
 
 		s = s.consumeIgnored()
@@ -1208,9 +1309,17 @@ func ParseExprConstr(
 
 			var expr Expression
 			var err Error
+
+			si := s
 			s, expr, err = ParseExprEquality(s, varNames, expectValue)
 			if err.IsErr() {
 				return s, nil, err
+			}
+
+			if !isNumeric(expr) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", expr.Type(),
+				)
 			}
 
 			s = s.consumeIgnored()
@@ -1222,9 +1331,16 @@ func ParseExprConstr(
 		} else if s, ok = s.consume("<="); ok {
 			s = s.consumeIgnored()
 
+			si := s
 			s, expr, err = ParseExprEquality(s, varNames, expectValue)
 			if err.IsErr() {
 				return s, nil, err
+			}
+
+			if !isNumeric(expr) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", expr.Type(),
+				)
 			}
 
 			s = s.consumeIgnored()
@@ -1236,9 +1352,16 @@ func ParseExprConstr(
 		} else if s, ok = s.consume(">="); ok {
 			s = s.consumeIgnored()
 
+			si := s
 			s, expr, err = ParseExprEquality(s, varNames, expectValue)
 			if err.IsErr() {
 				return s, nil, err
+			}
+
+			if !isNumeric(expr) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", expr.Type(),
+				)
 			}
 
 			s = s.consumeIgnored()
@@ -1250,9 +1373,16 @@ func ParseExprConstr(
 		} else if s, ok = s.consume("<"); ok {
 			s = s.consumeIgnored()
 
+			si := s
 			s, expr, err = ParseExprEquality(s, varNames, expectValue)
 			if err.IsErr() {
 				return s, nil, err
+			}
+
+			if !isNumeric(expr) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", expr.Type(),
+				)
 			}
 
 			s = s.consumeIgnored()
@@ -1264,9 +1394,16 @@ func ParseExprConstr(
 		} else if s, ok = s.consume(">"); ok {
 			s = s.consumeIgnored()
 
+			si := s
 			s, expr, err = ParseExprEquality(s, varNames, expectValue)
 			if err.IsErr() {
 				return s, nil, err
+			}
+
+			if !isNumeric(expr) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", expr.Type(),
+				)
 			}
 
 			s = s.consumeIgnored()
@@ -1277,9 +1414,16 @@ func ParseExprConstr(
 			}, Error{}
 		}
 
-		s, expr, err = ParseExprEquality(s, varNames, expect)
+		si := s
+		s, expr, err = ParseExprEquality(s, varNames, expectValue)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isNumeric(expr) {
+			return s, nil, errTypef(
+				si, "can't use %s as number", expr.Type(),
+			)
 		}
 
 		s = s.consumeIgnored()
@@ -1568,4 +1712,62 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 		n.Column++
 	}
 	return s, nil, false
+}
+
+func isNumeric(expr any) bool {
+	switch e := expr.(type) {
+	case *Variable:
+		// TODO: check schema
+		return true
+	case *ExprParentheses:
+		return isNumeric(e.Expression)
+	case *Float:
+		return true
+	case *Int:
+		return true
+	case *ExprAddition:
+		return true
+	case *ExprSubtraction:
+		return true
+	case *ExprMultiplication:
+		return true
+	case *ExprDivision:
+		return true
+	case *ExprModulo:
+		return true
+	}
+	return false
+}
+
+func isBoolean(expr any) bool {
+	switch e := expr.(type) {
+	case *Variable:
+		// TODO: check schema
+		return true
+	case *ExprParentheses:
+		return isBoolean(e.Expression)
+	case *True:
+		return true
+	case *False:
+		return true
+	case *ExprEqual:
+		return true
+	case *ExprNotEqual:
+		return true
+	case *ExprLess:
+		return true
+	case *ExprGreater:
+		return true
+	case *ExprLessOrEqual:
+		return true
+	case *ExprGreaterOrEqual:
+		return true
+	case *ExprLogicalNegation:
+		return true
+	case *ExprLogicalAnd:
+		return true
+	case *ExprLogicalOr:
+		return true
+	}
+	return false
 }
