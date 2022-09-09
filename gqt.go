@@ -892,9 +892,16 @@ func ParseExprUnary(
 
 		s = s.consumeIgnored()
 
+		si := s
 		s, e.Expression, err = ParseValue(s, varNames, expect)
 		if err.IsErr() {
 			return s, nil, err
+		}
+
+		if !isBoolean(e.Expression) {
+			return s, nil, errTypef(
+				si, "can't use %s as boolean", e.Expression.Type(),
+			)
 		}
 
 		s = s.consumeIgnored()
@@ -908,7 +915,7 @@ func ParseExprMultiplicative(
 	varNames map[string]struct{},
 	expect expect,
 ) (source, Expression, Error) {
-	l := s.Location
+	si := s
 
 	var result Expression
 	var err Error
@@ -923,30 +930,75 @@ func ParseExprMultiplicative(
 		s, selected = s.consumeEitherOf3("*", "/", "%")
 		switch selected {
 		case 0:
-			e := &ExprMultiplication{Location: l, Multiplicant: result}
+			e := &ExprMultiplication{Location: si.Location, Multiplicant: result}
+
+			if !isNumeric(e.Multiplicant) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Multiplicant.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
+			si := s
 			s, e.Multiplicator, err = ParseExprUnary(s, varNames, expect)
 			if err.IsErr() {
 				return s, nil, err
 			}
+
+			if !isNumeric(e.Multiplicator) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Multiplicator.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
 			result = e
 		case 1:
-			e := &ExprDivision{Location: l, Dividend: result}
+			e := &ExprDivision{Location: si.Location, Dividend: result}
+
+			if !isNumeric(e.Dividend) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Dividend.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
+			si := s
 			s, e.Divisor, err = ParseExprUnary(s, varNames, expect)
 			if err.IsErr() {
 				return s, nil, err
 			}
+
+			if !isNumeric(e.Divisor) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Divisor.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
 			result = e
 		case 2:
-			e := &ExprModulo{Location: l, Dividend: result}
+			e := &ExprModulo{Location: si.Location, Dividend: result}
+
+			if !isNumeric(e.Dividend) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Dividend.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
+			si := s
 			s, e.Divisor, err = ParseExprUnary(s, varNames, expect)
 			if err.IsErr() {
 				return s, nil, err
 			}
+
+			if !isNumeric(e.Divisor) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Divisor.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
 			result = e
 		default:
@@ -961,7 +1013,7 @@ func ParseExprAdditive(
 	varNames map[string]struct{},
 	expect expect,
 ) (source, Expression, Error) {
-	l := s.Location
+	si := s
 
 	var result Expression
 	var err Error
@@ -976,21 +1028,51 @@ func ParseExprAdditive(
 		s, selected = s.consumeEitherOf3("+", "-", "")
 		switch selected {
 		case 0:
-			e := &ExprAddition{Location: l, AddendLeft: result}
+			e := &ExprAddition{Location: si.Location, AddendLeft: result}
+
+			if !isNumeric(e.AddendLeft) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.AddendLeft.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
+			si := s
 			s, e.AddendRight, err = ParseExprMultiplicative(s, varNames, expect)
 			if err.IsErr() {
 				return s, nil, err
 			}
+
+			if !isNumeric(e.AddendRight) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.AddendRight.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
 			result = e
 		case 1:
-			e := &ExprSubtraction{Location: l, Minuend: result}
+			e := &ExprSubtraction{Location: si.Location, Minuend: result}
+
+			if !isNumeric(e.Minuend) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Minuend.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
+			si := s
 			s, e.Subtrahend, err = ParseExprMultiplicative(s, varNames, expect)
 			if err.IsErr() {
 				return s, nil, err
 			}
+
+			if !isNumeric(e.Subtrahend) {
+				return s, nil, errTypef(
+					si, "can't use %s as number", e.Subtrahend.Type(),
+				)
+			}
+
 			s = s.consumeIgnored()
 			result = e
 		default:
@@ -1466,6 +1548,9 @@ func (s source) ParseNumber() (_ source, number any, err Error) {
 			break
 		}
 		if s.s[s.Index] == 'e' || s.s[s.Index] == 'E' {
+			if s.Index == si.Index {
+				return si, nil, Error{}
+			}
 			s.Index++
 			s.Column++
 			if s.Index >= len(s.s) {
