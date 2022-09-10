@@ -427,6 +427,16 @@ func errTypef(s source, format string, v ...any) Error {
 	}
 }
 
+func errCantCompare(s source, left, right Expression) Error {
+	return Error{
+		Location: s.Location,
+		Msg: fmt.Sprintf(
+			"can't compare %s and %s",
+			left.Type(), right.Type(),
+		),
+	}
+}
+
 func errMsg(s source, msg string) Error {
 	return Error{
 		Location: s.Location,
@@ -1162,7 +1172,7 @@ func ParseExprEquality(
 	varNames map[string]struct{},
 	expect expect,
 ) (source, Expression, Error) {
-	l := s.Location
+	si := s
 
 	var err Error
 	var exprLeft Expression
@@ -1175,7 +1185,7 @@ func ParseExprEquality(
 
 	var ok bool
 	if s, ok = s.consume("=="); ok {
-		e := &ExprEqual{Location: l, Left: exprLeft}
+		e := &ExprEqual{Location: si.Location, Left: exprLeft}
 
 		s = s.consumeIgnored()
 
@@ -1184,10 +1194,15 @@ func ParseExprEquality(
 			return s, nil, err
 		}
 		s = s.consumeIgnored()
+
+		if err = assumeSameType(si, e.Left, e.Right); err.IsErr() {
+			return si, nil, err
+		}
+
 		return s, e, Error{}
 	}
 	if s, ok = s.consume("!="); ok {
-		e := &ExprNotEqual{Location: l, Left: exprLeft}
+		e := &ExprNotEqual{Location: si.Location, Left: exprLeft}
 
 		s = s.consumeIgnored()
 
@@ -1195,8 +1210,12 @@ func ParseExprEquality(
 		if err.IsErr() {
 			return s, nil, err
 		}
-
 		s = s.consumeIgnored()
+
+		if err = assumeSameType(si, e.Left, e.Right); err.IsErr() {
+			return si, nil, err
+		}
+
 		return s, e, Error{}
 	}
 
@@ -1855,4 +1874,38 @@ func isBoolean(expr any) bool {
 		return true
 	}
 	return false
+}
+
+func assumeSameType(s source, left, right Expression) Error {
+	_, lIsVar := left.(*Variable)
+	_, rIsVar := right.(*Variable)
+	if lIsVar || rIsVar {
+		// TODO check variable types
+		return Error{}
+	}
+
+	if isBoolean(left) && !isBoolean(right) {
+		return errCantCompare(s, left, right)
+	} else if isNumeric(left) && !isNumeric(right) {
+		return errCantCompare(s, left, right)
+	}
+	switch left.(type) {
+	case *String:
+		if _, ok := right.(*String); !ok {
+			return errCantCompare(s, left, right)
+		}
+	case *Enum:
+		if _, ok := right.(*Enum); !ok {
+			return errCantCompare(s, left, right)
+		}
+	case *Array:
+		if _, ok := right.(*Array); !ok {
+			return errCantCompare(s, left, right)
+		}
+	case *Object:
+		if _, ok := right.(*Object); !ok {
+			return errCantCompare(s, left, right)
+		}
+	}
+	return Error{}
 }
