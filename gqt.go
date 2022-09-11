@@ -40,9 +40,9 @@ type (
 
 	// Selection can be either of:
 	//
-	//	SelectionField
-	//	SelectionMax
-	//	SelectionInlineFrag
+	//	*SelectionField
+	//	*SelectionMax
+	//	*SelectionInlineFrag
 	Selection any
 
 	SelectionField struct {
@@ -61,43 +61,43 @@ type (
 
 	// Expression can be either of:
 	//
-	//	Variable
-	//	Int
-	//	Float
-	//	String
-	//	True
-	//	False
-	//	Null
-	//	Enum
-	//	Array
-	//	Object
-	//	ExprModulo
-	//	ExprDivision
-	//	ExprMultiplication
-	//	ExprAddition
-	//	ExprSubtraction
-	//	ExprEqual
-	//	ExprNotEqual
-	//  ExprLess
-	//  ExprGreater
-	//  ExprLessOrEqual
-	//  ExprGreaterOrEqual
-	//	ExprParentheses
-	//  ExprConstrEquals
-	//  ExprConstrNotEquals
-	//  ExprConstrLess
-	//  ExprConstrGreater
-	//  ExprConstrLessOrEqual
-	//  ExprConstrGreaterOrEqual
-	//  ExprConstrLenEquals
-	//  ExprConstrLenNotEquals
-	//  ExprConstrLenLess
-	//  ExprConstrLenGreater
-	//  ExprConstrLenLessOrEqual
-	//  ExprConstrLenGreaterOrEqual
-	//	ExprLogicalAnd
-	//	ExprLogicalOr
-	//	ExprLogicalNegation
+	//	*Variable
+	//	*Int
+	//	*Float
+	//	*String
+	//	*True
+	//	*False
+	//	*Null
+	//	*Enum
+	//	*Array
+	//	*Object
+	//	*ExprModulo
+	//	*ExprDivision
+	//	*ExprMultiplication
+	//	*ExprAddition
+	//	*ExprSubtraction
+	//	*ExprEqual
+	//	*ExprNotEqual
+	//  *ExprLess
+	//  *ExprGreater
+	//  *ExprLessOrEqual
+	//  *ExprGreaterOrEqual
+	//	*ExprParentheses
+	//  *ExprConstrEquals
+	//  *ExprConstrNotEquals
+	//  *ExprConstrLess
+	//  *ExprConstrGreater
+	//  *ExprConstrLessOrEqual
+	//  *ExprConstrGreaterOrEqual
+	//  *ExprConstrLenEquals
+	//  *ExprConstrLenNotEquals
+	//  *ExprConstrLenLess
+	//  *ExprConstrLenGreater
+	//  *ExprConstrLenLessOrEqual
+	//  *ExprConstrLenGreaterOrEqual
+	//	*ExprLogicalAnd
+	//	*ExprLogicalOr
+	//	*ExprLogicalNegation
 	Expression interface {
 		Type() string
 	}
@@ -522,7 +522,7 @@ func ParseSelectionSet(
 
 		if _, ok := s.consume("..."); ok {
 			var err Error
-			var fragInline SelectionInlineFrag
+			var fragInline *SelectionInlineFrag
 			sBefore := s
 			if s, fragInline, err = ParseInlineFrag(
 				s, variables, varRefs,
@@ -585,21 +585,21 @@ func ParseInlineFrag(
 	s source,
 	variables map[string]*VariableDefinition,
 	varRefs *[]*Variable,
-) (source, SelectionInlineFrag, Error) {
+) (source, *SelectionInlineFrag, Error) {
 	l := s.Location
 	var ok bool
 	if s, ok = s.consume("..."); !ok {
-		return s, SelectionInlineFrag{}, errUnexp(s, "expected '...'")
+		return s, nil, errUnexp(s, "expected '...'")
 	}
 
-	inlineFrag := SelectionInlineFrag{Location: l}
+	inlineFrag := &SelectionInlineFrag{Location: l}
 	s = s.consumeIgnored()
 
 	var tok []byte
 	sp := s
 	s, tok = s.consumeToken()
 	if string(tok) != "on" {
-		return sp, SelectionInlineFrag{}, errUnexp(sp, "expected keyword 'on'")
+		return sp, nil, errUnexp(sp, "expected keyword 'on'")
 	}
 
 	s = s.consumeIgnored()
@@ -607,15 +607,16 @@ func ParseInlineFrag(
 	var name []byte
 	s, name = s.consumeName()
 	if len(name) < 1 {
-		return s, SelectionInlineFrag{}, errUnexp(s, "expected type condition")
+		return s, nil, errUnexp(s, "expected type condition")
 	}
 	inlineFrag.TypeCondition = string(name)
 
 	s = s.consumeIgnored()
 	var sels []Selection
 	var err Error
-	if s, sels, err = ParseSelectionSet(s, variables, varRefs); err.IsErr() {
-		return s, SelectionInlineFrag{}, err
+	s, sels, err = ParseSelectionSet(s, variables, varRefs)
+	if err.IsErr() {
+		return s, nil, err
 	}
 
 	inlineFrag.Selections = sels

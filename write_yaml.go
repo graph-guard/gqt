@@ -488,6 +488,32 @@ func writeYAML(
 			}
 			written += n
 		}
+	case *SelectionInlineFrag:
+		colon := ""
+		if len(v.Selections) > 0 {
+			colon = ":"
+		}
+		if wrf(
+			"- SelectionInlineFrag[%d:%d](%s)%s",
+			v.Line, v.Column, v.TypeCondition, colon,
+		) {
+			return
+		}
+		if len(v.Selections) > 0 {
+			if wrBR() {
+				return
+			}
+			writeIndent(indent + 1)
+			if wrf("selections:") {
+				return
+			}
+			for _, a := range v.Selections {
+				if n, err = writeYAML(w, indent+2, a); err != nil {
+					return
+				}
+				written += n
+			}
+		}
 	default:
 		return written, fmt.Errorf("unsupported value: %#v", o)
 	}
