@@ -132,10 +132,10 @@ func writeYAML(
 		if v.Constraint != nil {
 			colon = ":"
 		}
-		if v.AssociatedVariableName != "" {
+		if v.AssociatedVariable != nil {
 			if wrf(
 				"- ObjectField[%d:%d](%s=$%s)%s",
-				v.Line, v.Column, v.Name, v.AssociatedVariableName, colon,
+				v.Line, v.Column, v.Name, v.AssociatedVariable.Name, colon,
 			) {
 				return
 			}
@@ -467,10 +467,10 @@ func writeYAML(
 		if v.Constraint != nil {
 			colon = ":"
 		}
-		if v.AssociatedVariableName != "" {
+		if v.AssociatedVariable != nil {
 			if wrf(
 				"- Argument[%d:%d](%s=$%s)%s",
-				v.Line, v.Column, v.Name, v.AssociatedVariableName, colon,
+				v.Line, v.Column, v.Name, v.AssociatedVariable.Name, colon,
 			) {
 				return
 			}

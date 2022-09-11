@@ -54,9 +54,9 @@ type (
 
 	Argument struct {
 		Location
-		Name                   string
-		AssociatedVariableName string
-		Constraint             Expression
+		Name               string
+		AssociatedVariable *VariableDefinition
+		Constraint         Expression
 	}
 
 	// Expression can be either of:
@@ -292,9 +292,9 @@ type (
 
 	ObjectField struct {
 		Location
-		Name                   string
-		AssociatedVariableName string
-		Constraint             Expression
+		Name               string
+		AssociatedVariable *VariableDefinition
+		Constraint         Expression
 	}
 
 	Variable struct {
@@ -367,9 +367,30 @@ func (*Object) Type() string { return "object" }
 
 func (*Variable) Type() string { return "variable" }
 
+type VariableDefinition struct {
+	Location Location
+	Name     string
+
+	// References can be any of:
+	//
+	//  *Argument
+	//  *ObjectField
+	References []any
+
+	// Parent can be any of:
+	//
+	//  *Argument
+	//  *ObjectField
+	Parent any
+}
+
 func Parse(
 	src []byte,
-) (*Operation, Error) {
+) (
+	operation *Operation,
+	variables map[string]*VariableDefinition,
+	err Error,
+) {
 	s := source{
 		Location: Location{
 			Line:   1,
@@ -392,21 +413,33 @@ func Parse(
 	} else if string(tok) == "subscription" {
 		o.Type = OperationTypeSubscription
 	} else {
-		return nil, errUnexp(
+		return nil, nil, errUnexp(
 			si, "expected query, mutation, or subscription "+
 				"operation definition",
 		)
 	}
 
-	varNames := make(map[string]struct{})
+	variables = make(map[string]*VariableDefinition)
+	varRefs := []*Variable{}
 
 	s = s.consumeIgnored()
-	var err Error
-	if s, o.Selections, err = ParseSelectionSet(s, varNames); err.IsErr() {
-		return nil, err
+	if s, o.Selections, err = ParseSelectionSet(
+		s, variables, &varRefs,
+	); err.IsErr() {
+		return nil, nil, err
 	}
 
-	return o, Error{}
+	for _, r := range varRefs {
+		if v, ok := variables[r.Name]; !ok {
+			sc := s
+			sc.Location = r.Location
+			return nil, nil, errMsg(sc, "undefined variable")
+		} else {
+			v.References = append(v.References, r)
+		}
+	}
+
+	return o, variables, Error{}
 }
 
 func errUnexp(s source, msg string) Error {
@@ -460,7 +493,8 @@ const (
 
 func ParseSelectionSet(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 ) (source, []Selection, Error) {
 	var ok bool
 	si := s
@@ -490,7 +524,9 @@ func ParseSelectionSet(
 			var err Error
 			var fragInline SelectionInlineFrag
 			sBefore := s
-			if s, fragInline, err = ParseInlineFrag(s, varNames); err.IsErr() {
+			if s, fragInline, err = ParseInlineFrag(
+				s, variables, varRefs,
+			); err.IsErr() {
 				return s, nil, err
 			}
 
@@ -519,7 +555,7 @@ func ParseSelectionSet(
 
 		if s.peek1('(') {
 			var err Error
-			s, sel.Arguments, err = ParseArguments(s, varNames)
+			s, sel.Arguments, err = ParseArguments(s, variables, varRefs)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -529,7 +565,7 @@ func ParseSelectionSet(
 
 		if s.peek1('{') {
 			var err Error
-			s, sel.Selections, err = ParseSelectionSet(s, varNames)
+			s, sel.Selections, err = ParseSelectionSet(s, variables, varRefs)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -547,7 +583,8 @@ func ParseSelectionSet(
 
 func ParseInlineFrag(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 ) (source, SelectionInlineFrag, Error) {
 	l := s.Location
 	var ok bool
@@ -577,7 +614,7 @@ func ParseInlineFrag(
 	s = s.consumeIgnored()
 	var sels []Selection
 	var err Error
-	if s, sels, err = ParseSelectionSet(s, varNames); err.IsErr() {
+	if s, sels, err = ParseSelectionSet(s, variables, varRefs); err.IsErr() {
 		return s, SelectionInlineFrag{}, err
 	}
 
@@ -587,7 +624,8 @@ func ParseInlineFrag(
 
 func ParseArguments(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 ) (source, []*Argument, Error) {
 	si := s
 	var ok bool
@@ -613,7 +651,7 @@ func ParseArguments(
 		s = s.consumeIgnored()
 
 		sBeforeName := s
-		arg := Argument{Location: s.Location}
+		arg := &Argument{Location: s.Location}
 		if s, name = s.consumeName(); name == nil {
 			return s, nil, errUnexp(s, "expected argument name")
 		}
@@ -641,11 +679,16 @@ func ParseArguments(
 				return s, nil, errUnexp(s, "expected variable name")
 			}
 
-			arg.AssociatedVariableName = string(name)
-			if _, ok := varNames[arg.AssociatedVariableName]; ok {
+			def := &VariableDefinition{
+				Location: sBeforeDollar.Location,
+				Parent:   arg,
+				Name:     string(name),
+			}
+			arg.AssociatedVariable = def
+			if _, ok := variables[def.Name]; ok {
 				return s, nil, errMsg(sBeforeDollar, "redeclared variable")
 			}
-			varNames[arg.AssociatedVariableName] = struct{}{}
+			variables[def.Name] = def
 			s = s.consumeIgnored()
 		}
 
@@ -659,14 +702,16 @@ func ParseArguments(
 			// Has a constraint
 			var expr Expression
 			var err Error
-			s, expr, err = ParseExprLogicalOr(s, varNames, expectConstraint)
+			s, expr, err = ParseExprLogicalOr(
+				s, variables, varRefs, expectConstraint,
+			)
 			if err.IsErr() {
 				return s, nil, err
 			}
 			arg.Constraint = expr
 		}
 
-		arguments = append(arguments, &arg)
+		arguments = append(arguments, arg)
 		s = s.consumeIgnored()
 
 		if s, ok = s.consume(","); !ok {
@@ -687,7 +732,8 @@ func ParseArguments(
 
 func ParseValue(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
@@ -706,7 +752,7 @@ func ParseValue(
 		s = s.consumeIgnored()
 
 		var err Error
-		s, e.Expression, err = ParseExprLogicalOr(s, varNames, expect)
+		s, e.Expression, err = ParseExprLogicalOr(s, variables, varRefs, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -726,6 +772,8 @@ func ParseValue(
 		}
 
 		v.Name = string(name)
+
+		*varRefs = append(*varRefs, v)
 
 		s = s.consumeIgnored()
 
@@ -757,7 +805,9 @@ func ParseValue(
 			}
 
 			var expr Expression
-			s, expr, err = ParseExprLogicalOr(s, varNames, expectConstraint)
+			s, expr, err = ParseExprLogicalOr(
+				s, variables, varRefs, expectConstraint,
+			)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -829,11 +879,16 @@ func ParseValue(
 					return s, nil, errUnexp(s, "expected variable name")
 				}
 
-				fld.AssociatedVariableName = string(name)
-				if _, ok := varNames[fld.AssociatedVariableName]; ok {
+				def := &VariableDefinition{
+					Location: sBeforeDollar.Location,
+					Parent:   fld,
+					Name:     string(name),
+				}
+				fld.AssociatedVariable = def
+				if _, ok := variables[def.Name]; ok {
 					return s, nil, errMsg(sBeforeDollar, "redeclared variable")
 				}
-				varNames[fld.AssociatedVariableName] = struct{}{}
+				variables[def.Name] = def
 
 				s = s.consumeIgnored()
 			}
@@ -848,7 +903,9 @@ func ParseValue(
 				// Has a constraint
 				var expr Expression
 				var err Error
-				s, expr, err = ParseExprLogicalOr(s, varNames, expectConstraint)
+				s, expr, err = ParseExprLogicalOr(
+					s, variables, varRefs, expectConstraint,
+				)
 				if err.IsErr() {
 					return s, nil, err
 				}
@@ -891,7 +948,8 @@ func ParseValue(
 
 func ParseExprUnary(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
@@ -903,7 +961,7 @@ func ParseExprUnary(
 		s = s.consumeIgnored()
 
 		si := s
-		s, e.Expression, err = ParseValue(s, varNames, expect)
+		s, e.Expression, err = ParseValue(s, variables, varRefs, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -917,19 +975,20 @@ func ParseExprUnary(
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
-	return ParseValue(s, varNames, expect)
+	return ParseValue(s, variables, varRefs, expect)
 }
 
 func ParseExprMultiplicative(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
 
 	var result Expression
 	var err Error
-	s, result, err = ParseExprUnary(s, varNames, expect)
+	s, result, err = ParseExprUnary(s, variables, varRefs, expect)
 	if err.IsErr() {
 		return s, nil, err
 	}
@@ -950,7 +1009,9 @@ func ParseExprMultiplicative(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Multiplicator, err = ParseExprUnary(s, varNames, expect)
+			s, e.Multiplicator, err = ParseExprUnary(
+				s, variables, varRefs, expect,
+			)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -974,7 +1035,9 @@ func ParseExprMultiplicative(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Divisor, err = ParseExprUnary(s, varNames, expect)
+			s, e.Divisor, err = ParseExprUnary(
+				s, variables, varRefs, expect,
+			)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -998,7 +1061,7 @@ func ParseExprMultiplicative(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Divisor, err = ParseExprUnary(s, varNames, expect)
+			s, e.Divisor, err = ParseExprUnary(s, variables, varRefs, expect)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1020,14 +1083,15 @@ func ParseExprMultiplicative(
 
 func ParseExprAdditive(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
 
 	var result Expression
 	var err Error
-	s, result, err = ParseExprMultiplicative(s, varNames, expect)
+	s, result, err = ParseExprMultiplicative(s, variables, varRefs, expect)
 	if err.IsErr() {
 		return s, nil, err
 	}
@@ -1048,7 +1112,9 @@ func ParseExprAdditive(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.AddendRight, err = ParseExprMultiplicative(s, varNames, expect)
+			s, e.AddendRight, err = ParseExprMultiplicative(
+				s, variables, varRefs, expect,
+			)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1072,7 +1138,9 @@ func ParseExprAdditive(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Subtrahend, err = ParseExprMultiplicative(s, varNames, expect)
+			s, e.Subtrahend, err = ParseExprMultiplicative(
+				s, variables, varRefs, expect,
+			)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1094,14 +1162,17 @@ func ParseExprAdditive(
 
 func ParseExprRelational(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
 
 	var left Expression
 	var err Error
-	s, left, err = ParseExprAdditive(s, varNames, expect)
+	s, left, err = ParseExprAdditive(
+		s, variables, varRefs, expect,
+	)
 	if err.IsErr() {
 		return s, nil, err
 	}
@@ -1114,7 +1185,9 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		s, e.Right, err = ParseExprAdditive(
+			s, variables, varRefs, expect,
+		)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1126,7 +1199,9 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		s, e.Right, err = ParseExprAdditive(
+			s, variables, varRefs, expect,
+		)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1138,7 +1213,9 @@ func ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		s, e.Right, err = ParseExprAdditive(
+			s, variables, varRefs, expect,
+		)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1151,7 +1228,9 @@ func ParseExprRelational(
 		s = s.consumeIgnored()
 
 		si := s
-		s, e.Right, err = ParseExprAdditive(s, varNames, expect)
+		s, e.Right, err = ParseExprAdditive(
+			s, variables, varRefs, expect,
+		)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1169,14 +1248,15 @@ func ParseExprRelational(
 
 func ParseExprEquality(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
 
 	var err Error
 	var exprLeft Expression
-	s, exprLeft, err = ParseExprRelational(s, varNames, expect)
+	s, exprLeft, err = ParseExprRelational(s, variables, varRefs, expect)
 	if err.IsErr() {
 		return s, nil, err
 	}
@@ -1189,7 +1269,7 @@ func ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprRelational(s, varNames, expect)
+		s, e.Right, err = ParseExprRelational(s, variables, varRefs, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1206,7 +1286,7 @@ func ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprRelational(s, varNames, expect)
+		s, e.Right, err = ParseExprRelational(s, variables, varRefs, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1225,7 +1305,8 @@ func ParseExprEquality(
 
 func ParseExprLogicalOr(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	e := &ExprLogicalOr{Location: s.Location}
@@ -1233,7 +1314,7 @@ func ParseExprLogicalOr(
 	var err Error
 	for {
 		var expr Expression
-		s, expr, err = ParseExprLogicalAnd(s, varNames, expect)
+		s, expr, err = ParseExprLogicalAnd(s, variables, varRefs, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1255,7 +1336,8 @@ func ParseExprLogicalOr(
 
 func ParseExprLogicalAnd(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	e := &ExprLogicalAnd{Location: s.Location}
@@ -1263,7 +1345,7 @@ func ParseExprLogicalAnd(
 	var err Error
 	for {
 		var expr Expression
-		s, expr, err = ParseExprConstr(s, varNames, expect)
+		s, expr, err = ParseExprConstr(s, variables, varRefs, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1285,7 +1367,8 @@ func ParseExprLogicalAnd(
 
 func ParseExprConstr(
 	s source,
-	varNames map[string]struct{},
+	variables map[string]*VariableDefinition,
+	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
@@ -1294,7 +1377,7 @@ func ParseExprConstr(
 	var err Error
 
 	if expect == expectValue {
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1307,7 +1390,7 @@ func ParseExprConstr(
 	if s, ok = s.consume("!="); ok {
 		s = s.consumeIgnored()
 
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1322,7 +1405,7 @@ func ParseExprConstr(
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1343,7 +1426,7 @@ func ParseExprConstr(
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1364,7 +1447,7 @@ func ParseExprConstr(
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1385,7 +1468,7 @@ func ParseExprConstr(
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1412,7 +1495,7 @@ func ParseExprConstr(
 			var err Error
 
 			si := s
-			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1433,7 +1516,7 @@ func ParseExprConstr(
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1454,7 +1537,7 @@ func ParseExprConstr(
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1475,7 +1558,7 @@ func ParseExprConstr(
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1496,7 +1579,7 @@ func ParseExprConstr(
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, varNames, expectValue)
+			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 			if err.IsErr() {
 				return s, nil, err
 			}
@@ -1516,7 +1599,7 @@ func ParseExprConstr(
 		}
 
 		si := s
-		s, expr, err = ParseExprEquality(s, varNames, expectValue)
+		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1535,7 +1618,7 @@ func ParseExprConstr(
 		}, Error{}
 	}
 
-	s, expr, err = ParseExprEquality(s, varNames, expectValue)
+	s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
 	if err.IsErr() {
 		return s, nil, err
 	}
