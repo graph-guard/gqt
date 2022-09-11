@@ -88,7 +88,7 @@ func ExecDirMD(
 					if input[len(input)-1] == '\n' {
 						input = input[:len(input)-1]
 					}
-					if output[len(output)-1] == '\n' {
+					if output != "" && output[len(output)-1] == '\n' {
 						output = output[:len(output)-1]
 					}
 
