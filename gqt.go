@@ -28,9 +28,7 @@ func (t OperationType) String() string {
 }
 
 type (
-	Location struct {
-		Index, Line, Column int
-	}
+	Location struct{ Index, Line, Column int }
 
 	Operation struct {
 		Location
@@ -47,6 +45,7 @@ type (
 
 	SelectionField struct {
 		Location
+		Parent     any
 		Name       string
 		Arguments  []*Argument
 		Selections []Selection
@@ -54,6 +53,7 @@ type (
 
 	Argument struct {
 		Location
+		Parent             any
 		Name               string
 		AssociatedVariable *VariableDefinition
 		Constraint         Expression
@@ -104,194 +104,231 @@ type (
 
 	ExprConstrEquals struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrNotEquals struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLess struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLessOrEqual struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrGreater struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrGreaterOrEqual struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLenEquals struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLenNotEquals struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLenLess struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLenLessOrEqual struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLenGreater struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprConstrLenGreaterOrEqual struct {
 		Location
-		Value Expression
+		Parent any
+		Value  Expression
 	}
 
 	ExprParentheses struct {
 		Location
+		Parent     any
 		Expression Expression
 	}
 
 	ExprLogicalNegation struct {
 		Location
+		Parent     any
 		Expression Expression
 	}
 
 	ExprModulo struct {
 		Location
+		Parent   any
 		Dividend Expression
 		Divisor  Expression
 	}
 
 	ExprDivision struct {
 		Location
+		Parent   any
 		Dividend Expression
 		Divisor  Expression
 	}
 
 	ExprMultiplication struct {
 		Location
+		Parent        any
 		Multiplicant  Expression
 		Multiplicator Expression
 	}
 
 	ExprAddition struct {
 		Location
+		Parent      any
 		AddendLeft  Expression
 		AddendRight Expression
 	}
 
 	ExprSubtraction struct {
 		Location
+		Parent     any
 		Minuend    Expression
 		Subtrahend Expression
 	}
 
 	ExprEqual struct {
 		Location
-		Left  Expression
-		Right Expression
+		Parent any
+		Left   Expression
+		Right  Expression
 	}
 
 	ExprNotEqual struct {
 		Location
-		Left  Expression
-		Right Expression
+		Parent any
+		Left   Expression
+		Right  Expression
 	}
 
 	ExprLess struct {
 		Location
-		Left  Expression
-		Right Expression
+		Parent any
+		Left   Expression
+		Right  Expression
 	}
 
 	ExprLessOrEqual struct {
 		Location
-		Left  Expression
-		Right Expression
+		Parent any
+		Left   Expression
+		Right  Expression
 	}
 
 	ExprGreater struct {
 		Location
-		Left  Expression
-		Right Expression
+		Parent any
+		Left   Expression
+		Right  Expression
 	}
 
 	ExprGreaterOrEqual struct {
 		Location
-		Left  Expression
-		Right Expression
+		Parent any
+		Left   Expression
+		Right  Expression
 	}
 
 	ExprLogicalAnd struct {
 		Location
+		Parent      any
 		Expressions []Expression
 	}
 
 	ExprLogicalOr struct {
 		Location
+		Parent      any
 		Expressions []Expression
 	}
 
 	Int struct {
 		Location
-		Value int64
+		Parent any
+		Value  int64
 	}
 
 	Float struct {
 		Location
-		Value float64
+		Parent any
+		Value  float64
 	}
 
 	String struct {
 		Location
-		Value string
+		Parent any
+		Value  string
 	}
 
 	True struct {
 		Location
+		Parent any
 	}
 
 	False struct {
 		Location
+		Parent any
 	}
 
 	Null struct {
 		Location
+		Parent any
 	}
 
 	Enum struct {
 		Location
-		Value string
+		Parent any
+		Value  string
 	}
 
 	Array struct {
 		Location
-		Items []Expression
+		Parent any
+		Items  []Expression
 	}
 
 	Object struct {
 		Location
+		Parent any
 		Fields []*ObjectField
 	}
 
 	ObjectField struct {
 		Location
+		Parent             any
 		Name               string
 		AssociatedVariable *VariableDefinition
 		Constraint         Expression
@@ -299,17 +336,20 @@ type (
 
 	Variable struct {
 		Location
-		Name string
+		Parent any
+		Name   string
 	}
 
 	SelectionMax struct {
 		Location
-		Limit      int
-		Selections []Selection
+		Parent  any
+		Limit   int
+		Options []Selection
 	}
 
 	SelectionInlineFrag struct {
 		Location
+		Parent        any
 		TypeCondition string
 		Selections    []Selection
 	}
@@ -426,6 +466,12 @@ func Parse(
 	if s, o.Selections, err = ParseSelectionSet(
 		s, variables, &varRefs,
 	); err.IsErr() {
+		return nil, nil, err
+	}
+	for _, sel := range o.Selections {
+		setParent(sel, o)
+	}
+	if err := validateSelectionSet(s.s, o.Selections); err.IsErr() {
 		return nil, nil, err
 	}
 
@@ -546,18 +592,77 @@ func ParseSelectionSet(
 		}
 		sel.Name = string(name)
 
+		s = s.consumeIgnored()
+
+		if sel.Name == "max" {
+			var maxNum any
+			sBeforeMaxNum := s
+			if s, maxNum, _ = s.ParseNumber(); maxNum != nil {
+				// Max
+				s = s.consumeIgnored()
+				maxInt, ok := maxNum.(*Int)
+
+				if !ok || maxInt.Value < 1 {
+					return sBeforeMaxNum, nil, errMsg(
+						sBeforeMaxNum, "maximum number of options"+
+							" must be an unsigned integer greater 0",
+					)
+				}
+
+				var options []Selection
+				var err Error
+				sBeforeOptionsBlock := s
+				if s, options, err = ParseSelectionSet(
+					s, variables, varRefs,
+				); err.IsErr() {
+					return s, nil, err
+				}
+
+				for _, option := range options {
+					if v, ok := option.(*SelectionMax); ok {
+						return s, nil, errMsg(source{
+							s:        s.s,
+							Location: v.Location,
+						}, "nested max block")
+					}
+				}
+
+				if len(options) < 2 {
+					return sBeforeOptionsBlock, nil, errMsg(
+						sBeforeOptionsBlock,
+						"max block must have at least 2 selection options",
+					)
+				} else if maxInt.Value > int64(len(options)-1) {
+					return sBeforeMaxNum, nil, errMsg(
+						sBeforeMaxNum,
+						"max selections number exceeds number of options-1",
+					)
+				}
+
+				e := &SelectionMax{
+					Location: sBeforeName.Location,
+					Limit:    int(maxInt.Value),
+					Options:  options,
+				}
+				selections = append(selections, e)
+				continue
+			}
+		}
+
 		if _, ok := fields[sel.Name]; ok {
 			return sBeforeName, nil, errMsg(sBeforeName, "redeclared field")
 		}
 		fields[sel.Name] = struct{}{}
 
-		s = s.consumeIgnored()
-
 		if s.peek1('(') {
 			var err Error
-			s, sel.Arguments, err = ParseArguments(s, variables, varRefs)
-			if err.IsErr() {
+			if s, sel.Arguments, err = ParseArguments(
+				s, variables, varRefs,
+			); err.IsErr() {
 				return s, nil, err
+			}
+			for _, arg := range sel.Arguments {
+				setParent(arg, sel)
 			}
 		}
 
@@ -565,8 +670,15 @@ func ParseSelectionSet(
 
 		if s.peek1('{') {
 			var err Error
-			s, sel.Selections, err = ParseSelectionSet(s, variables, varRefs)
-			if err.IsErr() {
+			if s, sel.Selections, err = ParseSelectionSet(
+				s, variables, varRefs,
+			); err.IsErr() {
+				return s, nil, err
+			}
+			for _, sub := range sel.Selections {
+				setParent(sub, sel)
+			}
+			if err := validateSelectionSet(s.s, sel.Selections); err.IsErr() {
 				return s, nil, err
 			}
 		}
@@ -617,6 +729,9 @@ func ParseInlineFrag(
 	s, sels, err = ParseSelectionSet(s, variables, varRefs)
 	if err.IsErr() {
 		return s, nil, err
+	}
+	for _, sel := range sels {
+		setParent(sel, inlineFrag)
 	}
 
 	inlineFrag.Selections = sels
@@ -709,6 +824,7 @@ func ParseArguments(
 			if err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, arg)
 			arg.Constraint = expr
 		}
 
@@ -757,6 +873,7 @@ func ParseValue(
 		if err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Expression, e)
 
 		if s, ok = s.consume(")"); !ok {
 			return s, nil, errUnexp(s, "missing closing parenthesis")
@@ -812,6 +929,7 @@ func ParseValue(
 			if err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, e)
 
 			e.Items = append(e.Items, expr)
 
@@ -850,7 +968,10 @@ func ParseValue(
 			s = s.consumeIgnored()
 
 			sBeforeName := s
-			fld := &ObjectField{Location: s.Location}
+			fld := &ObjectField{
+				Location: s.Location,
+				Parent:   o,
+			}
 			if s, name = s.consumeName(); name == nil {
 				return s, nil, errUnexp(s, "expected object field name")
 			}
@@ -910,6 +1031,7 @@ func ParseValue(
 				if err.IsErr() {
 					return s, nil, err
 				}
+				setParent(expr, fld)
 				fld.Constraint = expr
 			}
 
@@ -962,10 +1084,12 @@ func ParseExprUnary(
 		s = s.consumeIgnored()
 
 		si := s
-		s, e.Expression, err = ParseValue(s, variables, varRefs, expect)
-		if err.IsErr() {
+		if s, e.Expression, err = ParseValue(
+			s, variables, varRefs, expect,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Expression, e)
 
 		if !isBoolean(e.Expression) {
 			return s, nil, errTypef(
@@ -989,8 +1113,9 @@ func ParseExprMultiplicative(
 
 	var result Expression
 	var err Error
-	s, result, err = ParseExprUnary(s, variables, varRefs, expect)
-	if err.IsErr() {
+	if s, result, err = ParseExprUnary(
+		s, variables, varRefs, expect,
+	); err.IsErr() {
 		return s, nil, err
 	}
 
@@ -1000,7 +1125,11 @@ func ParseExprMultiplicative(
 		s, selected = s.consumeEitherOf3("*", "/", "%")
 		switch selected {
 		case 0:
-			e := &ExprMultiplication{Location: si.Location, Multiplicant: result}
+			e := &ExprMultiplication{
+				Location:     si.Location,
+				Multiplicant: result,
+			}
+			setParent(e.Multiplicant, e)
 
 			if !isNumeric(e.Multiplicant) {
 				return s, nil, errTypef(
@@ -1010,12 +1139,12 @@ func ParseExprMultiplicative(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Multiplicator, err = ParseExprUnary(
+			if s, e.Multiplicator, err = ParseExprUnary(
 				s, variables, varRefs, expect,
-			)
-			if err.IsErr() {
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(e.Multiplicator, e)
 
 			if !isNumeric(e.Multiplicator) {
 				return s, nil, errTypef(
@@ -1026,7 +1155,11 @@ func ParseExprMultiplicative(
 			s = s.consumeIgnored()
 			result = e
 		case 1:
-			e := &ExprDivision{Location: si.Location, Dividend: result}
+			e := &ExprDivision{
+				Location: si.Location,
+				Dividend: result,
+			}
+			setParent(e.Dividend, e)
 
 			if !isNumeric(e.Dividend) {
 				return s, nil, errTypef(
@@ -1036,12 +1169,12 @@ func ParseExprMultiplicative(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Divisor, err = ParseExprUnary(
+			if s, e.Divisor, err = ParseExprUnary(
 				s, variables, varRefs, expect,
-			)
-			if err.IsErr() {
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(e.Divisor, e)
 
 			if !isNumeric(e.Divisor) {
 				return s, nil, errTypef(
@@ -1052,7 +1185,11 @@ func ParseExprMultiplicative(
 			s = s.consumeIgnored()
 			result = e
 		case 2:
-			e := &ExprModulo{Location: si.Location, Dividend: result}
+			e := &ExprModulo{
+				Location: si.Location,
+				Dividend: result,
+			}
+			setParent(e.Dividend, e)
 
 			if !isNumeric(e.Dividend) {
 				return s, nil, errTypef(
@@ -1062,10 +1199,12 @@ func ParseExprMultiplicative(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Divisor, err = ParseExprUnary(s, variables, varRefs, expect)
-			if err.IsErr() {
+			if s, e.Divisor, err = ParseExprUnary(
+				s, variables, varRefs, expect,
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(e.Divisor, e)
 
 			if !isNumeric(e.Divisor) {
 				return s, nil, errTypef(
@@ -1092,8 +1231,9 @@ func ParseExprAdditive(
 
 	var result Expression
 	var err Error
-	s, result, err = ParseExprMultiplicative(s, variables, varRefs, expect)
-	if err.IsErr() {
+	if s, result, err = ParseExprMultiplicative(
+		s, variables, varRefs, expect,
+	); err.IsErr() {
 		return s, nil, err
 	}
 
@@ -1103,7 +1243,11 @@ func ParseExprAdditive(
 		s, selected = s.consumeEitherOf3("+", "-", "")
 		switch selected {
 		case 0:
-			e := &ExprAddition{Location: si.Location, AddendLeft: result}
+			e := &ExprAddition{
+				Location:   si.Location,
+				AddendLeft: result,
+			}
+			setParent(e.AddendLeft, e)
 
 			if !isNumeric(e.AddendLeft) {
 				return s, nil, errTypef(
@@ -1113,12 +1257,12 @@ func ParseExprAdditive(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.AddendRight, err = ParseExprMultiplicative(
+			if s, e.AddendRight, err = ParseExprMultiplicative(
 				s, variables, varRefs, expect,
-			)
-			if err.IsErr() {
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(e.AddendRight, e)
 
 			if !isNumeric(e.AddendRight) {
 				return s, nil, errTypef(
@@ -1129,7 +1273,11 @@ func ParseExprAdditive(
 			s = s.consumeIgnored()
 			result = e
 		case 1:
-			e := &ExprSubtraction{Location: si.Location, Minuend: result}
+			e := &ExprSubtraction{
+				Location: si.Location,
+				Minuend:  result,
+			}
+			setParent(e.Minuend, e)
 
 			if !isNumeric(e.Minuend) {
 				return s, nil, errTypef(
@@ -1139,12 +1287,12 @@ func ParseExprAdditive(
 
 			s = s.consumeIgnored()
 			si := s
-			s, e.Subtrahend, err = ParseExprMultiplicative(
+			if s, e.Subtrahend, err = ParseExprMultiplicative(
 				s, variables, varRefs, expect,
-			)
-			if err.IsErr() {
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(e.Subtrahend, e)
 
 			if !isNumeric(e.Subtrahend) {
 				return s, nil, errTypef(
@@ -1171,10 +1319,9 @@ func ParseExprRelational(
 
 	var left Expression
 	var err Error
-	s, left, err = ParseExprAdditive(
+	if s, left, err = ParseExprAdditive(
 		s, variables, varRefs, expect,
-	)
-	if err.IsErr() {
+	); err.IsErr() {
 		return s, nil, err
 	}
 
@@ -1182,59 +1329,75 @@ func ParseExprRelational(
 
 	var ok bool
 	if s, ok = s.consume("<="); ok {
-		e := &ExprLessOrEqual{Location: l, Left: left}
+		e := &ExprLessOrEqual{
+			Location: l,
+			Left:     left,
+		}
+		setParent(e.Left, e)
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprAdditive(
+		if s, e.Right, err = ParseExprAdditive(
 			s, variables, varRefs, expect,
-		)
-		if err.IsErr() {
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Right, e)
 
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume(">="); ok {
-		e := &ExprGreaterOrEqual{Location: l, Left: left}
+		e := &ExprGreaterOrEqual{
+			Location: l,
+			Left:     left,
+		}
+		setParent(e.Left, e)
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprAdditive(
+		if s, e.Right, err = ParseExprAdditive(
 			s, variables, varRefs, expect,
-		)
-		if err.IsErr() {
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Right, e)
 
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume("<"); ok {
-		e := &ExprLess{Location: l, Left: left}
+		e := &ExprLess{
+			Location: l,
+			Left:     left,
+		}
+		setParent(e.Left, e)
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprAdditive(
+		if s, e.Right, err = ParseExprAdditive(
 			s, variables, varRefs, expect,
-		)
-		if err.IsErr() {
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Right, e)
 
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	} else if s, ok = s.consume(">"); ok {
-		e := &ExprGreater{Location: l, Left: left}
+		e := &ExprGreater{
+			Location: l,
+			Left:     left,
+		}
+		setParent(e.Left, e)
 
 		s = s.consumeIgnored()
 
 		si := s
-		s, e.Right, err = ParseExprAdditive(
+		if s, e.Right, err = ParseExprAdditive(
 			s, variables, varRefs, expect,
-		)
-		if err.IsErr() {
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Right, e)
 
 		if !isNumeric(e.Right) {
 			return s, nil, errTypef(si, "can't use %s as number", e.Type())
@@ -1257,8 +1420,9 @@ func ParseExprEquality(
 
 	var err Error
 	var exprLeft Expression
-	s, exprLeft, err = ParseExprRelational(s, variables, varRefs, expect)
-	if err.IsErr() {
+	if s, exprLeft, err = ParseExprRelational(
+		s, variables, varRefs, expect,
+	); err.IsErr() {
 		return s, nil, err
 	}
 
@@ -1266,14 +1430,20 @@ func ParseExprEquality(
 
 	var ok bool
 	if s, ok = s.consume("=="); ok {
-		e := &ExprEqual{Location: si.Location, Left: exprLeft}
+		e := &ExprEqual{
+			Location: si.Location,
+			Left:     exprLeft,
+		}
+		setParent(e.Left, e)
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprRelational(s, variables, varRefs, expect)
-		if err.IsErr() {
+		if s, e.Right, err = ParseExprRelational(
+			s, variables, varRefs, expect,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Right, e)
 		s = s.consumeIgnored()
 
 		if err = assumeSameType(si, e.Left, e.Right); err.IsErr() {
@@ -1283,14 +1453,20 @@ func ParseExprEquality(
 		return s, e, Error{}
 	}
 	if s, ok = s.consume("!="); ok {
-		e := &ExprNotEqual{Location: si.Location, Left: exprLeft}
+		e := &ExprNotEqual{
+			Location: si.Location,
+			Left:     exprLeft,
+		}
+		setParent(e.Left, e)
 
 		s = s.consumeIgnored()
 
-		s, e.Right, err = ParseExprRelational(s, variables, varRefs, expect)
-		if err.IsErr() {
+		if s, e.Right, err = ParseExprRelational(
+			s, variables, varRefs, expect,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(e.Right, e)
 		s = s.consumeIgnored()
 
 		if err = assumeSameType(si, e.Left, e.Right); err.IsErr() {
@@ -1315,10 +1491,12 @@ func ParseExprLogicalOr(
 	var err Error
 	for {
 		var expr Expression
-		s, expr, err = ParseExprLogicalAnd(s, variables, varRefs, expect)
-		if err.IsErr() {
+		if s, expr, err = ParseExprLogicalAnd(
+			s, variables, varRefs, expect,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
 		e.Expressions = append(e.Expressions, expr)
 
 		s = s.consumeIgnored()
@@ -1346,10 +1524,12 @@ func ParseExprLogicalAnd(
 	var err Error
 	for {
 		var expr Expression
-		s, expr, err = ParseExprConstr(s, variables, varRefs, expect)
-		if err.IsErr() {
+		if s, expr, err = ParseExprConstr(
+			s, variables, varRefs, expect,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
 		e.Expressions = append(e.Expressions, expr)
 
 		s = s.consumeIgnored()
@@ -1378,8 +1558,9 @@ func ParseExprConstr(
 	var err Error
 
 	if expect == expectValue {
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
 			return s, nil, err
 		}
 
@@ -1389,27 +1570,38 @@ func ParseExprConstr(
 	}
 
 	if s, ok = s.consume("!="); ok {
-		s = s.consumeIgnored()
-
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
-			return s, nil, err
-		}
-
-		s = s.consumeIgnored()
-
-		return s, &ExprConstrNotEquals{
+		e := &ExprConstrNotEquals{
 			Location: l,
 			Value:    expr,
-		}, Error{}
+		}
+		s = s.consumeIgnored()
+
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
+			return s, nil, err
+		}
+		setParent(expr, e)
+		e.Value = expr
+
+		s = s.consumeIgnored()
+
+		return s, e, Error{}
 	} else if s, ok = s.consume("<="); ok {
+		e := &ExprConstrLessOrEqual{
+			Location: l,
+			Value:    expr,
+		}
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
+		e.Value = expr
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
@@ -1419,18 +1611,22 @@ func ParseExprConstr(
 
 		s = s.consumeIgnored()
 
-		return s, &ExprConstrLessOrEqual{
-			Location: l,
-			Value:    expr,
-		}, Error{}
+		return s, e, Error{}
 	} else if s, ok = s.consume(">="); ok {
+		e := &ExprConstrGreaterOrEqual{
+			Location: l,
+			Value:    expr,
+		}
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
+		e.Value = expr
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
@@ -1440,18 +1636,22 @@ func ParseExprConstr(
 
 		s = s.consumeIgnored()
 
-		return s, &ExprConstrGreaterOrEqual{
-			Location: l,
-			Value:    expr,
-		}, Error{}
+		return s, e, Error{}
 	} else if s, ok = s.consume("<"); ok {
+		e := &ExprConstrLess{
+			Location: l,
+			Value:    expr,
+		}
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
+		e.Value = expr
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
@@ -1461,18 +1661,22 @@ func ParseExprConstr(
 
 		s = s.consumeIgnored()
 
-		return s, &ExprConstrLess{
-			Location: l,
-			Value:    expr,
-		}, Error{}
+		return s, e, Error{}
 	} else if s, ok = s.consume(">"); ok {
+		e := &ExprConstrGreater{
+			Location: l,
+			Value:    expr,
+		}
 		s = s.consumeIgnored()
 
 		si := s
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
+		e.Value = expr
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
@@ -1482,24 +1686,28 @@ func ParseExprConstr(
 
 		s = s.consumeIgnored()
 
-		return s, &ExprConstrGreater{
-			Location: l,
-			Value:    expr,
-		}, Error{}
+		return s, e, Error{}
 	} else if s, ok = s.consume("len"); ok {
 		s = s.consumeIgnored()
 
 		if s, ok = s.consume("!="); ok {
+			e := &ExprConstrLenNotEquals{
+				Location: l,
+				Value:    expr,
+			}
 			s = s.consumeIgnored()
 
 			var expr Expression
 			var err Error
 
 			si := s
-			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-			if err.IsErr() {
+			if s, expr, err = ParseExprEquality(
+				s, variables, varRefs, expectValue,
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, e)
+			e.Value = expr
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
@@ -1509,18 +1717,22 @@ func ParseExprConstr(
 
 			s = s.consumeIgnored()
 
-			return s, &ExprConstrLenNotEquals{
-				Location: l,
-				Value:    expr,
-			}, Error{}
+			return s, e, Error{}
 		} else if s, ok = s.consume("<="); ok {
+			e := &ExprConstrLenLessOrEqual{
+				Location: l,
+				Value:    expr,
+			}
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-			if err.IsErr() {
+			if s, expr, err = ParseExprEquality(
+				s, variables, varRefs, expectValue,
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, e)
+			e.Value = expr
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
@@ -1530,18 +1742,22 @@ func ParseExprConstr(
 
 			s = s.consumeIgnored()
 
-			return s, &ExprConstrLenLessOrEqual{
-				Location: l,
-				Value:    expr,
-			}, Error{}
+			return s, e, Error{}
 		} else if s, ok = s.consume(">="); ok {
+			e := &ExprConstrLenGreaterOrEqual{
+				Location: l,
+				Value:    expr,
+			}
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-			if err.IsErr() {
+			if s, expr, err = ParseExprEquality(
+				s, variables, varRefs, expectValue,
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, e)
+			e.Value = expr
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
@@ -1551,18 +1767,22 @@ func ParseExprConstr(
 
 			s = s.consumeIgnored()
 
-			return s, &ExprConstrLenGreaterOrEqual{
-				Location: l,
-				Value:    expr,
-			}, Error{}
+			return s, e, Error{}
 		} else if s, ok = s.consume("<"); ok {
+			e := &ExprConstrLenLess{
+				Location: l,
+				Value:    expr,
+			}
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-			if err.IsErr() {
+			if s, expr, err = ParseExprEquality(
+				s, variables, varRefs, expectValue,
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, e)
+			e.Value = expr
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
@@ -1572,18 +1792,22 @@ func ParseExprConstr(
 
 			s = s.consumeIgnored()
 
-			return s, &ExprConstrLenLess{
-				Location: l,
-				Value:    expr,
-			}, Error{}
+			return s, e, Error{}
 		} else if s, ok = s.consume(">"); ok {
+			e := &ExprConstrLenGreater{
+				Location: l,
+				Value:    expr,
+			}
 			s = s.consumeIgnored()
 
 			si := s
-			s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-			if err.IsErr() {
+			if s, expr, err = ParseExprEquality(
+				s, variables, varRefs, expectValue,
+			); err.IsErr() {
 				return s, nil, err
 			}
+			setParent(expr, e)
+			e.Value = expr
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
@@ -1593,17 +1817,22 @@ func ParseExprConstr(
 
 			s = s.consumeIgnored()
 
-			return s, &ExprConstrLenGreater{
-				Location: l,
-				Value:    expr,
-			}, Error{}
+			return s, e, Error{}
+		}
+
+		e := &ExprConstrGreater{
+			Location: l,
+			Value:    expr,
 		}
 
 		si := s
-		s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-		if err.IsErr() {
+		if s, expr, err = ParseExprEquality(
+			s, variables, varRefs, expectValue,
+		); err.IsErr() {
 			return s, nil, err
 		}
+		setParent(expr, e)
+		e.Value = expr
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
@@ -1613,23 +1842,25 @@ func ParseExprConstr(
 
 		s = s.consumeIgnored()
 
-		return s, &ExprConstrGreater{
-			Location: l,
-			Value:    expr,
-		}, Error{}
+		return s, e, Error{}
 	}
 
-	s, expr, err = ParseExprEquality(s, variables, varRefs, expectValue)
-	if err.IsErr() {
+	e := &ExprConstrEquals{
+		Location: l,
+		Value:    expr,
+	}
+
+	if s, expr, err = ParseExprEquality(
+		s, variables, varRefs, expectValue,
+	); err.IsErr() {
 		return s, nil, err
 	}
+	setParent(expr, e)
+	e.Value = expr
 
 	s = s.consumeIgnored()
 
-	return s, &ExprConstrEquals{
-		Location: l,
-		Value:    expr,
-	}, Error{}
+	return s, e, Error{}
 }
 
 func (s source) ParseNumber() (_ source, number any, err Error) {
@@ -1993,3 +2224,196 @@ func assumeSameType(s source, left, right Expression) Error {
 	}
 	return Error{}
 }
+
+func setParent(t, parent any) {
+	switch v := t.(type) {
+	case *Variable:
+		v.Parent = parent
+	case *Int:
+		v.Parent = parent
+	case *Float:
+		v.Parent = parent
+	case *String:
+		v.Parent = parent
+	case *True:
+		v.Parent = parent
+	case *False:
+		v.Parent = parent
+	case *Null:
+		v.Parent = parent
+	case *Enum:
+		v.Parent = parent
+	case *Array:
+		v.Parent = parent
+	case *Object:
+		v.Parent = parent
+	case *ExprModulo:
+		v.Parent = parent
+	case *ExprDivision:
+		v.Parent = parent
+	case *ExprMultiplication:
+		v.Parent = parent
+	case *ExprAddition:
+		v.Parent = parent
+	case *ExprSubtraction:
+		v.Parent = parent
+	case *ExprEqual:
+		v.Parent = parent
+	case *ExprNotEqual:
+		v.Parent = parent
+	case *ExprLess:
+		v.Parent = parent
+	case *ExprGreater:
+		v.Parent = parent
+	case *ExprLessOrEqual:
+		v.Parent = parent
+	case *ExprGreaterOrEqual:
+		v.Parent = parent
+	case *ExprParentheses:
+		v.Parent = parent
+	case *ExprConstrEquals:
+		v.Parent = parent
+	case *ExprConstrNotEquals:
+		v.Parent = parent
+	case *ExprConstrLess:
+		v.Parent = parent
+	case *ExprConstrGreater:
+		v.Parent = parent
+	case *ExprConstrLessOrEqual:
+		v.Parent = parent
+	case *ExprConstrGreaterOrEqual:
+		v.Parent = parent
+	case *ExprConstrLenEquals:
+		v.Parent = parent
+	case *ExprConstrLenNotEquals:
+		v.Parent = parent
+	case *ExprConstrLenLess:
+		v.Parent = parent
+	case *ExprConstrLenGreater:
+		v.Parent = parent
+	case *ExprConstrLenLessOrEqual:
+		v.Parent = parent
+	case *ExprConstrLenGreaterOrEqual:
+		v.Parent = parent
+	case *ExprLogicalAnd:
+		v.Parent = parent
+	case *ExprLogicalOr:
+		v.Parent = parent
+	case *ExprLogicalNegation:
+		v.Parent = parent
+	case *SelectionInlineFrag:
+		v.Parent = parent
+	case *ObjectField:
+		v.Parent = parent
+	case *SelectionField:
+		v.Parent = parent
+	case *Argument:
+		v.Parent = parent
+	case *SelectionMax:
+		v.Parent = parent
+	default:
+		panic(fmt.Errorf("unsupported type: %T", t))
+	}
+}
+
+func validateSelectionSet(s []byte, set []Selection) Error {
+	var maxs []*SelectionMax
+	fields := map[string]*SelectionField{}
+	inlineFrags := map[string]*SelectionInlineFrag{}
+	for _, s := range set {
+		switch v := s.(type) {
+		case *SelectionMax:
+			maxs = append(maxs, v)
+		case *SelectionField:
+			fields[v.Name] = v
+		case *SelectionInlineFrag:
+			inlineFrags[v.TypeCondition] = v
+		}
+	}
+
+	if len(maxs) > 1 {
+		return errMsg(source{
+			s:        s,
+			Location: maxs[len(maxs)-1].Location,
+		}, "multiple max blocks in one selection set")
+	}
+
+	for _, m := range maxs {
+		for _, sel := range m.Options {
+			switch v := sel.(type) {
+			case *SelectionField:
+				if f, ok := fields[v.Name]; ok {
+					return errMsg(source{
+						s: s,
+						Location: furthestLocation(
+							f.Location, v.Location,
+						),
+					}, "redeclared field")
+				}
+			case *SelectionInlineFrag:
+				if c, ok := inlineFrags[v.TypeCondition]; ok {
+					return errMsg(source{
+						s: s,
+						Location: furthestLocation(
+							c.Location, v.Location,
+						),
+					}, "redeclared type condition")
+				}
+			}
+		}
+	}
+
+	return Error{}
+}
+
+func furthestLocation(a, b Location) Location {
+	if a.Index < b.Index {
+		return b
+	}
+	return a
+}
+
+// func Find[T any](document *Operation, path string) (t T) {
+// 	var currentNode any = document
+// 	i := strings.IndexAny(path, ".")
+// 	if i < 0 {
+// 		return
+// 	}
+// 	switch path[:i] {
+// 	case "query":
+// 		if document.Type != OperationTypeQuery {
+// 			return
+// 		}
+// 	case "mutation":
+// 		if document.Type != OperationTypeMutation {
+// 			return
+// 		}
+// 	case "subscription":
+// 		if document.Type != OperationTypeSubscription {
+// 			return
+// 		}
+// 	default:
+// 		return
+// 	}
+// 	path = path[i:]
+
+// 	for path != "" {
+// 		i := strings.IndexAny(path, ".|?")
+// 		if i < 0 {
+// 			break
+// 		}
+// 		next := path[:i]
+// 		if next == "" {
+// 			return
+// 		}
+// 		switch path[i] {
+// 		case '.':
+// 			// Field
+// 		case '|':
+// 			// Argument
+// 		case '?':
+// 			// Type condition
+// 		}
+// 	}
+// 	return
+// }

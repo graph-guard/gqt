@@ -421,6 +421,28 @@ func writeYAML(
 			}
 			written += n
 		}
+	case *SelectionMax:
+		if wrf(
+			"- SelectionMax[%d:%d](%d):",
+			v.Line, v.Column, v.Limit,
+		) {
+			return
+		}
+		if len(v.Options) > 0 {
+			if wrBR() {
+				return
+			}
+			writeIndent(indent + 1)
+			if wrf("options:") {
+				return
+			}
+			for _, a := range v.Options {
+				if n, err = writeYAML(w, indent+2, a); err != nil {
+					return
+				}
+				written += n
+			}
+		}
 	case *SelectionField:
 		colon := ""
 		if len(v.Selections) > 0 || len(v.Arguments) > 0 {
