@@ -1,1015 +1,129 @@
 package gqt_test
 
 import (
-	"fmt"
-	"path/filepath"
-	"runtime"
+	"bytes"
+	"embed"
 	"testing"
 
 	"github.com/graph-guard/gqt"
+	"github.com/graph-guard/gqt/internal/test"
+
 	"github.com/stretchr/testify/require"
+	yaml "gopkg.in/yaml.v3"
 )
 
-type KeyValueConstraintInterface interface {
-	Key() string
-	Content() gqt.Constraint
-}
+//go:embed test/error
+var errorFS embed.FS
 
-func TestConstraintKeyAndValue(t *testing.T) {
-	for _, td := range []struct {
-		input KeyValueConstraintInterface
-		key   string
-		value gqt.Constraint
-	}{
-		{
-			input: gqt.InputConstraint{
-				Name: "a",
-				Constraint: gqt.ConstraintValEqual{
-					Value: 88.0,
-				},
-			},
-			key: "a",
-			value: gqt.ConstraintValEqual{
-				Value: 88.0,
-			},
-		},
-		{
-			input: gqt.ObjectField{
-				Name: "a",
-				Value: gqt.ConstraintValNotEqual{
-					Value: 88.0,
-				},
-			},
-			key: "a",
-			value: gqt.ConstraintValNotEqual{
-				Value: 88.0,
-			},
-		},
-	} {
-		t.Run("", func(t *testing.T) {
-			key := td.input.Key()
-			value := td.input.Content()
-			require.Equal(t, td.key, key)
-			require.Equal(t, td.value, value)
-		})
-	}
-}
+//go:embed test/ast
+var astFS embed.FS
 
-var tests = []ExpectDoc{
-	Expect(`mutation {
-		a {
-			b(
-				x1: val = 1
-			) {
-				c
-				d
-			}
-		}
-	}
-	
-	query {
-		a {
-			b(
-				x1: val = 1
-			) {
-				c
-				d
-			}
-		}
-	}
-	
-	subscription {
-		a {
-			b(
-				x1: val = 1
-			) {
-				c
-				d
-			}
-		}
-	}`, gqt.Doc{
-		Mutation: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "a",
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "b",
-						InputConstraints: []gqt.InputConstraint{{
-							Name: "x1",
-							Constraint: gqt.ConstraintValEqual{
-								Value: int64(1),
-							},
-						}},
-						Selections: []gqt.Selection{
-							gqt.SelectionField{
-								Name: "c",
-							},
-							gqt.SelectionField{
-								Name: "d",
-							},
-						},
-					},
-				},
-			},
+func TestParseErr(t *testing.T) {
+	test.ExecDirMD(
+		t, errorFS, "test/error", "ERR: ",
+		func(t *testing.T, input, expectation string) {
+			d, vars, err := gqt.Parse([]byte(input))
+			require.Equal(
+				t, expectation, err.Error(),
+				"input: %q", input,
+			)
+			require.Zero(t, d)
+			require.Nil(t, vars)
 		},
-		Query: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "a",
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "b",
-						InputConstraints: []gqt.InputConstraint{{
-							Name: "x1",
-							Constraint: gqt.ConstraintValEqual{
-								Value: int64(1),
-							},
-						}},
-						Selections: []gqt.Selection{
-							gqt.SelectionField{
-								Name: "c",
-							},
-							gqt.SelectionField{
-								Name: "d",
-							},
-						},
-					},
-				},
-			},
-		},
-		Subscription: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "a",
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "b",
-						InputConstraints: []gqt.InputConstraint{{
-							Name: "x1",
-							Constraint: gqt.ConstraintValEqual{
-								Value: int64(1),
-							},
-						}},
-						Selections: []gqt.Selection{
-							gqt.SelectionField{
-								Name: "c",
-							},
-							gqt.SelectionField{
-								Name: "d",
-							},
-						},
-					},
-				},
-			},
-		},
-	}),
-	Expect(`query {
-		filesystemObject(id: any) {
-			name
-			... on File {
-				format
-			}
-			... on Directory {
-				objects {
-					... on File {
-						format
-					}
-				}
-			}
-		}
-	}`, gqt.Doc{
-		Query: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "filesystemObject",
-				InputConstraints: []gqt.InputConstraint{{
-					Name:       "id",
-					Constraint: gqt.ConstraintAny{},
-				}},
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "name",
-					},
-					gqt.SelectionInlineFragment{
-						TypeName: "File",
-						Selections: []gqt.Selection{
-							gqt.SelectionField{
-								Name: "format",
-							},
-						},
-					},
-					gqt.SelectionInlineFragment{
-						TypeName: "Directory",
-						Selections: []gqt.Selection{
-							gqt.SelectionField{
-								Name: "objects",
-								Selections: []gqt.Selection{
-									gqt.SelectionInlineFragment{
-										TypeName: "File",
-										Selections: []gqt.Selection{
-											gqt.SelectionField{
-												Name: "format",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}),
-	Expect(`query#comment after token
-	#comment after token
-	{#comment after token
-	#comment after token
-		a#comment after token
-		#comment after token
-	}#comment after token
-	#comment after token
-	mutation#comment after token
-	#comment after token
-	{#comment after token
-	#comment after token
-		a#comment after token
-		#comment after token
-		{#comment after token
-		#comment after token
-			b#comment after token
-			#comment after token
-			(#comment after token
-			#comment after token
-				x1#comment after token
-				#comment after token
-				:#comment after token
-				#comment after token
-				val#comment after token
-				#comment after token
-				=#comment after token
-				#comment after token
-				1#comment after token
-				#comment after token
-			)#comment after token
-			#comment after token
-			{#comment after token
-			#comment after token
-				c#comment after token
-				#comment after token
-				d#comment after token
-				#comment after token
-			}#comment after token
-			#comment after token
-			combine#comment after token
-			#comment after token
-			1#comment after token
-			#comment after token
-			{#comment after token
-			#comment after token
-				foo#comment after token
-				#comment after token
-				...#comment after token
-				#comment after token
-				on#comment after token
-				#comment after token
-				TypeCondition#comment after token
-				#comment after token
-				{#comment after token
-				#comment after token
-					f#comment after token
-					#comment after token
-				}#comment after token
-				#comment after token
-			}#comment after token
-			#comment after token
-		}#comment after token
-		#comment after token
-	}#comment after token
-	#comment after token`, gqt.Doc{
-		Query: []gqt.Selection{
-			gqt.SelectionField{Name: "a"},
-		},
-		Mutation: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "a",
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "b",
-						InputConstraints: []gqt.InputConstraint{
-							{
-								Name: "x1",
-								Constraint: gqt.ConstraintValEqual{
-									Value: int64(1),
-								},
-							},
-						},
-						Selections: []gqt.Selection{
-							gqt.SelectionField{Name: "c"},
-							gqt.SelectionField{Name: "d"},
-						},
-					},
-					gqt.ConstraintCombine{
-						MaxItems: 1,
-						Items: []gqt.Selection{
-							gqt.SelectionField{Name: "foo"},
-							gqt.SelectionInlineFragment{
-								TypeName: "TypeCondition",
-								Selections: []gqt.Selection{
-									gqt.SelectionField{Name: "f"},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}),
-	Expect(`mutation {
-		a(
-			y1: any
-			i1: val = 42
-			i2: val != 42
-			i3: val > 42
-			i4: val < 42
-			i5: val >= 42
-			i6: val <= 42
-			i7: val = 42.0
-			i8: val != 42.0
-			i9: val > 42.0
-			i10: val < 42.0
-			i11: val >= 42.0
-			i12: val <= 42.0
-			i13: val = "text"
-			i14: val != "text"
-			e1: val = ENUMVAL
-			e2: val != ENUMVAL
-			l1: len = 42
-			l2: len != 42
-			l3: len > 42
-			l4: len < 42
-			l5: len >= 42
-			l6: len <= 42
-			b1: bytelen = 42
-			b2: bytelen != 42
-			b3: bytelen > 42
-			b4: bytelen < 42
-			b5: bytelen >= 42
-			b6: bytelen <= 42
-			a1: val = []
-			a2: val = [ ... val < 10.0 ]
-			a3: val = [ val = "a", val = "b" ]
-			o1: val = {
-				of1: val = true
-				of2: val = false
-				oo2: val = {
-					oa1: val != null
-					oa2: any
-				}
-			}
-		) {b}
-	}`, gqt.Doc{
-		Mutation: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "a",
-				InputConstraints: []gqt.InputConstraint{{
-					Name:       "y1",
-					Constraint: gqt.ConstraintAny{},
-				}, {
-					Name: "i1",
-					Constraint: gqt.ConstraintValEqual{
-						Value: int64(42),
-					},
-				}, {
-					Name: "i2",
-					Constraint: gqt.ConstraintValNotEqual{
-						Value: int64(42),
-					},
-				}, {
-					Name: "i3",
-					Constraint: gqt.ConstraintValGreater{
-						Value: int64(42),
-					},
-				}, {
-					Name: "i4",
-					Constraint: gqt.ConstraintValLess{
-						Value: int64(42),
-					},
-				}, {
-					Name: "i5",
-					Constraint: gqt.ConstraintValGreaterOrEqual{
-						Value: int64(42),
-					},
-				}, {
-					Name: "i6",
-					Constraint: gqt.ConstraintValLessOrEqual{
-						Value: int64(42),
-					},
-				}, {
-					Name: "i7",
-					Constraint: gqt.ConstraintValEqual{
-						Value: float64(42),
-					},
-				}, {
-					Name: "i8",
-					Constraint: gqt.ConstraintValNotEqual{
-						Value: float64(42),
-					},
-				}, {
-					Name: "i9",
-					Constraint: gqt.ConstraintValGreater{
-						Value: float64(42),
-					},
-				}, {
-					Name: "i10",
-					Constraint: gqt.ConstraintValLess{
-						Value: float64(42),
-					},
-				}, {
-					Name: "i11",
-					Constraint: gqt.ConstraintValGreaterOrEqual{
-						Value: float64(42),
-					},
-				}, {
-					Name: "i12",
-					Constraint: gqt.ConstraintValLessOrEqual{
-						Value: float64(42),
-					},
-				}, {
-					Name: "i13",
-					Constraint: gqt.ConstraintValEqual{
-						Value: "text",
-					},
-				}, {
-					Name: "i14",
-					Constraint: gqt.ConstraintValNotEqual{
-						Value: "text",
-					},
-				}, {
-					Name: "e1",
-					Constraint: gqt.ConstraintValEqual{
-						Value: gqt.EnumValue("ENUMVAL"),
-					},
-				}, {
-					Name: "e2",
-					Constraint: gqt.ConstraintValNotEqual{
-						Value: gqt.EnumValue("ENUMVAL"),
-					},
-				}, {
-					Name: "l1",
-					Constraint: gqt.ConstraintLenEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "l2",
-					Constraint: gqt.ConstraintLenNotEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "l3",
-					Constraint: gqt.ConstraintLenGreater{
-						Value: uint(42),
-					},
-				}, {
-					Name: "l4",
-					Constraint: gqt.ConstraintLenLess{
-						Value: uint(42),
-					},
-				}, {
-					Name: "l5",
-					Constraint: gqt.ConstraintLenGreaterOrEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "l6",
-					Constraint: gqt.ConstraintLenLessOrEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "b1",
-					Constraint: gqt.ConstraintBytelenEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "b2",
-					Constraint: gqt.ConstraintBytelenNotEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "b3",
-					Constraint: gqt.ConstraintBytelenGreater{
-						Value: uint(42),
-					},
-				}, {
-					Name: "b4",
-					Constraint: gqt.ConstraintBytelenLess{
-						Value: uint(42),
-					},
-				}, {
-					Name: "b5",
-					Constraint: gqt.ConstraintBytelenGreaterOrEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "b6",
-					Constraint: gqt.ConstraintBytelenLessOrEqual{
-						Value: uint(42),
-					},
-				}, {
-					Name: "a1",
-					Constraint: gqt.ConstraintValEqual{
-						Value: gqt.ValueArray{},
-					},
-				}, {
-					Name: "a2",
-					Constraint: gqt.ConstraintMap{
-						Constraint: gqt.ConstraintValLess{
-							Value: 10.0,
-						},
-					},
-				}, {
-					Name: "a3",
-					Constraint: gqt.ConstraintValEqual{Value: gqt.ValueArray{
-						Items: []gqt.Constraint{
-							gqt.ConstraintValEqual{Value: "a"},
-							gqt.ConstraintValEqual{Value: "b"},
-						},
-					}},
-				}, {
-					Name: "o1",
-					Constraint: gqt.ConstraintValEqual{
-						Value: gqt.ValueObject{
-							Fields: []gqt.ObjectField{
-								{
-									Name:  "of1",
-									Value: gqt.ConstraintValEqual{Value: true},
-								}, {
-									Name:  "of2",
-									Value: gqt.ConstraintValEqual{Value: false},
-								}, {
-									Name: "oo2",
-									Value: gqt.ConstraintValEqual{
-										Value: gqt.ValueObject{
-											Fields: []gqt.ObjectField{
-												{
-													Name: "oa1",
-													Value: gqt.ConstraintValNotEqual{
-														Value: nil,
-													},
-												}, {
-													Name:  "oa2",
-													Value: gqt.ConstraintAny{},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}},
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "b",
-					},
-				},
-			},
-		},
-	}),
-	Expect(`mutation {
-		a(
-			a: val > 0.0 && val < 3.0
-			b: val > 0.0 && val < 9.0 && val != 5.0
-			c: val = 1.0 || val = 2.0
-			d: val = 1.0 || val = 2.0 || val = 3.0
-			e: bytelen > 3 && bytelen <= 10 ||
-				val = true ||
-				val = 1.0
-		) {b}
-	}`, gqt.Doc{
-		Mutation: []gqt.Selection{
-			gqt.SelectionField{
-				Name: "a",
-				InputConstraints: []gqt.InputConstraint{{
-					Name: "a",
-					Constraint: gqt.ConstraintAnd{
-						Constraints: []gqt.Constraint{
-							gqt.ConstraintValGreater{Value: float64(0)},
-							gqt.ConstraintValLess{Value: float64(3)},
-						},
-					},
-				}, {
-					Name: "b",
-					Constraint: gqt.ConstraintAnd{
-						Constraints: []gqt.Constraint{
-							gqt.ConstraintValGreater{Value: float64(0)},
-							gqt.ConstraintValLess{Value: float64(9)},
-							gqt.ConstraintValNotEqual{Value: float64(5)},
-						},
-					},
-				}, {
-					Name: "c",
-					Constraint: gqt.ConstraintOr{
-						Constraints: []gqt.Constraint{
-							gqt.ConstraintValEqual{Value: float64(1)},
-							gqt.ConstraintValEqual{Value: float64(2)},
-						},
-					},
-				}, {
-					Name: "d",
-					Constraint: gqt.ConstraintOr{
-						Constraints: []gqt.Constraint{
-							gqt.ConstraintValEqual{Value: float64(1)},
-							gqt.ConstraintValEqual{Value: float64(2)},
-							gqt.ConstraintValEqual{Value: float64(3)},
-						},
-					},
-				}, {
-					Name: "e",
-					Constraint: gqt.ConstraintOr{
-						Constraints: []gqt.Constraint{
-							gqt.ConstraintAnd{
-								Constraints: []gqt.Constraint{
-									gqt.ConstraintBytelenGreater{Value: uint(3)},
-									gqt.ConstraintBytelenLessOrEqual{Value: uint(10)},
-								},
-							},
-							gqt.ConstraintValEqual{Value: true},
-							gqt.ConstraintValEqual{Value: float64(1)},
-						},
-					},
-				}},
-				Selections: []gqt.Selection{
-					gqt.SelectionField{
-						Name: "b",
-					},
-				},
-			},
-		},
-	}), Expect(`query {
-		foo
-		combine 1 {
-			eitherThis
-			orThat
-		}
-	}`, gqt.Doc{
-		Query: []gqt.Selection{
-			gqt.SelectionField{Name: "foo"},
-			gqt.ConstraintCombine{
-				MaxItems: 1,
-				Items: []gqt.Selection{
-					gqt.SelectionField{Name: "eitherThis"},
-					gqt.SelectionField{Name: "orThat"},
-				},
-			},
-		},
-	}), Expect(`query {
-		combine
-		combine 2 {
-			... on EitherThis { f1 }
-			... on Those { f2 f3 }
-			... on OrThat { f4 }
-			Those
-		}
-	}`, gqt.Doc{
-		Query: []gqt.Selection{
-			gqt.SelectionField{Name: "combine"},
-			gqt.ConstraintCombine{
-				MaxItems: 2,
-				Items: []gqt.Selection{
-					gqt.SelectionInlineFragment{
-						TypeName: "EitherThis",
-						Selections: []gqt.Selection{
-							gqt.SelectionField{Name: "f1"},
-						},
-					},
-					gqt.SelectionInlineFragment{
-						TypeName: "Those",
-						Selections: []gqt.Selection{
-							gqt.SelectionField{Name: "f2"},
-							gqt.SelectionField{Name: "f3"},
-						},
-					},
-					gqt.SelectionInlineFragment{
-						TypeName: "OrThat",
-						Selections: []gqt.Selection{
-							gqt.SelectionField{Name: "f4"},
-						},
-					},
-					gqt.SelectionField{Name: "Those"},
-				},
-			},
-		},
-	})}
+	)
+}
 
 func TestParse(t *testing.T) {
-	for _, td := range tests {
-		t.Run(td.Decl, func(t *testing.T) {
-			d, err := gqt.Parse([]byte(td.Input))
-			require.Zero(t, err.Error())
-			require.False(t, err.IsErr())
-			require.Equal(t, td.Expect, d)
-		})
-	}
+	test.ExecDirMD(
+		t, astFS, "test/ast", "ERR: ",
+		func(t *testing.T, input, expectation string) {
+			var discard map[string]any
+			require.NoError(
+				t, yaml.Unmarshal([]byte(expectation), &discard),
+				"invalid expectation YAML",
+			)
+
+			o, vars, err := gqt.Parse([]byte(input))
+			require.False(t, err.IsErr(), "unexpected error: %v", err)
+			require.NotNil(t, vars)
+
+			{
+				var b bytes.Buffer
+				_, err := gqt.WriteYAML(&b, o)
+				require.NoError(t, err)
+				require.Equal(t, expectation, b.String())
+			}
+		},
+	)
 }
 
-var testsSemanticErr = []ExpectErr{
-	// Redundant query type
-	SyntaxErr(
-		`query { x } query { y }`,
-		"error at 12: redundant query type",
-	),
-	// Redundant mutation type
-	SyntaxErr(
-		`mutation { x } mutation { y }`,
-		"error at 15: redundant mutation type",
-	),
-	// Redundant subscription type
-	SyntaxErr(
-		`subscription { x } subscription { y }`,
-		"error at 19: redundant subscription type",
-	),
-	// Redundant field selection
-	SyntaxErr(
-		`query { x x }`,
-		"error at 10: redundant field selection",
-	),
-	// Redundant type condition
-	SyntaxErr(
-		`query {
-			... on T {x}
-			... on T {y}
-		}`,
-		"error at 27: redundant type condition",
-	),
-	// Redundant constraint
-	SyntaxErr(
-		`query { x(a: val = 3 a: val = 4) }`,
-		"error at 21: redundant constraint",
-	),
-	// Map multiple constraints
-	SyntaxErr(
-		`query {x(a: val = [ ... val=0 val=1 ])}`,
-		"error at 30: expected right square bracket",
-	),
-	// Nested combine constraints
-	SyntaxErr(
-		`query { combine 1 { combine 1 { baz faz } foo bar } }`,
-		"error at 20: nested combine constraint",
-	),
-	SyntaxErr(
-		`query { combine 1 { foo combine 1 { baz faz } bar } }`,
-		"error at 24: nested combine constraint",
-	),
-	// Invalid combine limit (non-integer)
-	SyntaxErr(
-		`query { combine 1.2 { foo bar } }`,
-		"error at 16: invalid combine limit, must be an integer greater 0",
-	),
-	// Invalid combine limit (negative)
-	SyntaxErr(
-		`query { combine -1 { foo bar } }`,
-		"error at 16: invalid combine limit, must be greater 0",
-	),
-	// Invalid combine limit (zero)
-	SyntaxErr(
-		`query { combine 0 { foo bar } }`,
-		"error at 16: invalid combine limit, must be greater 0",
-	),
-	// Invalid combine limit (equals number of items)
-	SyntaxErr(
-		`query { combine 2 { foo bar } }`,
-		"error at 16: invalid combine limit, must be greater 0 and smaller 2",
-	),
-	SyntaxErr(
-		`query { combine 3 { foo bar baz } }`,
-		"error at 16: invalid combine limit, must be greater 0 and smaller 3",
-	),
-	// Invalid combine limit (exceeds the number of items)
-	SyntaxErr(
-		`query { combine 3 { foo bar } }`,
-		"error at 16: invalid combine limit, must be greater 0 and smaller 2",
-	),
-	// Combine single item
-	SyntaxErr(
-		`query { combine 1 { foo } }`,
-		"error at 20: single combine item, "+
-			"combine statements must contain at least 2 items",
-	),
-	// Redundant combine item
-	SyntaxErr(
-		`query { combine 1 { foo foo } }`,
-		"error at 24: redundant combine item",
-	),
-	SyntaxErr(
-		`query { combine 1 { foo bar foo(x: val = 2) } }`,
-		"error at 28: redundant combine item",
-	),
+func TestParseEmpty(t *testing.T) {
+	input := `query{x}`
+	opr, vars, err := gqt.Parse([]byte(input))
+	require.False(t, err.IsErr(), "unexpected error: %v", err)
+	require.NotNil(t, opr)
+	require.Len(t, vars, 0)
 }
 
-func TestSemanticErr(t *testing.T) {
-	for _, td := range testsSemanticErr {
-		t.Run(td.Decl, func(t *testing.T) {
-			d, err := gqt.Parse([]byte(td.Input))
-			require.True(t, err.IsErr())
-			require.Equal(t, td.ExpectedError, err.Error())
-			require.Equal(t, gqt.Doc{}, d)
-		})
-	}
-}
+func TestParseVariables(t *testing.T) {
+	input := `query {
+		f1(a: $b+$x, c=$c: $b) {
+			f2(b=$b:*, x=$unused: $c+$b, d: {o1=$x:*})
+		}
+	}`
+	opr, vars, err := gqt.Parse([]byte(input))
+	require.False(t, err.IsErr(), "unexpected error: %v", err)
+	require.NotNil(t, opr)
 
-var testsSyntaxErr = []ExpectErr{
-	SyntaxErr(
-		``,
-		"error at 0: expected definition",
-	),
-	SyntaxErr(
-		`  `,
-		"error at 2: expected definition",
-	),
-	SyntaxErr(
-		`query`,
-		"error at 5: expected selection set",
-	),
-	SyntaxErr(
-		`query  `,
-		"error at 7: expected selection set",
-	),
-	SyntaxErr(
-		`query{`,
-		"error at 6: expected field name",
-	),
-	SyntaxErr(
-		`query{  `,
-		"error at 8: expected field name",
-	),
-	SyntaxErr(
-		`query{  }`,
-		"error at 8: expected field name",
-	),
-	SyntaxErr(
-		`query{f`,
-		"error at 7: expected field name",
-	),
-	SyntaxErr(
-		`query{f  `,
-		"error at 9: expected field name",
-	),
-	SyntaxErr(
-		`query{f{}}`,
-		"error at 8: expected field name",
-	),
-	SyntaxErr(
-		`query{f(`,
-		"error at 8: expected parameter name",
-	),
-	SyntaxErr(
-		`query{f(  `,
-		"error at 10: expected parameter name",
-	),
-	SyntaxErr(
-		`query{f()}`,
-		"error at 8: expected parameter name",
-	),
-	SyntaxErr(
-		`query{f(x`,
-		"error at 9: expected column after parameter name",
-	),
-	SyntaxErr(
-		`query{f(x  `,
-		"error at 11: expected column after parameter name",
-	),
-	SyntaxErr(
-		`query{f(x:`,
-		"error at 10: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f(x:  `,
-		"error at 12: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f(x:val`,
-		"error at 13: expected constraint operator",
-	),
-	SyntaxErr(
-		`query{f(x:val  `,
-		"error at 15: expected constraint operator",
-	),
-	SyntaxErr(
-		`query{f(x:val=`,
-		"error at 14: expected value",
-	),
-	SyntaxErr(
-		`query{f(x:val=  `,
-		"error at 16: expected value",
-	),
-	SyntaxErr(
-		`query{f(x:val=1`,
-		"error at 15: expected parameter name",
-	),
-	SyntaxErr(
-		`query{f(x:val=1  `,
-		"error at 17: expected parameter name",
-	),
-	SyntaxErr(
-		`query{f(x:val=[`,
-		"error at 15: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f(x:val=[.`,
-		"error at 15: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f(x:val=[..`,
-		"error at 15: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f(x:val=[...`,
-		"error at 18: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f(x:val=[...  `,
-		"error at 20: expected constraint subject",
-	),
-	SyntaxErr(
-		`query{f{...`,
-		"error at 11: expected keyword 'on'",
-	),
-	SyntaxErr(
-		`query{f{... `,
-		"error at 12: expected keyword 'on'",
-	),
-	SyntaxErr(
-		`query{f{...on`,
-		"error at 13: expected type name",
-	),
-	SyntaxErr(
-		`query{f{...on `,
-		"error at 14: expected type name",
-	),
-	SyntaxErr(
-		`query{f{...on T`,
-		"error at 15: expected selection set",
-	),
-	SyntaxErr(
-		`query{f{...on T `,
-		"error at 16: expected selection set",
-	),
-	SyntaxErr(
-		`query{f{...onT{x}}}`,
-		"error at 11: expected keyword 'on'",
-	),
-	SyntaxErr(
-		`query { combine 1`,
-		"error at 17: expected combine items list",
-	),
-	SyntaxErr(
-		`query { combine 1 x }`,
-		"error at 18: expected combine items list",
-	),
-	SyntaxErr(
-		`query { combine 1 { } }`,
-		"error at 20: expected field name",
-	),
-}
+	require.Len(t, vars, 4)
+	require.Contains(t, vars, "b")
+	require.Contains(t, vars, "c")
+	require.Contains(t, vars, "x")
+	require.Contains(t, vars, "unused")
 
-func TestSyntaxErr(t *testing.T) {
-	for _, td := range testsSyntaxErr {
-		t.Run(td.Decl, func(t *testing.T) {
-			r := require.New(t)
-			d, err := gqt.Parse([]byte(td.Input))
-			r.True(err.IsErr())
-			r.Equal(td.ExpectedError, err.Error())
-			r.Equal(gqt.Doc{}, d)
-		})
-	}
-}
+	// Check names
+	require.Equal(t, "b", vars["b"].Name)
+	require.Equal(t, "c", vars["c"].Name)
+	require.Equal(t, "x", vars["x"].Name)
+	require.Equal(t, "unused", vars["unused"].Name)
 
-func decl(skipFrames int) string {
-	_, filename, line, _ := runtime.Caller(skipFrames)
-	return fmt.Sprintf("%s:%d", filepath.Base(filename), line)
-}
+	// Check parents
+	require.IsType(t, &gqt.Argument{}, vars["b"].Parent)
+	require.IsType(t, &gqt.Argument{}, vars["c"].Parent)
+	require.IsType(t, &gqt.Argument{}, vars["unused"].Parent)
+	require.IsType(t, &gqt.ObjectField{}, vars["x"].Parent)
 
-type ExpectErr struct {
-	Decl          string
-	Input         string
-	ExpectedError string
-}
+	require.Equal(t, "b", vars["b"].Parent.(*gqt.Argument).Name)
+	require.Equal(t, "c", vars["c"].Parent.(*gqt.Argument).Name)
+	require.Equal(t, "x", vars["unused"].Parent.(*gqt.Argument).Name)
+	require.Equal(t, "o1", vars["x"].Parent.(*gqt.ObjectField).Name)
 
-func SyntaxErr(input, expectedError string) ExpectErr {
-	return ExpectErr{
-		Decl:          decl(2),
-		Input:         input,
-		ExpectedError: expectedError,
-	}
-}
+	// Check references
+	require.Len(t, vars["b"].References, 3)
+	require.Len(t, vars["c"].References, 1)
+	require.Len(t, vars["unused"].References, 0)
+	require.Len(t, vars["x"].References, 1)
 
-type ExpectDoc struct {
-	Decl   string
-	Input  string
-	Expect gqt.Doc
-}
+	require.Equal(
+		t, gqt.Location{Index: 16, Line: 2, Column: 9},
+		vars["b"].References[0].(*gqt.Variable).Location,
+	)
+	require.Equal(
+		t, gqt.Location{Index: 29, Line: 2, Column: 22},
+		vars["b"].References[1].(*gqt.Variable).Location,
+	)
+	require.Equal(
+		t, gqt.Location{Index: 63, Line: 3, Column: 29},
+		vars["b"].References[2].(*gqt.Variable).Location,
+	)
 
-func Expect(input string, doc gqt.Doc) ExpectDoc {
-	return ExpectDoc{
-		Decl:   decl(2),
-		Input:  input,
-		Expect: doc,
-	}
+	require.Equal(
+		t, gqt.Location{Index: 60, Line: 3, Column: 26},
+		vars["c"].References[0].(*gqt.Variable).Location,
+	)
+
+	require.Equal(
+		t, gqt.Location{Index: 19, Line: 2, Column: 12},
+		vars["x"].References[0].(*gqt.Variable).Location,
+	)
 }
