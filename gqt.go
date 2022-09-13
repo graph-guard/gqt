@@ -83,95 +83,101 @@ type (
 	//  *ExprLessOrEqual
 	//  *ExprGreaterOrEqual
 	//	*ExprParentheses
-	//  *ExprConstrEquals
-	//  *ExprConstrNotEquals
-	//  *ExprConstrLess
-	//  *ExprConstrGreater
-	//  *ExprConstrLessOrEqual
-	//  *ExprConstrGreaterOrEqual
-	//  *ExprConstrLenEquals
-	//  *ExprConstrLenNotEquals
-	//  *ExprConstrLenLess
-	//  *ExprConstrLenGreater
-	//  *ExprConstrLenLessOrEqual
-	//  *ExprConstrLenGreaterOrEqual
 	//	*ExprLogicalAnd
 	//	*ExprLogicalOr
 	//	*ExprLogicalNegation
+	//  *ConstrEquals
+	//  *ConstrNotEquals
+	//  *ConstrLess
+	//  *ConstrGreater
+	//  *ConstrLessOrEqual
+	//  *ConstrGreaterOrEqual
+	//  *ConstrLenEquals
+	//  *ConstrLenNotEquals
+	//  *ConstrLenLess
+	//  *ConstrLenGreater
+	//  *ConstrLenLessOrEqual
+	//  *ConstrLenGreaterOrEqual
 	Expression interface {
 		Type() string
 	}
 
-	ExprConstrEquals struct {
+	ConstrEquals struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrNotEquals struct {
+	ConstrNotEquals struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLess struct {
+	ConstrLess struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLessOrEqual struct {
+	ConstrLessOrEqual struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrGreater struct {
+	ConstrGreater struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrGreaterOrEqual struct {
+	ConstrGreaterOrEqual struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLenEquals struct {
+	ConstrLenEquals struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLenNotEquals struct {
+	ConstrLenNotEquals struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLenLess struct {
+	ConstrLenLess struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLenLessOrEqual struct {
+	ConstrLenLessOrEqual struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLenGreater struct {
+	ConstrLenGreater struct {
 		Location
 		Parent any
 		Value  Expression
 	}
 
-	ExprConstrLenGreaterOrEqual struct {
+	ConstrLenGreaterOrEqual struct {
 		Location
 		Parent any
 		Value  Expression
+	}
+
+	ConstrMap struct {
+		Location
+		Parent     any
+		Constraint Expression
 	}
 
 	ExprParentheses struct {
@@ -362,18 +368,18 @@ func (e *ExprParentheses) Type() string {
 	return ""
 }
 
-func (e *ExprConstrEquals) Type() string            { return "constraint" }
-func (e *ExprConstrNotEquals) Type() string         { return "constraint" }
-func (e *ExprConstrLess) Type() string              { return "constraint" }
-func (e *ExprConstrLessOrEqual) Type() string       { return "constraint" }
-func (e *ExprConstrGreater) Type() string           { return "constraint" }
-func (e *ExprConstrGreaterOrEqual) Type() string    { return "constraint" }
-func (e *ExprConstrLenEquals) Type() string         { return "constraint" }
-func (e *ExprConstrLenNotEquals) Type() string      { return "constraint" }
-func (e *ExprConstrLenLess) Type() string           { return "constraint" }
-func (e *ExprConstrLenLessOrEqual) Type() string    { return "constraint" }
-func (e *ExprConstrLenGreater) Type() string        { return "constraint" }
-func (e *ExprConstrLenGreaterOrEqual) Type() string { return "constraint" }
+func (e *ConstrEquals) Type() string            { return "constraint" }
+func (e *ConstrNotEquals) Type() string         { return "constraint" }
+func (e *ConstrLess) Type() string              { return "constraint" }
+func (e *ConstrLessOrEqual) Type() string       { return "constraint" }
+func (e *ConstrGreater) Type() string           { return "constraint" }
+func (e *ConstrGreaterOrEqual) Type() string    { return "constraint" }
+func (e *ConstrLenEquals) Type() string         { return "constraint" }
+func (e *ConstrLenNotEquals) Type() string      { return "constraint" }
+func (e *ConstrLenLess) Type() string           { return "constraint" }
+func (e *ConstrLenLessOrEqual) Type() string    { return "constraint" }
+func (e *ConstrLenGreater) Type() string        { return "constraint" }
+func (e *ConstrLenGreaterOrEqual) Type() string { return "constraint" }
 
 func (*ExprLogicalNegation) Type() string { return "boolean" }
 func (*ExprModulo) Type() string          { return "number" }
@@ -402,6 +408,8 @@ func (*Null) Type() string { return "null" }
 func (*Enum) Type() string { return "enum" }
 
 func (*Array) Type() string { return "array" }
+
+func (*ConstrMap) Type() string { return "mapped array" }
 
 func (*Object) Type() string { return "object" }
 
@@ -1525,7 +1533,7 @@ func ParseExprLogicalAnd(
 	var err Error
 	for {
 		var expr Expression
-		if s, expr, err = ParseExprConstr(
+		if s, expr, err = ParseConstr(
 			s, variables, varRefs, expect,
 		); err.IsErr() {
 			return s, nil, err
@@ -1547,13 +1555,13 @@ func ParseExprLogicalAnd(
 	}
 }
 
-func ParseExprConstr(
+func ParseConstr(
 	s source,
 	variables map[string]*VariableDefinition,
 	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
-	l := s.Location
+	si := s
 	var ok bool
 	var expr Expression
 	var err Error
@@ -1571,8 +1579,8 @@ func ParseExprConstr(
 	}
 
 	if s, ok = s.consume("!="); ok {
-		e := &ExprConstrNotEquals{
-			Location: l,
+		e := &ConstrNotEquals{
+			Location: si.Location,
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -1589,8 +1597,8 @@ func ParseExprConstr(
 
 		return s, e, Error{}
 	} else if s, ok = s.consume("<="); ok {
-		e := &ExprConstrLessOrEqual{
-			Location: l,
+		e := &ConstrLessOrEqual{
+			Location: si.Location,
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -1614,8 +1622,8 @@ func ParseExprConstr(
 
 		return s, e, Error{}
 	} else if s, ok = s.consume(">="); ok {
-		e := &ExprConstrGreaterOrEqual{
-			Location: l,
+		e := &ConstrGreaterOrEqual{
+			Location: si.Location,
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -1639,8 +1647,8 @@ func ParseExprConstr(
 
 		return s, e, Error{}
 	} else if s, ok = s.consume("<"); ok {
-		e := &ExprConstrLess{
-			Location: l,
+		e := &ConstrLess{
+			Location: si.Location,
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -1664,8 +1672,8 @@ func ParseExprConstr(
 
 		return s, e, Error{}
 	} else if s, ok = s.consume(">"); ok {
-		e := &ExprConstrGreater{
-			Location: l,
+		e := &ConstrGreater{
+			Location: si.Location,
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -1692,8 +1700,8 @@ func ParseExprConstr(
 		s = s.consumeIgnored()
 
 		if s, ok = s.consume("!="); ok {
-			e := &ExprConstrLenNotEquals{
-				Location: l,
+			e := &ConstrLenNotEquals{
+				Location: si.Location,
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -1720,8 +1728,8 @@ func ParseExprConstr(
 
 			return s, e, Error{}
 		} else if s, ok = s.consume("<="); ok {
-			e := &ExprConstrLenLessOrEqual{
-				Location: l,
+			e := &ConstrLenLessOrEqual{
+				Location: si.Location,
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -1745,8 +1753,8 @@ func ParseExprConstr(
 
 			return s, e, Error{}
 		} else if s, ok = s.consume(">="); ok {
-			e := &ExprConstrLenGreaterOrEqual{
-				Location: l,
+			e := &ConstrLenGreaterOrEqual{
+				Location: si.Location,
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -1770,8 +1778,8 @@ func ParseExprConstr(
 
 			return s, e, Error{}
 		} else if s, ok = s.consume("<"); ok {
-			e := &ExprConstrLenLess{
-				Location: l,
+			e := &ConstrLenLess{
+				Location: si.Location,
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -1795,8 +1803,8 @@ func ParseExprConstr(
 
 			return s, e, Error{}
 		} else if s, ok = s.consume(">"); ok {
-			e := &ExprConstrLenGreater{
-				Location: l,
+			e := &ConstrLenGreater{
+				Location: si.Location,
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -1821,8 +1829,8 @@ func ParseExprConstr(
 			return s, e, Error{}
 		}
 
-		e := &ExprConstrGreater{
-			Location: l,
+		e := &ConstrGreater{
+			Location: si.Location,
 			Value:    expr,
 		}
 
@@ -1846,8 +1854,40 @@ func ParseExprConstr(
 		return s, e, Error{}
 	}
 
-	e := &ExprConstrEquals{
-		Location: l,
+	if s, ok = s.consume("["); ok {
+		s = s.consumeIgnored()
+		if s, ok = s.consume("..."); ok {
+			e := &ConstrMap{Location: si.Location}
+			s = s.consumeIgnored()
+
+			if s.isEOF() {
+				return s, nil, errUnexp(s, "expected map constraint")
+			}
+
+			var expr Expression
+			var err Error
+			s, expr, err = ParseExprLogicalOr(
+				s, variables, varRefs, expectConstraint,
+			)
+			if err.IsErr() {
+				return s, nil, err
+			}
+			setParent(expr, e)
+			e.Constraint = expr
+
+			s = s.consumeIgnored()
+			if s, ok = s.consume("]"); !ok {
+				return s, nil, errUnexp(s, "expected end of map constraint ']'")
+			}
+
+			return s, e, Error{}
+		} else {
+			s = si
+		}
+	}
+
+	e := &ConstrEquals{
+		Location: si.Location,
 		Value:    expr,
 	}
 
@@ -2272,29 +2312,29 @@ func setParent(t, parent any) {
 		v.Parent = parent
 	case *ExprParentheses:
 		v.Parent = parent
-	case *ExprConstrEquals:
+	case *ConstrEquals:
 		v.Parent = parent
-	case *ExprConstrNotEquals:
+	case *ConstrNotEquals:
 		v.Parent = parent
-	case *ExprConstrLess:
+	case *ConstrLess:
 		v.Parent = parent
-	case *ExprConstrGreater:
+	case *ConstrGreater:
 		v.Parent = parent
-	case *ExprConstrLessOrEqual:
+	case *ConstrLessOrEqual:
 		v.Parent = parent
-	case *ExprConstrGreaterOrEqual:
+	case *ConstrGreaterOrEqual:
 		v.Parent = parent
-	case *ExprConstrLenEquals:
+	case *ConstrLenEquals:
 		v.Parent = parent
-	case *ExprConstrLenNotEquals:
+	case *ConstrLenNotEquals:
 		v.Parent = parent
-	case *ExprConstrLenLess:
+	case *ConstrLenLess:
 		v.Parent = parent
-	case *ExprConstrLenGreater:
+	case *ConstrLenGreater:
 		v.Parent = parent
-	case *ExprConstrLenLessOrEqual:
+	case *ConstrLenLessOrEqual:
 		v.Parent = parent
-	case *ExprConstrLenGreaterOrEqual:
+	case *ConstrLenGreaterOrEqual:
 		v.Parent = parent
 	case *ExprLogicalAnd:
 		v.Parent = parent
@@ -2311,6 +2351,8 @@ func setParent(t, parent any) {
 	case *Argument:
 		v.Parent = parent
 	case *SelectionMax:
+		v.Parent = parent
+	case *ConstrMap:
 		v.Parent = parent
 	default:
 		panic(fmt.Errorf("unsupported type: %T", t))

@@ -110,6 +110,17 @@ func writeYAML(
 			}
 			written += n
 		}
+	case *ConstrMap:
+		if wrf(
+			"- ConstrMap[%d:%d]:",
+			v.Line, v.Column,
+		) {
+			return
+		}
+		if n, err = writeYAML(w, indent+1, v.Constraint); err != nil {
+			return
+		}
+		written += n
 	case *Object:
 		colon := ""
 		if len(v.Fields) > 0 {
@@ -305,7 +316,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrEquals:
+	case *ConstrEquals:
 		if wrf("- ConstrEquals[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -313,7 +324,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrNotEquals:
+	case *ConstrNotEquals:
 		if wrf("- ConstrNotEquals[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -321,7 +332,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLess:
+	case *ConstrLess:
 		if wrf("- ConstrLess[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -329,7 +340,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLessOrEqual:
+	case *ConstrLessOrEqual:
 		if wrf("- ConstrLessOrEqual[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -337,7 +348,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrGreater:
+	case *ConstrGreater:
 		if wrf("- ConstrGreater[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -345,7 +356,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrGreaterOrEqual:
+	case *ConstrGreaterOrEqual:
 		if wrf("- ConstrGreaterOrEqual[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -353,7 +364,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLenEquals:
+	case *ConstrLenEquals:
 		if wrf("- ConstrLenEquals[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -361,7 +372,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLenNotEquals:
+	case *ConstrLenNotEquals:
 		if wrf("- ConstrLenNotEquals[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -369,7 +380,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLenLess:
+	case *ConstrLenLess:
 		if wrf("- ConstrLenLess[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -377,7 +388,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLenLessOrEqual:
+	case *ConstrLenLessOrEqual:
 		if wrf("- ConstrLenLessOrEqual[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -385,7 +396,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLenGreater:
+	case *ConstrLenGreater:
 		if wrf("- ConstrLenGreater[%d:%d]:", v.Line, v.Column) {
 			return
 		}
@@ -393,7 +404,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *ExprConstrLenGreaterOrEqual:
+	case *ConstrLenGreaterOrEqual:
 		if wrf("- ConstrLenGreaterOrEqual[%d:%d]:", v.Line, v.Column) {
 			return
 		}
