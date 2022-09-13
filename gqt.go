@@ -915,6 +915,7 @@ func ParseValue(
 
 	if s, ok = s.consume("["); ok {
 		e := &Array{Location: l}
+		s = s.consumeIgnored()
 
 		for {
 			var err Error
