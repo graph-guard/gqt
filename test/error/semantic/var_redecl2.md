@@ -1,7 +1,7 @@
 ```graphql
-query { a(a=$a, b=$a) }
+query { a(a=$a:*, b=$a:*) }
 ```
 
 ```
-1:19: redeclared variable
+1:21: redeclared variable
 ```

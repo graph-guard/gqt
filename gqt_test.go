@@ -68,7 +68,7 @@ func TestParseEmpty(t *testing.T) {
 func TestParseVariables(t *testing.T) {
 	input := `query {
 		f1(a: $b+$x, c=$c: $b) {
-			f2(b=$b, x=$unused: $c+$b, d: {o1=$x})
+			f2(b=$b:*, x=$unused: $c+$b, d: {o1=$x:*})
 		}
 	}`
 	opr, vars, err := gqt.Parse([]byte(input))
@@ -113,12 +113,12 @@ func TestParseVariables(t *testing.T) {
 		vars["b"].References[1].(*gqt.Variable).Location,
 	)
 	require.Equal(
-		t, gqt.Location{Index: 61, Line: 3, Column: 27},
+		t, gqt.Location{Index: 63, Line: 3, Column: 29},
 		vars["b"].References[2].(*gqt.Variable).Location,
 	)
 
 	require.Equal(
-		t, gqt.Location{Index: 58, Line: 3, Column: 24},
+		t, gqt.Location{Index: 60, Line: 3, Column: 26},
 		vars["c"].References[0].(*gqt.Variable).Location,
 	)
 

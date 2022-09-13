@@ -102,6 +102,11 @@ type (
 		Type() string
 	}
 
+	ConstrAny struct {
+		Location
+		Parent any
+	}
+
 	ConstrEquals struct {
 		Location
 		Parent any
@@ -367,7 +372,7 @@ func (e *ExprParentheses) Type() string {
 	}
 	return ""
 }
-
+func (e *ConstrAny) Type() string               { return "constraint" }
 func (e *ConstrEquals) Type() string            { return "constraint" }
 func (e *ConstrNotEquals) Type() string         { return "constraint" }
 func (e *ConstrLess) Type() string              { return "constraint" }
@@ -816,25 +821,25 @@ func ParseArguments(
 			s = s.consumeIgnored()
 		}
 
-		if s, ok = s.consume(":"); ok {
-			s = s.consumeIgnored()
-
-			if s.isEOF() {
-				return s, nil, errUnexp(s, "expected constraint")
-			}
-
-			// Has a constraint
-			var expr Expression
-			var err Error
-			s, expr, err = ParseExprLogicalOr(
-				s, variables, varRefs, expectConstraint,
-			)
-			if err.IsErr() {
-				return s, nil, err
-			}
-			setParent(expr, arg)
-			arg.Constraint = expr
+		if s, ok = s.consume(":"); !ok {
+			return s, nil, errUnexp(s, "expected colon")
 		}
+		s = s.consumeIgnored()
+		if s.isEOF() {
+			return s, nil, errUnexp(s, "expected constraint")
+		}
+
+		// Has a constraint
+		var expr Expression
+		var err Error
+		s, expr, err = ParseExprLogicalOr(
+			s, variables, varRefs, expectConstraint,
+		)
+		if err.IsErr() {
+			return s, nil, err
+		}
+		setParent(expr, arg)
+		arg.Constraint = expr
 
 		arguments = append(arguments, arg)
 		s = s.consumeIgnored()
@@ -1578,7 +1583,12 @@ func ParseConstr(
 		return s, expr, Error{}
 	}
 
-	if s, ok = s.consume("!="); ok {
+	if s, ok = s.consume("*"); ok {
+		e := &ConstrAny{Location: si.Location}
+		s = s.consumeIgnored()
+
+		return s, e, Error{}
+	} else if s, ok = s.consume("!="); ok {
 		e := &ConstrNotEquals{
 			Location: si.Location,
 			Value:    expr,
@@ -2353,6 +2363,8 @@ func setParent(t, parent any) {
 	case *SelectionMax:
 		v.Parent = parent
 	case *ConstrMap:
+		v.Parent = parent
+	case *ConstrAny:
 		v.Parent = parent
 	default:
 		panic(fmt.Errorf("unsupported type: %T", t))

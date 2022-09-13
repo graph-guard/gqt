@@ -1,7 +1,7 @@
 ```graphql
-query { f(a, b,,) }
+query { f(a:*, b:*,,) }
 ```
 
 ```
-1:16: unexpected token, expected argument name
+1:20: unexpected token, expected argument name
 ```

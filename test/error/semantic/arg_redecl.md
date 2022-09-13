@@ -1,7 +1,7 @@
 ```graphql
-query { f(a, b, a) }
+query { f(a:*, b:*, a:*) }
 ```
 
 ```
-1:17: redeclared argument
+1:21: redeclared argument
 ```

@@ -110,6 +110,13 @@ func writeYAML(
 			}
 			written += n
 		}
+	case *ConstrAny:
+		if wrf(
+			"- Any[%d:%d]",
+			v.Line, v.Column,
+		) {
+			return
+		}
 	case *ConstrMap:
 		if wrf(
 			"- ConstrMap[%d:%d]:",
