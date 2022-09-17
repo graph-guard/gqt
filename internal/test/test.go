@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	mdast "github.com/gomarkdown/markdown/ast"
 	mdparser "github.com/gomarkdown/markdown/parser"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +22,10 @@ func New[T any](t *testing.T, fn func(t *testing.T, x T)) func(T) {
 	}
 }
 
-// ExecDirMD applies fn to each .md file in dirName recursively.
+// ExecDirMD2 applies fn to each .md file in dirName recursively.
 // Expects the markdown file to contain two code blocks,
 // one for the input and another one for the expected output.
-func ExecDirMD(
+func ExecDirMD2(
 	t *testing.T,
 	filesystem fs.FS,
 	dirName string,
@@ -108,22 +107,25 @@ func ExecDirMD(
 	)
 }
 
-// Markdown applies fn to each .txt file in dirName recursively.
-// Expects the expectation line to begin with expectationPrefix.
-func Markdown(
+// ExecDirMD3 applies fn to each .md file in dirName recursively.
+// Expects the markdown file to contain three code blocks,
+// one for the GraphQL schema, another one for the template and
+// another one for the expected output.
+func ExecDirMD3(
 	t *testing.T,
 	filesystem fs.FS,
 	dirName string,
 	expectationPrefix string,
-	fn func(t *testing.T, input, expectation string),
+	fn func(t *testing.T, schema, input, expectation string),
 ) {
+	t.Helper()
 	var execDirectory func(
 		t *testing.T,
 		filesystem fs.FS,
 		fullPath, name string,
 		dir []fs.DirEntry,
 		expectationPrefix string,
-		fn func(t *testing.T, input, expectation string),
+		fn func(t *testing.T, schema, input, expectation string),
 	)
 	execDirectory = func(
 		t *testing.T,
@@ -131,7 +133,7 @@ func Markdown(
 		fullPath, name string,
 		dir []fs.DirEntry,
 		expectationPrefix string,
-		fn func(t *testing.T, input, expectation string),
+		fn func(t *testing.T, schema, input, expectation string),
 	) {
 		t.Run(name, func(t *testing.T) {
 			for _, e := range dir {
@@ -145,8 +147,7 @@ func Markdown(
 				}
 
 				if !strings.HasSuffix(en, ".md") {
-					t.Errorf("unsupported file type: %q", n)
-					continue
+					t.Fatalf("unsupported file: %q", n)
 				}
 
 				t.Run(en, func(t *testing.T) {
@@ -158,36 +159,31 @@ func Markdown(
 
 					children := ast.GetChildren()
 
-					var inputBlock *mdast.Container
-					var outputBlock *mdast.Container
-					if len(children) == 2 {
-						inputBlock = children[0].AsContainer()
-						outputBlock = children[1].AsContainer()
-					}
-
-					require.Len(t, children, 2)
-					require.NotNil(t, inputBlock)
-					require.NotNil(t, outputBlock)
-					require.Len(t, inputBlock.Children, 1)
-					require.Len(t, outputBlock.Children, 1)
-
-					require.IsType(t, inputBlock.Children[0], &mdast.Text{})
-					require.IsType(t, outputBlock.Children[0], &mdast.Text{})
-
-					input := string(inputBlock.Children[0].(*mdast.Text).Leaf.Literal)
-					output := string(outputBlock.Children[0].(*mdast.Text).Leaf.Literal)
-
-					if len(children) != 2 ||
-						inputBlock == nil ||
-						outputBlock == nil ||
-						len(inputBlock.Children) != 1 ||
-						len(outputBlock.Children) != 1 {
-						t.Fatal("expected 2 code blocks, " +
-							"one for the input " +
+					if len(children) != 3 ||
+						children[0].AsLeaf() == nil ||
+						children[1].AsLeaf() == nil ||
+						children[2].AsLeaf() == nil {
+						t.Fatal("expected 3 code blocks, " +
+							"one for the GraphQL schema," +
+							"one for the template " +
 							"and another one for the expected output")
 					}
 
-					fn(t, input, output)
+					schema := string(children[0].AsLeaf().Literal)
+					input := string(children[1].AsLeaf().Literal)
+					output := string(children[2].AsLeaf().Literal)
+
+					if schema[len(schema)-1] == '\n' {
+						schema = schema[:len(schema)-1]
+					}
+					if input[len(input)-1] == '\n' {
+						input = input[:len(input)-1]
+					}
+					if output != "" && output[len(output)-1] == '\n' {
+						output = output[:len(output)-1]
+					}
+
+					fn(t, schema, input, output)
 				})
 			}
 		})

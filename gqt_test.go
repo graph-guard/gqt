@@ -18,8 +18,14 @@ var errorFS embed.FS
 //go:embed test/ast
 var astFS embed.FS
 
+//go:embed test/schema_aware
+var schemaFS embed.FS
+
+//go:embed test/error_schema
+var errorSchemaFS embed.FS
+
 func TestParseErr(t *testing.T) {
-	test.ExecDirMD(
+	test.ExecDirMD2(
 		t, errorFS, "test/error", "ERR: ",
 		func(t *testing.T, input, expectation string) {
 			d, vars, err := gqt.Parse([]byte(input))
@@ -34,8 +40,8 @@ func TestParseErr(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	test.ExecDirMD(
-		t, astFS, "test/ast", "ERR: ",
+	test.ExecDirMD2(
+		t, astFS, "test/ast", "",
 		func(t *testing.T, input, expectation string) {
 			var discard map[string]any
 			require.NoError(
@@ -127,3 +133,115 @@ func TestParseVariables(t *testing.T) {
 		vars["x"].References[0].(*gqt.Variable).Location,
 	)
 }
+
+func TestParserSchema(t *testing.T) {
+	test.ExecDirMD3(
+		t, schemaFS, "test/schema_aware", "",
+		func(t *testing.T, schema, input, expectation string) {
+			p, errp := gqt.NewParser([]gqt.Source{
+				{Name: "test_schema_aware", Content: schema},
+			})
+			require.NoError(t, errp, "unexpected GraphQL schema parser error")
+			o, vars, err := p.Parse([]byte(input))
+			require.False(t, err.IsErr(), "unexpected error: %v", err)
+			require.NotNil(t, vars)
+
+			{
+				var b bytes.Buffer
+				_, err := gqt.WriteYAML(&b, o)
+				require.NoError(t, err)
+				require.Equal(t, expectation, b.String())
+			}
+		},
+	)
+}
+
+func TestParserSchemaErr(t *testing.T) {
+	test.ExecDirMD3(
+		t, errorSchemaFS, "test/error_schema", "ERR: ",
+		func(t *testing.T, schema, input, expectation string) {
+			p, errp := gqt.NewParser([]gqt.Source{
+				{Name: "testschema", Content: schema},
+			})
+			require.NoError(t, errp, "unexpected GraphQL schema parser error")
+			d, vars, err := p.Parse([]byte(input))
+			require.Equal(
+				t, expectation, err.Error(),
+				"input: %q", input,
+			)
+			require.Zero(t, d)
+			require.Nil(t, vars)
+		},
+	)
+}
+
+// const schema = `
+// type Query {
+// 	id: ID!
+// 	string: String!
+// 	boolean: Boolean!
+// 	float: Float!
+// 	integer: Int!
+// 	enum: Color!
+// 	type: Type!
+// 	array: [Int!]!
+
+// 	idOpt: ID
+// 	stringOpt: String
+// 	booleanOpt: Boolean
+// 	floatOpt: Float
+// 	integerOpt: Int
+// 	enumOpt: Color
+// 	typeOpt: Type
+// 	arrayOpt: [Int!]
+// }
+
+// type Mutation {
+// 	withArgs(input: Input! inputOpt: Input!): Boolean!
+// }
+
+// type Type {
+// 	id: ID!
+// 	string: String!
+// 	boolean: Boolean!
+// 	float: Float!
+// 	integer: Int!
+// 	enum: Color!
+// 	type: Type!
+// 	array: [Int!]!
+
+// 	idOpt: ID
+// 	stringOpt: String
+// 	booleanOpt: Boolean
+// 	floatOpt: Float
+// 	integerOpt: Int
+// 	enumOpt: Color
+// 	typeOpr: Type!
+// 	arrayOpt: [Int!]
+// }
+
+// input Input {
+// 	id: ID!
+// 	string: String!
+// 	boolean: Boolean!
+// 	float: Float!
+// 	integer: Int!
+// 	enum: Color!
+// 	array: [Int!]!
+
+// 	idOpt: ID
+// 	stringOpt: String
+// 	booleanOpt: Boolean
+// 	floatOpt: Float
+// 	integerOpt: Int
+// 	enumOpt: Color
+// 	inputOpt: Input
+// 	arrayOpt: [Int!]
+// }
+
+// enum Color {
+// 	RED
+// 	GREEN
+// 	BLUE
+// }
+// `
