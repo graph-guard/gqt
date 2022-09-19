@@ -3,5 +3,5 @@ query { f(a: len != (false)) }
 ```
 
 ```
-1:21: mismatching types: can't use boolean as number
+1:21: mismatching types: can't use Boolean as number
 ```

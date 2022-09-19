@@ -103,7 +103,7 @@ type (
 	//  *ConstrLenLessOrEqual
 	//  *ConstrLenGreaterOrEqual
 	Expression interface {
-		Type() string
+		GetLocation() Location
 		ValueType(p *Parser) string
 	}
 
@@ -371,63 +371,52 @@ type (
 	}
 )
 
-func (e *ExprParentheses) Type() string {
-	if e.Expression != nil {
-		return e.Expression.Type()
-	}
-	return ""
-}
-func (e *ConstrAny) Type() string               { return "constraint" }
-func (e *ConstrEquals) Type() string            { return "constraint" }
-func (e *ConstrNotEquals) Type() string         { return "constraint" }
-func (e *ConstrLess) Type() string              { return "constraint" }
-func (e *ConstrLessOrEqual) Type() string       { return "constraint" }
-func (e *ConstrGreater) Type() string           { return "constraint" }
-func (e *ConstrGreaterOrEqual) Type() string    { return "constraint" }
-func (e *ConstrLenEquals) Type() string         { return "constraint" }
-func (e *ConstrLenNotEquals) Type() string      { return "constraint" }
-func (e *ConstrLenLess) Type() string           { return "constraint" }
-func (e *ConstrLenLessOrEqual) Type() string    { return "constraint" }
-func (e *ConstrLenGreater) Type() string        { return "constraint" }
-func (e *ConstrLenGreaterOrEqual) Type() string { return "constraint" }
+func (e *ExprParentheses) GetLocation() Location         { return e.Location }
+func (e *ConstrAny) GetLocation() Location               { return e.Location }
+func (e *ConstrEquals) GetLocation() Location            { return e.Location }
+func (e *ConstrNotEquals) GetLocation() Location         { return e.Location }
+func (e *ConstrLess) GetLocation() Location              { return e.Location }
+func (e *ConstrLessOrEqual) GetLocation() Location       { return e.Location }
+func (e *ConstrGreater) GetLocation() Location           { return e.Location }
+func (e *ConstrGreaterOrEqual) GetLocation() Location    { return e.Location }
+func (e *ConstrLenEquals) GetLocation() Location         { return e.Location }
+func (e *ConstrLenNotEquals) GetLocation() Location      { return e.Location }
+func (e *ConstrLenLess) GetLocation() Location           { return e.Location }
+func (e *ConstrLenLessOrEqual) GetLocation() Location    { return e.Location }
+func (e *ConstrLenGreater) GetLocation() Location        { return e.Location }
+func (e *ConstrLenGreaterOrEqual) GetLocation() Location { return e.Location }
 
-func (*ExprLogicalNegation) Type() string { return "boolean" }
-func (*ExprModulo) Type() string          { return "number" }
-func (*ExprDivision) Type() string        { return "number" }
-func (*ExprMultiplication) Type() string  { return "number" }
-func (*ExprAddition) Type() string        { return "number" }
-func (*ExprSubtraction) Type() string     { return "number" }
-func (*Int) Type() string                 { return "number" }
-func (*Float) Type() string               { return "number" }
+func (e *ExprModulo) GetLocation() Location         { return e.Location }
+func (e *ExprDivision) GetLocation() Location       { return e.Location }
+func (e *ExprMultiplication) GetLocation() Location { return e.Location }
+func (e *ExprAddition) GetLocation() Location       { return e.Location }
+func (e *ExprSubtraction) GetLocation() Location    { return e.Location }
 
-func (*True) Type() string               { return "boolean" }
-func (*False) Type() string              { return "boolean" }
-func (*ExprEqual) Type() string          { return "boolean" }
-func (*ExprNotEqual) Type() string       { return "boolean" }
-func (*ExprLess) Type() string           { return "boolean" }
-func (*ExprLessOrEqual) Type() string    { return "boolean" }
-func (*ExprGreater) Type() string        { return "boolean" }
-func (*ExprGreaterOrEqual) Type() string { return "boolean" }
-func (*ExprLogicalAnd) Type() string     { return "boolean" }
-func (*ExprLogicalOr) Type() string      { return "boolean" }
+func (e *ExprLogicalNegation) GetLocation() Location { return e.Location }
+func (e *ExprEqual) GetLocation() Location           { return e.Location }
+func (e *ExprNotEqual) GetLocation() Location        { return e.Location }
+func (e *ExprLess) GetLocation() Location            { return e.Location }
+func (e *ExprLessOrEqual) GetLocation() Location     { return e.Location }
+func (e *ExprGreater) GetLocation() Location         { return e.Location }
+func (e *ExprGreaterOrEqual) GetLocation() Location  { return e.Location }
+func (e *ExprLogicalAnd) GetLocation() Location      { return e.Location }
+func (e *ExprLogicalOr) GetLocation() Location       { return e.Location }
 
-func (*String) Type() string { return "string" }
-
-func (*Null) Type() string { return "null" }
-
-func (*Enum) Type() string { return "enum" }
-
-func (*Array) Type() string { return "array" }
-
-func (*ConstrMap) Type() string { return "mapped array" }
-
-func (*Object) Type() string { return "object" }
-
-func (*Variable) Type() string { return "variable" }
+func (e *True) GetLocation() Location      { return e.Location }
+func (e *False) GetLocation() Location     { return e.Location }
+func (e *Int) GetLocation() Location       { return e.Location }
+func (e *Float) GetLocation() Location     { return e.Location }
+func (e *String) GetLocation() Location    { return e.Location }
+func (e *Null) GetLocation() Location      { return e.Location }
+func (e *Enum) GetLocation() Location      { return e.Location }
+func (e *Array) GetLocation() Location     { return e.Location }
+func (e *ConstrMap) GetLocation() Location { return e.Location }
+func (e *Object) GetLocation() Location    { return e.Location }
+func (e *Variable) GetLocation() Location  { return e.Location }
 
 func (e *ExprParentheses) ValueType(p *Parser) string {
 	if e.Expression != nil {
-		return e.Expression.Type()
+		return e.Expression.ValueType(p)
 	}
 	return ""
 }
@@ -439,97 +428,105 @@ func (e *ConstrNotEquals) ValueType(p *Parser) string {
 	return e.Value.ValueType(p)
 }
 func (e *ConstrLess) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLessOrEqual) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrGreater) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrGreaterOrEqual) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLenEquals) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLenNotEquals) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLenLess) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLenLessOrEqual) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLenGreater) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 func (e *ConstrLenGreaterOrEqual) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
+	return "Int|Float"
 }
 
-func (e *ExprLogicalNegation) ValueType(p *Parser) string { return "!" }
 func (e *ExprModulo) ValueType(p *Parser) string {
-	return e.Dividend.ValueType(p)
+	return "Int|Float"
 }
 func (e *ExprDivision) ValueType(p *Parser) string {
-	return e.Dividend.ValueType(p)
+	return "Int|Float"
 }
 func (e *ExprMultiplication) ValueType(p *Parser) string {
-	return e.Multiplicant.ValueType(p)
+	return "Int|Float"
 }
 func (e *ExprAddition) ValueType(p *Parser) string {
-	return e.AddendLeft.ValueType(p)
+	return "Int|Float"
 }
 func (e *ExprSubtraction) ValueType(p *Parser) string {
-	return e.Minuend.ValueType(p)
+	return "Int|Float"
+}
+func (e *ExprLogicalNegation) ValueType(p *Parser) string {
+	return "Boolean"
 }
 func (e *ExprEqual) ValueType(p *Parser) string {
-	return e.Left.ValueType(p)
+	return "Boolean"
 }
 func (e *ExprNotEqual) ValueType(p *Parser) string {
-	return e.Left.ValueType(p)
+	return "Boolean"
 }
 func (e *ExprLess) ValueType(p *Parser) string {
-	return e.Left.ValueType(p)
+	return "Boolean"
 }
 func (e *ExprLessOrEqual) ValueType(p *Parser) string {
-	return e.Left.ValueType(p)
+	return "Boolean"
 }
 func (e *ExprGreater) ValueType(p *Parser) string {
-	return e.Left.ValueType(p)
+	return "Boolean"
 }
 func (e *ExprGreaterOrEqual) ValueType(p *Parser) string {
-	return e.Left.ValueType(p)
+	return "Boolean"
 }
 func (e *ExprLogicalAnd) ValueType(p *Parser) string {
-	return e.Expressions[0].ValueType(p)
+	return "Boolean"
 }
 func (e *ExprLogicalOr) ValueType(p *Parser) string {
-	return e.Expressions[0].ValueType(p)
+	return "Boolean"
 }
-
-func (e *Int) ValueType(p *Parser) string   { return "Int" }
-func (e *Float) ValueType(p *Parser) string { return "Float" }
 
 func (e *True) ValueType(p *Parser) string   { return "Boolean" }
 func (e *False) ValueType(p *Parser) string  { return "Boolean" }
+func (e *Int) ValueType(p *Parser) string    { return "Int" }
+func (e *Float) ValueType(p *Parser) string  { return "Float" }
 func (e *String) ValueType(p *Parser) string { return "String" }
 func (e *Null) ValueType(p *Parser) string   { return "null" }
-
 func (e *Enum) ValueType(p *Parser) string {
+	if p.schema == nil {
+		return "enum"
+	}
+
 	t := p.enumVal[e.Value]
 	if t == nil {
-		return ""
+		return "enum"
 	}
 	return t.Name
 }
-
 func (e *Array) ValueType(p *Parser) string {
+	if p.schema == nil {
+		return "array"
+	}
+
 	var b strings.Builder
 	notNull := true
 	foundType := false
+
 	b.WriteRune('[')
 	for _, i := range e.Items {
 		vt := i.ValueType(p)
@@ -548,15 +545,15 @@ func (e *Array) ValueType(p *Parser) string {
 	b.WriteRune(']')
 	return b.String()
 }
-
 func (e *ConstrMap) ValueType(p *Parser) string {
 	return "Array"
 }
-
 func (e *Object) ValueType(p *Parser) string {
-	return "input"
+	if p.schema == nil {
+		return "object"
+	}
+	return "object"
 }
-
 func (e *Variable) ValueType(p *Parser) string {
 	return "variable"
 }
@@ -725,11 +722,16 @@ func errSchemaTypeUndef(s source) Error {
 	}
 }
 
-func errSchemaArgUndef(s source) Error {
-	return Error{
-		Location: s.Location,
-		Msg:      "argument is undefined in schema",
-	}
+func errSchemaArgUndef(
+	s source,
+	argName string,
+	fieldName string,
+	hostType *ast.Definition,
+) Error {
+	return errMsg(s, fmt.Sprintf(
+		"argument %q is undefined on field %q of type %q",
+		argName, fieldName, hostType.Name,
+	))
 }
 
 func errSchemaFieldUndef(
@@ -745,12 +747,12 @@ func errSchemaFieldUndef(
 	}
 }
 
-func errCantCompare(s source, left, right Expression) Error {
+func (p *Parser) errCantCompare(s source, left, right Expression) Error {
 	return Error{
 		Location: s.Location,
 		Msg: fmt.Sprintf(
 			"can't compare %s and %s",
-			left.Type(), right.Type(),
+			left.ValueType(p), right.ValueType(p),
 		),
 	}
 }
@@ -910,7 +912,7 @@ func (p *Parser) ParseSelectionSet(
 		if s.peek1('(') {
 			var err Error
 			if s, sel.Arguments, err = p.ParseArguments(
-				s, variables, varRefs, fieldDef,
+				s, variables, varRefs, setDef, fieldDef,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -921,7 +923,7 @@ func (p *Parser) ParseSelectionSet(
 			for _, a := range fieldDef.Arguments {
 				if a.Type.NonNull {
 					return sBeforeName, nil, errMsg(
-						sBeforeName, errMsgArgMissing(a.Name),
+						sBeforeName, errMsgArgMissing(a),
 					)
 				}
 			}
@@ -1029,6 +1031,7 @@ func (p *Parser) ParseArguments(
 	s source,
 	variables map[string]*VariableDefinition,
 	varRefs *[]*Variable,
+	hostType *ast.Definition,
 	fieldDef *ast.FieldDefinition,
 ) (source, []*Argument, Error) {
 	si := s
@@ -1070,7 +1073,9 @@ func (p *Parser) ParseArguments(
 		var argDef *ast.ArgumentDefinition
 		if p.schema != nil {
 			if argDef = fieldDef.Arguments.ForName(arg.Name); argDef == nil {
-				return sBeforeName, nil, errSchemaArgUndef(sBeforeName)
+				return sBeforeName, nil, errSchemaArgUndef(
+					sBeforeName, arg.Name, fieldDef.Name, hostType,
+				)
 			}
 		}
 
@@ -1124,9 +1129,10 @@ func (p *Parser) ParseArguments(
 		arg.Constraint = expr
 
 		if argDef != nil {
-			errm := p.checkArgConstraint(arg.Constraint, argDef.Type)
-			if errm != "" {
-				return sBeforeConstr, nil, errMsg(sBeforeConstr, errm)
+			if err := p.checkArgConstraint(
+				sBeforeConstr, arg.Constraint, argDef.Type,
+			); err.IsErr() {
+				return sBeforeConstr, nil, err
 			}
 		}
 
@@ -1158,7 +1164,7 @@ func (p *Parser) ParseArguments(
 					continue ARG_SCAN
 				}
 			}
-			return si, nil, errMsg(si, errMsgArgMissing(a.Name))
+			return si, nil, errMsg(si, errMsgArgMissing(a))
 		}
 	}
 
@@ -1412,7 +1418,7 @@ func (p *Parser) ParseExprUnary(
 
 		if !isBoolean(e.Expression) {
 			return s, nil, errTypef(
-				si, "can't use %s as boolean", e.Expression.Type(),
+				si, "can't use %s as Boolean", e.Expression.ValueType(p),
 			)
 		}
 
@@ -1452,7 +1458,7 @@ func (p *Parser) ParseExprMultiplicative(
 
 			if !isNumeric(e.Multiplicant) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Multiplicant.Type(),
+					si, "can't use %s as number", e.Multiplicant.ValueType(p),
 				)
 			}
 
@@ -1467,7 +1473,7 @@ func (p *Parser) ParseExprMultiplicative(
 
 			if !isNumeric(e.Multiplicator) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Multiplicator.Type(),
+					si, "can't use %s as number", e.Multiplicator.ValueType(p),
 				)
 			}
 
@@ -1482,7 +1488,7 @@ func (p *Parser) ParseExprMultiplicative(
 
 			if !isNumeric(e.Dividend) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Dividend.Type(),
+					si, "can't use %s as number", e.Dividend.ValueType(p),
 				)
 			}
 
@@ -1497,7 +1503,7 @@ func (p *Parser) ParseExprMultiplicative(
 
 			if !isNumeric(e.Divisor) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Divisor.Type(),
+					si, "can't use %s as number", e.Divisor.ValueType(p),
 				)
 			}
 
@@ -1512,7 +1518,7 @@ func (p *Parser) ParseExprMultiplicative(
 
 			if !isNumeric(e.Dividend) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Dividend.Type(),
+					si, "can't use %s as number", e.Dividend.ValueType(p),
 				)
 			}
 
@@ -1527,7 +1533,7 @@ func (p *Parser) ParseExprMultiplicative(
 
 			if !isNumeric(e.Divisor) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Divisor.Type(),
+					si, "can't use %s as number", e.Divisor.ValueType(p),
 				)
 			}
 
@@ -1570,7 +1576,7 @@ func (p *Parser) ParseExprAdditive(
 
 			if !isNumeric(e.AddendLeft) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.AddendLeft.Type(),
+					si, "can't use %s as number", e.AddendLeft.ValueType(p),
 				)
 			}
 
@@ -1585,7 +1591,7 @@ func (p *Parser) ParseExprAdditive(
 
 			if !isNumeric(e.AddendRight) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.AddendRight.Type(),
+					si, "can't use %s as number", e.AddendRight.ValueType(p),
 				)
 			}
 
@@ -1600,7 +1606,7 @@ func (p *Parser) ParseExprAdditive(
 
 			if !isNumeric(e.Minuend) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Minuend.Type(),
+					si, "can't use %s as number", e.Minuend.ValueType(p),
 				)
 			}
 
@@ -1615,7 +1621,7 @@ func (p *Parser) ParseExprAdditive(
 
 			if !isNumeric(e.Subtrahend) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", e.Subtrahend.Type(),
+					si, "can't use %s as number", e.Subtrahend.ValueType(p),
 				)
 			}
 
@@ -1719,7 +1725,7 @@ func (p *Parser) ParseExprRelational(
 		setParent(e.Right, e)
 
 		if !isNumeric(e.Right) {
-			return s, nil, errTypef(si, "can't use %s as number", e.Type())
+			return s, nil, errTypef(si, "can't use %s as number", e.ValueType(p))
 		}
 
 		s = s.consumeIgnored()
@@ -1765,7 +1771,7 @@ func (p *Parser) ParseExprEquality(
 		setParent(e.Right, e)
 		s = s.consumeIgnored()
 
-		if err = assumeSameType(si, e.Left, e.Right); err.IsErr() {
+		if err = p.assumeSameType(si, e.Left, e.Right); err.IsErr() {
 			return si, nil, err
 		}
 
@@ -1788,7 +1794,7 @@ func (p *Parser) ParseExprEquality(
 		setParent(e.Right, e)
 		s = s.consumeIgnored()
 
-		if err = assumeSameType(si, e.Left, e.Right); err.IsErr() {
+		if err = p.assumeSameType(si, e.Left, e.Right); err.IsErr() {
 			return si, nil, err
 		}
 
@@ -1929,7 +1935,7 @@ func (p *Parser) ParseConstr(
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
-				si, "can't use %s as number", expr.Type(),
+				si, "can't use %s as number", expr.ValueType(p),
 			)
 		}
 
@@ -1954,7 +1960,7 @@ func (p *Parser) ParseConstr(
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
-				si, "can't use %s as number", expr.Type(),
+				si, "can't use %s as number", expr.ValueType(p),
 			)
 		}
 
@@ -1979,7 +1985,7 @@ func (p *Parser) ParseConstr(
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
-				si, "can't use %s as number", expr.Type(),
+				si, "can't use %s as number", expr.ValueType(p),
 			)
 		}
 
@@ -2004,7 +2010,7 @@ func (p *Parser) ParseConstr(
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
-				si, "can't use %s as number", expr.Type(),
+				si, "can't use %s as number", expr.ValueType(p),
 			)
 		}
 
@@ -2035,7 +2041,7 @@ func (p *Parser) ParseConstr(
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", expr.Type(),
+					si, "can't use %s as number", expr.ValueType(p),
 				)
 			}
 
@@ -2060,7 +2066,7 @@ func (p *Parser) ParseConstr(
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", expr.Type(),
+					si, "can't use %s as number", expr.ValueType(p),
 				)
 			}
 
@@ -2085,7 +2091,7 @@ func (p *Parser) ParseConstr(
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", expr.Type(),
+					si, "can't use %s as number", expr.ValueType(p),
 				)
 			}
 
@@ -2110,7 +2116,7 @@ func (p *Parser) ParseConstr(
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", expr.Type(),
+					si, "can't use %s as number", expr.ValueType(p),
 				)
 			}
 
@@ -2135,7 +2141,7 @@ func (p *Parser) ParseConstr(
 
 			if !isNumeric(expr) {
 				return s, nil, errTypef(
-					si, "can't use %s as number", expr.Type(),
+					si, "can't use %s as number", expr.ValueType(p),
 				)
 			}
 
@@ -2160,7 +2166,7 @@ func (p *Parser) ParseConstr(
 
 		if !isNumeric(expr) {
 			return s, nil, errTypef(
-				si, "can't use %s as number", expr.Type(),
+				si, "can't use %s as number", expr.ValueType(p),
 			)
 		}
 
@@ -2547,7 +2553,7 @@ func isBoolean(expr any) bool {
 	return false
 }
 
-func assumeSameType(s source, left, right Expression) Error {
+func (p *Parser) assumeSameType(s source, left, right Expression) Error {
 	_, lIsVar := left.(*Variable)
 	_, rIsVar := right.(*Variable)
 	if lIsVar || rIsVar {
@@ -2556,26 +2562,26 @@ func assumeSameType(s source, left, right Expression) Error {
 	}
 
 	if isBoolean(left) && !isBoolean(right) {
-		return errCantCompare(s, left, right)
+		return p.errCantCompare(s, left, right)
 	} else if isNumeric(left) && !isNumeric(right) {
-		return errCantCompare(s, left, right)
+		return p.errCantCompare(s, left, right)
 	}
 	switch left.(type) {
 	case *String:
 		if _, ok := right.(*String); !ok {
-			return errCantCompare(s, left, right)
+			return p.errCantCompare(s, left, right)
 		}
 	case *Enum:
 		if _, ok := right.(*Enum); !ok {
-			return errCantCompare(s, left, right)
+			return p.errCantCompare(s, left, right)
 		}
 	case *Array:
 		if _, ok := right.(*Array); !ok {
-			return errCantCompare(s, left, right)
+			return p.errCantCompare(s, left, right)
 		}
 	case *Object:
 		if _, ok := right.(*Object); !ok {
-			return errCantCompare(s, left, right)
+			return p.errCantCompare(s, left, right)
 		}
 	}
 	return Error{}
@@ -2853,21 +2859,29 @@ func (p *Parser) checkTypeCond(
 	))
 }
 
-func errMsgArgMissing(missingArgumentName string) string {
+func errMsgArgMissing(missingArgument *ast.ArgumentDefinition) string {
 	return fmt.Sprintf(
-		"argument %q is required by schema but missing", missingArgumentName,
+		"argument %q of type %q is required but missing",
+		missingArgument.Name, missingArgument.Type,
 	)
 }
 
-func errMsgUnexpType(
-	p *Parser,
+func errMsgInputFieldMissing(missingField *ast.FieldDefinition) string {
+	return fmt.Sprintf(
+		"field %q of type %q is required but missing",
+		missingField.Name, missingField.Type,
+	)
+}
+
+func (p *Parser) errMsgUnexpType(
+	s source,
 	expected *ast.Type,
 	actual Expression,
-) string {
-	return fmt.Sprintf(
-		"expected type %s but received %s",
+) Error {
+	return errMsg(s, fmt.Sprintf(
+		"expected type %q but received %q",
 		expected, actual.ValueType(p),
-	)
+	))
 }
 
 func errMsgUndefEnumVal(val string) string {
@@ -2877,201 +2891,274 @@ func errMsgUndefEnumVal(val string) string {
 // checkArgConstraint returns false if the argument constraint type
 // doesn't match the schema argument type.
 func (p *Parser) checkArgConstraint(
+	s source,
 	e Expression,
 	def *ast.Type,
-) (errorMessage string) {
+) Error {
 	switch v := e.(type) {
 	case *ConstrAny:
 	case *ConstrEquals:
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrNotEquals:
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLess:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrGreater:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLessOrEqual:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrGreaterOrEqual:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLenEquals:
 		if !defHasLength(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLenNotEquals:
 		if !defHasLength(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLenLess:
 		if !defHasLength(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLenGreater:
 		if !defHasLength(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLenLessOrEqual:
 		if !defHasLength(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrLenGreaterOrEqual:
 		if !defHasLength(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Value, def)
+		s = source{s: s.s, Location: v.Value.GetLocation()}
+		return p.checkArgConstraint(s, v.Value, def)
 	case *ConstrMap:
 		if !defIsArray(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Constraint, def.Elem)
+		s = source{s: s.s, Location: v.Constraint.GetLocation()}
+		return p.checkArgConstraint(s, v.Constraint, def.Elem)
 	case *ExprParentheses:
-		return p.checkArgConstraint(v.Expression, def)
+		s = source{s: s.s, Location: v.Expression.GetLocation()}
+		return p.checkArgConstraint(s, v.Expression, def)
 	case *ExprLogicalNegation:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Expression, def)
+		s = source{s: s.s, Location: v.Expression.GetLocation()}
+		return p.checkArgConstraint(s, v.Expression, def)
 	case *ExprModulo:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		if err := p.checkArgConstraint(v.Dividend, def); err != "" {
+		s = source{s: s.s, Location: v.Dividend.GetLocation()}
+		if err := p.checkArgConstraint(s, v.Dividend, def); err.IsErr() {
 			return err
 		}
-		return p.checkArgConstraint(v.Divisor, def)
+		s = source{s: s.s, Location: v.Divisor.GetLocation()}
+		return p.checkArgConstraint(s, v.Divisor, def)
 	case *ExprDivision:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		if err := p.checkArgConstraint(v.Dividend, def); err != "" {
+		s = source{s: s.s, Location: v.Dividend.GetLocation()}
+		if err := p.checkArgConstraint(s, v.Dividend, def); err.IsErr() {
 			return err
 		}
-		return p.checkArgConstraint(v.Divisor, def)
+		s = source{s: s.s, Location: v.Divisor.GetLocation()}
+		return p.checkArgConstraint(s, v.Divisor, def)
 	case *ExprMultiplication:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		if err := p.checkArgConstraint(v.Multiplicant, def); err != "" {
+		s = source{s: s.s, Location: v.Multiplicant.GetLocation()}
+		if err := p.checkArgConstraint(s, v.Multiplicant, def); err.IsErr() {
 			return err
 		}
-		return p.checkArgConstraint(v.Multiplicator, def)
+		s = source{s: s.s, Location: v.Multiplicator.GetLocation()}
+		return p.checkArgConstraint(s, v.Multiplicator, def)
 	case *ExprAddition:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		if err := p.checkArgConstraint(v.AddendLeft, def); err != "" {
-			return errMsgUnexpType(p, def, v)
+		s = source{s: s.s, Location: v.AddendLeft.GetLocation()}
+		if err := p.checkArgConstraint(s, v.AddendLeft, def); err.IsErr() {
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.AddendRight, def)
+		s = source{s: s.s, Location: v.AddendRight.GetLocation()}
+		return p.checkArgConstraint(s, v.AddendRight, def)
 	case *ExprSubtraction:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
-		if err := p.checkArgConstraint(v.Minuend, def); err != "" {
-			return errMsgUnexpType(p, def, v)
+		s = source{s: s.s, Location: v.Minuend.GetLocation()}
+		if err := p.checkArgConstraint(s, v.Minuend, def); err.IsErr() {
+			return p.errMsgUnexpType(s, def, v)
 		}
-		return p.checkArgConstraint(v.Subtrahend, def)
+		s = source{s: s.s, Location: v.Subtrahend.GetLocation()}
+		return p.checkArgConstraint(s, v.Subtrahend, def)
 	case *Int:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *Float:
 		if !defIsNum(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *True:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			fmt.Println("OKAY", v.Location)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *False:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *String:
 		if def.NamedType != "String" {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *Array:
 		if !defIsArray(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 		for _, i := range v.Items {
-			if err := p.checkArgConstraint(i, def.Elem); err != "" {
+			if err := p.checkArgConstraint(source{
+				s:        s.s,
+				Location: i.GetLocation(),
+			}, i, def.Elem); err.IsErr() {
 				return err
 			}
 		}
 	case *Null:
 		if def.NonNull {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *Enum:
 		t, ok := p.enumVal[v.Value]
 		if !ok {
-			return errMsgUndefEnumVal(v.Value)
+			return errMsg(s, errMsgUndefEnumVal(v.Value))
 		}
 		if def.NamedType != t.Name {
-			return fmt.Sprintf(
-				"expected type %s but received %s",
-				def, t.Name,
-			)
+			return p.errMsgUnexpType(s, def, v)
 		}
+	case *Object:
+		tp := p.schema.Types[def.Name()]
+
+		if tp.Kind != ast.InputObject {
+			return p.errMsgUnexpType(s, def, v)
+		}
+
+		declaredFields := make(
+			map[string]*ast.FieldDefinition,
+			len(tp.Fields),
+		)
+
+		for _, vf := range v.Fields {
+			field := tp.Fields.ForName(vf.Name)
+			if field == nil {
+				return errMsg(source{
+					s:        s.s,
+					Location: vf.Location,
+				}, fmt.Sprintf(
+					"undefined field %q in %s",
+					field.Name, def.Name(),
+				))
+			}
+
+			if err := p.checkArgConstraint(
+				source{
+					s:        s.s,
+					Location: vf.Constraint.GetLocation(),
+				}, vf.Constraint, field.Type,
+			); err.IsErr() {
+				return err
+			}
+
+			declaredFields[vf.Name] = field
+		}
+
+		for _, f := range tp.Fields {
+			if f.Type.NonNull {
+				if _, ok := declaredFields[f.Name]; !ok {
+					return errMsg(s, errMsgInputFieldMissing(f))
+				}
+			}
+		}
+
 	case *ExprEqual:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *ExprNotEqual:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *ExprLess:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *ExprLessOrEqual:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *ExprGreater:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *ExprGreaterOrEqual:
 		if !defIsBool(def) {
-			return errMsgUnexpType(p, def, v)
+			return p.errMsgUnexpType(s, def, v)
 		}
 	case *ExprLogicalAnd:
 		for _, e := range v.Expressions {
-			if err := p.checkArgConstraint(e, def); err != "" {
+			s = source{s: s.s, Location: e.GetLocation()}
+			if err := p.checkArgConstraint(s, e, def); err.IsErr() {
 				return err
 			}
 		}
 	case *ExprLogicalOr:
 		for _, e := range v.Expressions {
-			if err := p.checkArgConstraint(e, def); err != "" {
+			s = source{s: s.s, Location: e.GetLocation()}
+			if err := p.checkArgConstraint(s, e, def); err.IsErr() {
 				return err
 			}
 		}
 	default:
 		panic(fmt.Errorf("unsupported constraint type: %T", e))
 	}
-	return ""
+	return Error{}
 }
 
 func defIsNum(t *ast.Type) bool {

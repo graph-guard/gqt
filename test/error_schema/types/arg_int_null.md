@@ -7,5 +7,5 @@ query { string(a: null) }
 ```
 
 ```
-1:19: wrong type for argument "a"
+1:19: expected type "Int!" but received "null"
 ```

@@ -7,5 +7,5 @@ query { foo(b: *) }
 ```
 
 ```
-1:12: argument "a" is required by schema but missing
+1:12: argument "a" of type "Int!" is required but missing
 ```

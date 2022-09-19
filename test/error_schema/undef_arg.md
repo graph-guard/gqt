@@ -1,11 +1,11 @@
 ```graphql
-type Query {foo(a: Int!): Int!}
+type Query {f(a: Int!): Int!}
 ```
 
 ```graphql
-query { foo(b: *) }
+query { f(b: *) }
 ```
 
 ```
-1:13: argument is undefined in schema
+1:11: argument "b" is undefined on field "f" of type "Query"
 ```
