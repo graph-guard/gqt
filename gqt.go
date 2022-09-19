@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 
 	gqlparser "github.com/vektah/gqlparser/v2"
 	ast "github.com/vektah/gqlparser/v2/ast"
@@ -103,6 +104,7 @@ type (
 	//  *ConstrLenGreaterOrEqual
 	Expression interface {
 		Type() string
+		ValueType(p *Parser) string
 	}
 
 	ConstrAny struct {
@@ -423,6 +425,142 @@ func (*Object) Type() string { return "object" }
 
 func (*Variable) Type() string { return "variable" }
 
+func (e *ExprParentheses) ValueType(p *Parser) string {
+	if e.Expression != nil {
+		return e.Expression.Type()
+	}
+	return ""
+}
+func (e *ConstrAny) ValueType(p *Parser) string { return "*" }
+func (e *ConstrEquals) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrNotEquals) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLess) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLessOrEqual) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrGreater) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrGreaterOrEqual) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLenEquals) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLenNotEquals) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLenLess) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLenLessOrEqual) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLenGreater) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+func (e *ConstrLenGreaterOrEqual) ValueType(p *Parser) string {
+	return e.Value.ValueType(p)
+}
+
+func (e *ExprLogicalNegation) ValueType(p *Parser) string { return "!" }
+func (e *ExprModulo) ValueType(p *Parser) string {
+	return e.Dividend.ValueType(p)
+}
+func (e *ExprDivision) ValueType(p *Parser) string {
+	return e.Dividend.ValueType(p)
+}
+func (e *ExprMultiplication) ValueType(p *Parser) string {
+	return e.Multiplicant.ValueType(p)
+}
+func (e *ExprAddition) ValueType(p *Parser) string {
+	return e.AddendLeft.ValueType(p)
+}
+func (e *ExprSubtraction) ValueType(p *Parser) string {
+	return e.Minuend.ValueType(p)
+}
+func (e *ExprEqual) ValueType(p *Parser) string {
+	return e.Left.ValueType(p)
+}
+func (e *ExprNotEqual) ValueType(p *Parser) string {
+	return e.Left.ValueType(p)
+}
+func (e *ExprLess) ValueType(p *Parser) string {
+	return e.Left.ValueType(p)
+}
+func (e *ExprLessOrEqual) ValueType(p *Parser) string {
+	return e.Left.ValueType(p)
+}
+func (e *ExprGreater) ValueType(p *Parser) string {
+	return e.Left.ValueType(p)
+}
+func (e *ExprGreaterOrEqual) ValueType(p *Parser) string {
+	return e.Left.ValueType(p)
+}
+func (e *ExprLogicalAnd) ValueType(p *Parser) string {
+	return e.Expressions[0].ValueType(p)
+}
+func (e *ExprLogicalOr) ValueType(p *Parser) string {
+	return e.Expressions[0].ValueType(p)
+}
+
+func (e *Int) ValueType(p *Parser) string   { return "Int" }
+func (e *Float) ValueType(p *Parser) string { return "Float" }
+
+func (e *True) ValueType(p *Parser) string   { return "Boolean" }
+func (e *False) ValueType(p *Parser) string  { return "Boolean" }
+func (e *String) ValueType(p *Parser) string { return "String" }
+func (e *Null) ValueType(p *Parser) string   { return "null" }
+
+func (e *Enum) ValueType(p *Parser) string {
+	t := p.enumVal[e.Value]
+	if t == nil {
+		return ""
+	}
+	return t.Name
+}
+
+func (e *Array) ValueType(p *Parser) string {
+	var b strings.Builder
+	notNull := true
+	foundType := false
+	b.WriteRune('[')
+	for _, i := range e.Items {
+		vt := i.ValueType(p)
+		if vt == "null" {
+			notNull = false
+			continue
+		}
+		if !foundType {
+			b.WriteString(vt)
+			foundType = true
+		}
+	}
+	if notNull {
+		b.WriteRune('!')
+	}
+	b.WriteRune(']')
+	return b.String()
+}
+
+func (e *ConstrMap) ValueType(p *Parser) string {
+	return "Array"
+}
+
+func (e *Object) ValueType(p *Parser) string {
+	return "input"
+}
+
+func (e *Variable) ValueType(p *Parser) string {
+	return "variable"
+}
+
 type VariableDefinition struct {
 	Location Location
 	Name     string
@@ -441,7 +579,8 @@ type VariableDefinition struct {
 }
 
 type Parser struct {
-	schema *ast.Schema
+	schema  *ast.Schema
+	enumVal map[string]*ast.Definition
 }
 
 type Source struct {
@@ -466,7 +605,18 @@ func NewParser(schema []Source) (*Parser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Parser{schema: s}, nil
+
+	p := &Parser{
+		schema:  s,
+		enumVal: map[string]*ast.Definition{},
+	}
+	for _, t := range s.Types {
+		for _, v := range t.EnumValues {
+			p.enumVal[v.Name] = t
+		}
+	}
+
+	return p, nil
 }
 
 func Parse(src []byte) (
@@ -744,12 +894,12 @@ func (p *Parser) ParseSelectionSet(
 		}
 		fields[sel.Name] = struct{}{}
 
-		var fieldSchemaDef *ast.FieldDefinition
+		var fieldDef *ast.FieldDefinition
 
 		if p.schema != nil {
 			if sel.Name != "__typename" {
-				fieldSchemaDef = setDef.Fields.ForName(sel.Name)
-				if fieldSchemaDef == nil {
+				fieldDef = setDef.Fields.ForName(sel.Name)
+				if fieldDef == nil {
 					return sBeforeName, nil, errSchemaFieldUndef(
 						sBeforeName, sel.Name, setDef,
 					)
@@ -760,20 +910,28 @@ func (p *Parser) ParseSelectionSet(
 		if s.peek1('(') {
 			var err Error
 			if s, sel.Arguments, err = p.ParseArguments(
-				s, variables, varRefs, fieldSchemaDef,
+				s, variables, varRefs, fieldDef,
 			); err.IsErr() {
 				return s, nil, err
 			}
 			for _, arg := range sel.Arguments {
 				setParent(arg, sel)
 			}
+		} else if fieldDef != nil {
+			for _, a := range fieldDef.Arguments {
+				if a.Type.NonNull {
+					return sBeforeName, nil, errMsg(
+						sBeforeName, errMsgArgMissing(a.Name),
+					)
+				}
+			}
 		}
 
 		s = s.consumeIgnored()
 
 		var typeDef *ast.Definition
-		if p.schema != nil && fieldSchemaDef != nil {
-			typeDef = p.schema.Types[fieldSchemaDef.Type.NamedType]
+		if p.schema != nil && fieldDef != nil {
+			typeDef = p.schema.Types[fieldDef.Type.NamedType]
 		}
 
 		if s.peek1('{') {
@@ -909,8 +1067,6 @@ func (p *Parser) ParseArguments(
 
 		names[arg.Name] = struct{}{}
 
-		fmt.Println("ARG: ", arg.Name)
-
 		var argDef *ast.ArgumentDefinition
 		if p.schema != nil {
 			if argDef = fieldDef.Arguments.ForName(arg.Name); argDef == nil {
@@ -955,9 +1111,9 @@ func (p *Parser) ParseArguments(
 			return s, nil, errUnexp(s, "expected constraint")
 		}
 
-		// Has a constraint
 		var expr Expression
 		var err Error
+		sBeforeConstr := s
 		s, expr, err = p.ParseExprLogicalOr(
 			s, variables, varRefs, expectConstraint,
 		)
@@ -966,6 +1122,13 @@ func (p *Parser) ParseArguments(
 		}
 		setParent(expr, arg)
 		arg.Constraint = expr
+
+		if argDef != nil {
+			errm := p.checkArgConstraint(arg.Constraint, argDef.Type)
+			if errm != "" {
+				return sBeforeConstr, nil, errMsg(sBeforeConstr, errm)
+			}
+		}
 
 		arguments = append(arguments, arg)
 		s = s.consumeIgnored()
@@ -995,9 +1158,7 @@ func (p *Parser) ParseArguments(
 					continue ARG_SCAN
 				}
 			}
-			return si, nil, errMsg(si, fmt.Sprintf(
-				"argument %q is required by schema but missing", a.Name,
-			))
+			return si, nil, errMsg(si, errMsgArgMissing(a.Name))
 		}
 	}
 
@@ -2690,4 +2851,241 @@ func (p *Parser) checkTypeCond(
 		"type %q can never be of type %q",
 		hostDef.Name, condTypeDef.Name,
 	))
+}
+
+func errMsgArgMissing(missingArgumentName string) string {
+	return fmt.Sprintf(
+		"argument %q is required by schema but missing", missingArgumentName,
+	)
+}
+
+func errMsgUnexpType(
+	p *Parser,
+	expected *ast.Type,
+	actual Expression,
+) string {
+	return fmt.Sprintf(
+		"expected type %s but received %s",
+		expected, actual.ValueType(p),
+	)
+}
+
+func errMsgUndefEnumVal(val string) string {
+	return fmt.Sprintf("undefined enum value %q", val)
+}
+
+// checkArgConstraint returns false if the argument constraint type
+// doesn't match the schema argument type.
+func (p *Parser) checkArgConstraint(
+	e Expression,
+	def *ast.Type,
+) (errorMessage string) {
+	switch v := e.(type) {
+	case *ConstrAny:
+	case *ConstrEquals:
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrNotEquals:
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLess:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrGreater:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLessOrEqual:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrGreaterOrEqual:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLenEquals:
+		if !defHasLength(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLenNotEquals:
+		if !defHasLength(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLenLess:
+		if !defHasLength(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLenGreater:
+		if !defHasLength(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLenLessOrEqual:
+		if !defHasLength(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrLenGreaterOrEqual:
+		if !defHasLength(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Value, def)
+	case *ConstrMap:
+		if !defIsArray(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Constraint, def.Elem)
+	case *ExprParentheses:
+		return p.checkArgConstraint(v.Expression, def)
+	case *ExprLogicalNegation:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Expression, def)
+	case *ExprModulo:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		if err := p.checkArgConstraint(v.Dividend, def); err != "" {
+			return err
+		}
+		return p.checkArgConstraint(v.Divisor, def)
+	case *ExprDivision:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		if err := p.checkArgConstraint(v.Dividend, def); err != "" {
+			return err
+		}
+		return p.checkArgConstraint(v.Divisor, def)
+	case *ExprMultiplication:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		if err := p.checkArgConstraint(v.Multiplicant, def); err != "" {
+			return err
+		}
+		return p.checkArgConstraint(v.Multiplicator, def)
+	case *ExprAddition:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		if err := p.checkArgConstraint(v.AddendLeft, def); err != "" {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.AddendRight, def)
+	case *ExprSubtraction:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		if err := p.checkArgConstraint(v.Minuend, def); err != "" {
+			return errMsgUnexpType(p, def, v)
+		}
+		return p.checkArgConstraint(v.Subtrahend, def)
+	case *Int:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *Float:
+		if !defIsNum(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *True:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *False:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *String:
+		if def.NamedType != "String" {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *Array:
+		if !defIsArray(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+		for _, i := range v.Items {
+			if err := p.checkArgConstraint(i, def.Elem); err != "" {
+				return err
+			}
+		}
+	case *Null:
+		if def.NonNull {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *Enum:
+		t, ok := p.enumVal[v.Value]
+		if !ok {
+			return errMsgUndefEnumVal(v.Value)
+		}
+		if def.NamedType != t.Name {
+			return fmt.Sprintf(
+				"expected type %s but received %s",
+				def, t.Name,
+			)
+		}
+	case *ExprEqual:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *ExprNotEqual:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *ExprLess:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *ExprLessOrEqual:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *ExprGreater:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *ExprGreaterOrEqual:
+		if !defIsBool(def) {
+			return errMsgUnexpType(p, def, v)
+		}
+	case *ExprLogicalAnd:
+		for _, e := range v.Expressions {
+			if err := p.checkArgConstraint(e, def); err != "" {
+				return err
+			}
+		}
+	case *ExprLogicalOr:
+		for _, e := range v.Expressions {
+			if err := p.checkArgConstraint(e, def); err != "" {
+				return err
+			}
+		}
+	default:
+		panic(fmt.Errorf("unsupported constraint type: %T", e))
+	}
+	return ""
+}
+
+func defIsNum(t *ast.Type) bool {
+	return t.NamedType == "Int" || t.NamedType == "Float"
+}
+
+func defIsBool(t *ast.Type) bool {
+	return t.NamedType == "Boolean"
+}
+
+func defHasLength(t *ast.Type) bool {
+	return t.NamedType == "String" || defIsArray(t)
+}
+
+func defIsArray(t *ast.Type) bool {
+	return t.NamedType == "" && t.Elem != nil
 }
