@@ -61,6 +61,7 @@ type (
 		Name               string
 		AssociatedVariable *VariableDefinition
 		Constraint         Expression
+		Def                *ast.ArgumentDefinition
 	}
 
 	// Expression can be either of:
@@ -354,6 +355,7 @@ type (
 		Location
 		Parent any
 		Name   string
+		Type   *ast.Type
 	}
 
 	SelectionMax struct {
@@ -561,6 +563,7 @@ func (e *Variable) ValueType(p *Parser) string {
 type VariableDefinition struct {
 	Location Location
 	Name     string
+	Type     *ast.Type
 
 	// References can be any of:
 	//
@@ -578,6 +581,8 @@ type VariableDefinition struct {
 type Parser struct {
 	schema  *ast.Schema
 	enumVal map[string]*ast.Definition
+	varDefs map[string]*VariableDefinition
+	varRefs []*Variable
 }
 
 type Source struct {
@@ -629,6 +634,9 @@ func (p *Parser) Parse(src []byte) (
 	variables map[string]*VariableDefinition,
 	err Error,
 ) {
+	p.varDefs = make(map[string]*VariableDefinition)
+	p.varRefs = make([]*Variable, 0)
+
 	s := source{
 		Location: Location{
 			Line:   1,
@@ -668,12 +676,9 @@ func (p *Parser) Parse(src []byte) (
 		)
 	}
 
-	variables = make(map[string]*VariableDefinition)
-	varRefs := []*Variable{}
-
 	s = s.consumeIgnored()
 	if s, o.Selections, err = p.ParseSelectionSet(
-		s, variables, &varRefs, typeDef,
+		s, typeDef,
 	); err.IsErr() {
 		return nil, nil, err
 	}
@@ -684,8 +689,8 @@ func (p *Parser) Parse(src []byte) (
 		return nil, nil, err
 	}
 
-	for _, r := range varRefs {
-		if v, ok := variables[r.Name]; !ok {
+	for _, r := range p.varRefs {
+		if v, ok := p.varDefs[r.Name]; !ok {
 			sc := s
 			sc.Location = r.Location
 			return nil, nil, errMsg(sc, "undefined variable")
@@ -694,7 +699,39 @@ func (p *Parser) Parse(src []byte) (
 		}
 	}
 
-	return o, variables, Error{}
+	// Enrich variable references with types from their argument
+	if p.schema != nil {
+		for _, r := range p.varRefs {
+			r.Type = p.varDefs[r.Name].Type
+		}
+
+		// Recheck
+		for _, r := range p.varRefs {
+			var arg *Argument
+			for p := r.Parent; p != nil; {
+				if x, ok := p.(*Argument); ok {
+					arg = x
+					break
+				}
+				p = getParent(p)
+			}
+
+			fmt.Println("RECHECK ", arg.Name)
+			fmt.Printf("RECHECK %#v\n", arg.Constraint.(*ConstrEquals).Value.(*ExprEqual).Right)
+			if err := p.checkArgConstraint(
+				source{
+					s:        s.s,
+					Location: arg.Location,
+				},
+				arg.Constraint,
+				arg.Def.Type,
+			); err.IsErr() {
+				return nil, nil, err
+			}
+		}
+	}
+
+	return o, p.varDefs, Error{}
 }
 
 func errUnexp(s source, msg string) Error {
@@ -780,8 +817,6 @@ const (
 
 func (p *Parser) ParseSelectionSet(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	setDef *ast.Definition,
 ) (source, []Selection, Error) {
 	var ok bool
@@ -813,7 +848,7 @@ func (p *Parser) ParseSelectionSet(
 			var fragInline *SelectionInlineFrag
 			sBefore := s
 			if s, fragInline, err = p.ParseInlineFrag(
-				s, variables, varRefs, setDef,
+				s, setDef,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -855,7 +890,7 @@ func (p *Parser) ParseSelectionSet(
 				var err Error
 				sBeforeOptionsBlock := s
 				if s, options, err = p.ParseSelectionSet(
-					s, variables, varRefs, setDef,
+					s, setDef,
 				); err.IsErr() {
 					return s, nil, err
 				}
@@ -912,7 +947,7 @@ func (p *Parser) ParseSelectionSet(
 		if s.peek1('(') {
 			var err Error
 			if s, sel.Arguments, err = p.ParseArguments(
-				s, variables, varRefs, setDef, fieldDef,
+				s, setDef, fieldDef,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -939,7 +974,7 @@ func (p *Parser) ParseSelectionSet(
 		if s.peek1('{') {
 			var err Error
 			if s, sel.Selections, err = p.ParseSelectionSet(
-				s, variables, varRefs, typeDef,
+				s, typeDef,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -970,8 +1005,6 @@ func (p *Parser) ParseSelectionSet(
 
 func (p *Parser) ParseInlineFrag(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	setType *ast.Definition,
 ) (source, *SelectionInlineFrag, Error) {
 	l := s.Location
@@ -1015,7 +1048,7 @@ func (p *Parser) ParseInlineFrag(
 	s = s.consumeIgnored()
 	var sels []Selection
 	var err Error
-	s, sels, err = p.ParseSelectionSet(s, variables, varRefs, typeDef)
+	s, sels, err = p.ParseSelectionSet(s, typeDef)
 	if err.IsErr() {
 		return s, nil, err
 	}
@@ -1029,8 +1062,6 @@ func (p *Parser) ParseInlineFrag(
 
 func (p *Parser) ParseArguments(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	hostType *ast.Definition,
 	fieldDef *ast.FieldDefinition,
 ) (source, []*Argument, Error) {
@@ -1070,9 +1101,8 @@ func (p *Parser) ParseArguments(
 
 		names[arg.Name] = struct{}{}
 
-		var argDef *ast.ArgumentDefinition
 		if p.schema != nil {
-			if argDef = fieldDef.Arguments.ForName(arg.Name); argDef == nil {
+			if arg.Def = fieldDef.Arguments.ForName(arg.Name); arg.Def == nil {
 				return sBeforeName, nil, errSchemaArgUndef(
 					sBeforeName, arg.Name, fieldDef.Name, hostType,
 				)
@@ -1095,16 +1125,22 @@ func (p *Parser) ParseArguments(
 				return s, nil, errUnexp(s, "expected variable name")
 			}
 
+			var varType *ast.Type
+			if arg.Def != nil {
+				varType = arg.Def.Type
+			}
+
 			def := &VariableDefinition{
 				Location: sBeforeDollar.Location,
 				Parent:   arg,
 				Name:     string(name),
+				Type:     varType,
 			}
 			arg.AssociatedVariable = def
-			if _, ok := variables[def.Name]; ok {
+			if _, ok := p.varDefs[def.Name]; ok {
 				return s, nil, errMsg(sBeforeDollar, "redeclared variable")
 			}
-			variables[def.Name] = def
+			p.varDefs[def.Name] = def
 			s = s.consumeIgnored()
 		}
 
@@ -1120,7 +1156,7 @@ func (p *Parser) ParseArguments(
 		var err Error
 		sBeforeConstr := s
 		s, expr, err = p.ParseExprLogicalOr(
-			s, variables, varRefs, expectConstraint,
+			s, expectConstraint,
 		)
 		if err.IsErr() {
 			return s, nil, err
@@ -1128,9 +1164,9 @@ func (p *Parser) ParseArguments(
 		setParent(expr, arg)
 		arg.Constraint = expr
 
-		if argDef != nil {
+		if arg.Def != nil {
 			if err := p.checkArgConstraint(
-				sBeforeConstr, arg.Constraint, argDef.Type,
+				sBeforeConstr, arg.Constraint, arg.Def.Type,
 			); err.IsErr() {
 				return sBeforeConstr, nil, err
 			}
@@ -1173,8 +1209,6 @@ func (p *Parser) ParseArguments(
 
 func (p *Parser) ParseValue(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
@@ -1193,7 +1227,7 @@ func (p *Parser) ParseValue(
 		s = s.consumeIgnored()
 
 		var err Error
-		s, e.Expression, err = p.ParseExprLogicalOr(s, variables, varRefs, expect)
+		s, e.Expression, err = p.ParseExprLogicalOr(s, expect)
 		if err.IsErr() {
 			return s, nil, err
 		}
@@ -1215,7 +1249,7 @@ func (p *Parser) ParseValue(
 
 		v.Name = string(name)
 
-		*varRefs = append(*varRefs, v)
+		p.varRefs = append(p.varRefs, v)
 
 		s = s.consumeIgnored()
 
@@ -1249,7 +1283,7 @@ func (p *Parser) ParseValue(
 
 			var expr Expression
 			s, expr, err = p.ParseExprLogicalOr(
-				s, variables, varRefs, expectConstraint,
+				s, expectConstraint,
 			)
 			if err.IsErr() {
 				return s, nil, err
@@ -1332,10 +1366,10 @@ func (p *Parser) ParseValue(
 					Name:     string(name),
 				}
 				fld.AssociatedVariable = def
-				if _, ok := variables[def.Name]; ok {
+				if _, ok := p.varDefs[def.Name]; ok {
 					return s, nil, errMsg(sBeforeDollar, "redeclared variable")
 				}
-				variables[def.Name] = def
+				p.varDefs[def.Name] = def
 
 				s = s.consumeIgnored()
 			}
@@ -1351,7 +1385,7 @@ func (p *Parser) ParseValue(
 				var expr Expression
 				var err Error
 				s, expr, err = p.ParseExprLogicalOr(
-					s, variables, varRefs, expectConstraint,
+					s, expectConstraint,
 				)
 				if err.IsErr() {
 					return s, nil, err
@@ -1396,8 +1430,6 @@ func (p *Parser) ParseValue(
 
 func (p *Parser) ParseExprUnary(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
@@ -1410,7 +1442,7 @@ func (p *Parser) ParseExprUnary(
 
 		si := s
 		if s, e.Expression, err = p.ParseValue(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1425,13 +1457,11 @@ func (p *Parser) ParseExprUnary(
 		s = s.consumeIgnored()
 		return s, e, Error{}
 	}
-	return p.ParseValue(s, variables, varRefs, expect)
+	return p.ParseValue(s, expect)
 }
 
 func (p *Parser) ParseExprMultiplicative(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
@@ -1439,7 +1469,7 @@ func (p *Parser) ParseExprMultiplicative(
 	var result Expression
 	var err Error
 	if s, result, err = p.ParseExprUnary(
-		s, variables, varRefs, expect,
+		s, expect,
 	); err.IsErr() {
 		return s, nil, err
 	}
@@ -1465,7 +1495,7 @@ func (p *Parser) ParseExprMultiplicative(
 			s = s.consumeIgnored()
 			si := s
 			if s, e.Multiplicator, err = p.ParseExprUnary(
-				s, variables, varRefs, expect,
+				s, expect,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -1495,7 +1525,7 @@ func (p *Parser) ParseExprMultiplicative(
 			s = s.consumeIgnored()
 			si := s
 			if s, e.Divisor, err = p.ParseExprUnary(
-				s, variables, varRefs, expect,
+				s, expect,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -1525,7 +1555,7 @@ func (p *Parser) ParseExprMultiplicative(
 			s = s.consumeIgnored()
 			si := s
 			if s, e.Divisor, err = p.ParseExprUnary(
-				s, variables, varRefs, expect,
+				s, expect,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -1548,8 +1578,6 @@ func (p *Parser) ParseExprMultiplicative(
 
 func (p *Parser) ParseExprAdditive(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
@@ -1557,7 +1585,7 @@ func (p *Parser) ParseExprAdditive(
 	var result Expression
 	var err Error
 	if s, result, err = p.ParseExprMultiplicative(
-		s, variables, varRefs, expect,
+		s, expect,
 	); err.IsErr() {
 		return s, nil, err
 	}
@@ -1583,7 +1611,7 @@ func (p *Parser) ParseExprAdditive(
 			s = s.consumeIgnored()
 			si := s
 			if s, e.AddendRight, err = p.ParseExprMultiplicative(
-				s, variables, varRefs, expect,
+				s, expect,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -1613,7 +1641,7 @@ func (p *Parser) ParseExprAdditive(
 			s = s.consumeIgnored()
 			si := s
 			if s, e.Subtrahend, err = p.ParseExprMultiplicative(
-				s, variables, varRefs, expect,
+				s, expect,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -1636,8 +1664,6 @@ func (p *Parser) ParseExprAdditive(
 
 func (p *Parser) ParseExprRelational(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	l := s.Location
@@ -1645,7 +1671,7 @@ func (p *Parser) ParseExprRelational(
 	var left Expression
 	var err Error
 	if s, left, err = p.ParseExprAdditive(
-		s, variables, varRefs, expect,
+		s, expect,
 	); err.IsErr() {
 		return s, nil, err
 	}
@@ -1663,7 +1689,7 @@ func (p *Parser) ParseExprRelational(
 		s = s.consumeIgnored()
 
 		if s, e.Right, err = p.ParseExprAdditive(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1681,7 +1707,7 @@ func (p *Parser) ParseExprRelational(
 		s = s.consumeIgnored()
 
 		if s, e.Right, err = p.ParseExprAdditive(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1699,7 +1725,7 @@ func (p *Parser) ParseExprRelational(
 		s = s.consumeIgnored()
 
 		if s, e.Right, err = p.ParseExprAdditive(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1718,7 +1744,7 @@ func (p *Parser) ParseExprRelational(
 
 		si := s
 		if s, e.Right, err = p.ParseExprAdditive(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1737,8 +1763,6 @@ func (p *Parser) ParseExprRelational(
 
 func (p *Parser) ParseExprEquality(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
@@ -1746,7 +1770,7 @@ func (p *Parser) ParseExprEquality(
 	var err Error
 	var exprLeft Expression
 	if s, exprLeft, err = p.ParseExprRelational(
-		s, variables, varRefs, expect,
+		s, expect,
 	); err.IsErr() {
 		return s, nil, err
 	}
@@ -1764,7 +1788,7 @@ func (p *Parser) ParseExprEquality(
 		s = s.consumeIgnored()
 
 		if s, e.Right, err = p.ParseExprRelational(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1787,7 +1811,7 @@ func (p *Parser) ParseExprEquality(
 		s = s.consumeIgnored()
 
 		if s, e.Right, err = p.ParseExprRelational(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1807,8 +1831,6 @@ func (p *Parser) ParseExprEquality(
 
 func (p *Parser) ParseExprLogicalOr(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	e := &ExprLogicalOr{Location: s.Location}
@@ -1817,7 +1839,7 @@ func (p *Parser) ParseExprLogicalOr(
 	for {
 		var expr Expression
 		if s, expr, err = p.ParseExprLogicalAnd(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1840,8 +1862,6 @@ func (p *Parser) ParseExprLogicalOr(
 
 func (p *Parser) ParseExprLogicalAnd(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	e := &ExprLogicalAnd{Location: s.Location}
@@ -1850,7 +1870,7 @@ func (p *Parser) ParseExprLogicalAnd(
 	for {
 		var expr Expression
 		if s, expr, err = p.ParseConstr(
-			s, variables, varRefs, expect,
+			s, expect,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1873,8 +1893,6 @@ func (p *Parser) ParseExprLogicalAnd(
 
 func (p *Parser) ParseConstr(
 	s source,
-	variables map[string]*VariableDefinition,
-	varRefs *[]*Variable,
 	expect expect,
 ) (source, Expression, Error) {
 	si := s
@@ -1884,7 +1902,7 @@ func (p *Parser) ParseConstr(
 
 	if expect == expectValue {
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1907,7 +1925,7 @@ func (p *Parser) ParseConstr(
 		s = s.consumeIgnored()
 
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1926,7 +1944,7 @@ func (p *Parser) ParseConstr(
 
 		si := s
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1951,7 +1969,7 @@ func (p *Parser) ParseConstr(
 
 		si := s
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -1976,7 +1994,7 @@ func (p *Parser) ParseConstr(
 
 		si := s
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -2001,7 +2019,7 @@ func (p *Parser) ParseConstr(
 
 		si := s
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -2032,7 +2050,7 @@ func (p *Parser) ParseConstr(
 
 			si := s
 			if s, expr, err = p.ParseExprEquality(
-				s, variables, varRefs, expectValue,
+				s, expectValue,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -2057,7 +2075,7 @@ func (p *Parser) ParseConstr(
 
 			si := s
 			if s, expr, err = p.ParseExprEquality(
-				s, variables, varRefs, expectValue,
+				s, expectValue,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -2082,7 +2100,7 @@ func (p *Parser) ParseConstr(
 
 			si := s
 			if s, expr, err = p.ParseExprEquality(
-				s, variables, varRefs, expectValue,
+				s, expectValue,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -2107,7 +2125,7 @@ func (p *Parser) ParseConstr(
 
 			si := s
 			if s, expr, err = p.ParseExprEquality(
-				s, variables, varRefs, expectValue,
+				s, expectValue,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -2132,7 +2150,7 @@ func (p *Parser) ParseConstr(
 
 			si := s
 			if s, expr, err = p.ParseExprEquality(
-				s, variables, varRefs, expectValue,
+				s, expectValue,
 			); err.IsErr() {
 				return s, nil, err
 			}
@@ -2157,7 +2175,7 @@ func (p *Parser) ParseConstr(
 
 		si := s
 		if s, expr, err = p.ParseExprEquality(
-			s, variables, varRefs, expectValue,
+			s, expectValue,
 		); err.IsErr() {
 			return s, nil, err
 		}
@@ -2188,7 +2206,7 @@ func (p *Parser) ParseConstr(
 			var expr Expression
 			var err Error
 			s, expr, err = p.ParseExprLogicalOr(
-				s, variables, varRefs, expectConstraint,
+				s, expectConstraint,
 			)
 			if err.IsErr() {
 				return s, nil, err
@@ -2213,7 +2231,7 @@ func (p *Parser) ParseConstr(
 	}
 
 	if s, expr, err = p.ParseExprEquality(
-		s, variables, varRefs, expectValue,
+		s, expectValue,
 	); err.IsErr() {
 		return s, nil, err
 	}
@@ -2682,6 +2700,101 @@ func setParent(t, parent any) {
 	}
 }
 
+func getParent(t any) any {
+	switch v := t.(type) {
+	case *Variable:
+		return v.Parent
+	case *Int:
+		return v.Parent
+	case *Float:
+		return v.Parent
+	case *String:
+		return v.Parent
+	case *True:
+		return v.Parent
+	case *False:
+		return v.Parent
+	case *Null:
+		return v.Parent
+	case *Enum:
+		return v.Parent
+	case *Array:
+		return v.Parent
+	case *Object:
+		return v.Parent
+	case *ExprModulo:
+		return v.Parent
+	case *ExprDivision:
+		return v.Parent
+	case *ExprMultiplication:
+		return v.Parent
+	case *ExprAddition:
+		return v.Parent
+	case *ExprSubtraction:
+		return v.Parent
+	case *ExprEqual:
+		return v.Parent
+	case *ExprNotEqual:
+		return v.Parent
+	case *ExprLess:
+		return v.Parent
+	case *ExprGreater:
+		return v.Parent
+	case *ExprLessOrEqual:
+		return v.Parent
+	case *ExprGreaterOrEqual:
+		return v.Parent
+	case *ExprParentheses:
+		return v.Parent
+	case *ConstrEquals:
+		return v.Parent
+	case *ConstrNotEquals:
+		return v.Parent
+	case *ConstrLess:
+		return v.Parent
+	case *ConstrGreater:
+		return v.Parent
+	case *ConstrLessOrEqual:
+		return v.Parent
+	case *ConstrGreaterOrEqual:
+		return v.Parent
+	case *ConstrLenEquals:
+		return v.Parent
+	case *ConstrLenNotEquals:
+		return v.Parent
+	case *ConstrLenLess:
+		return v.Parent
+	case *ConstrLenGreater:
+		return v.Parent
+	case *ConstrLenLessOrEqual:
+		return v.Parent
+	case *ConstrLenGreaterOrEqual:
+		return v.Parent
+	case *ExprLogicalAnd:
+		return v.Parent
+	case *ExprLogicalOr:
+		return v.Parent
+	case *ExprLogicalNegation:
+		return v.Parent
+	case *SelectionInlineFrag:
+		return v.Parent
+	case *ObjectField:
+		return v.Parent
+	case *SelectionField:
+		return v.Parent
+	case *Argument:
+		return v.Parent
+	case *SelectionMax:
+		return v.Parent
+	case *ConstrMap:
+		return v.Parent
+	case *ConstrAny:
+		return v.Parent
+	default:
+		panic(fmt.Errorf("unsupported type: %T", t))
+	}
+}
+
 func validateSelectionSet(s []byte, set []Selection) Error {
 	var maxs []*SelectionMax
 	fields := map[string]*SelectionField{}
@@ -3038,7 +3151,6 @@ func (p *Parser) checkArgConstraint(
 		}
 	case *True:
 		if !defIsBool(def) {
-			fmt.Println("OKAY", v.Location)
 			return p.errMsgUnexpType(s, def, v)
 		}
 	case *False:
@@ -3121,6 +3233,16 @@ func (p *Parser) checkArgConstraint(
 		if !defIsBool(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
+
+		s = source{s: s.s, Location: v.Left.GetLocation()}
+		if err := p.checkArgConstraint(s, v.Left, &ast.Type{
+			NamedType: "Boolean",
+		}); err.IsErr() {
+			return p.errMsgUnexpType(s, def, v)
+		}
+		s = source{s: s.s, Location: v.Right.GetLocation()}
+		return p.checkArgConstraint(s, v.Right, def)
+
 	case *ExprNotEqual:
 		if !defIsBool(def) {
 			return p.errMsgUnexpType(s, def, v)
@@ -3154,6 +3276,18 @@ func (p *Parser) checkArgConstraint(
 			if err := p.checkArgConstraint(s, e, def); err.IsErr() {
 				return err
 			}
+		}
+	case *Variable:
+		if v.Type != nil {
+			fmt.Println("CHECK", v.Name)
+			if v.Type != def {
+				return errMsg(s, fmt.Sprintf(
+					"expected type %q but received %q",
+					def, v.Type,
+				))
+			}
+		} else {
+			fmt.Println("SKIP", v.Name)
 		}
 	default:
 		panic(fmt.Errorf("unsupported constraint type: %T", e))
