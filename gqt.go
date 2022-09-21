@@ -349,6 +349,7 @@ type (
 		Name               string
 		AssociatedVariable *VariableDefinition
 		Constraint         Expression
+		Def                *ast.FieldDefinition
 	}
 
 	Variable struct {
@@ -699,8 +700,8 @@ func (p *Parser) Parse(src []byte) (
 		}
 	}
 
-	// Enrich variable references with types from their argument
 	if p.schema != nil {
+		// Enrich variable references with types from their argument
 		for _, r := range p.varRefs {
 			r.Type = p.varDefs[r.Name].Type
 		}
@@ -716,7 +717,7 @@ func (p *Parser) Parse(src []byte) (
 				p = getParent(p)
 			}
 
-			if err := p.checkArgConstraint(
+			if err := p.checkConstraintType(
 				source{
 					s:        s.s,
 					Location: arg.Location,
@@ -767,19 +768,6 @@ func errSchemaArgUndef(
 		"argument %q is undefined on field %q of type %q",
 		argName, fieldName, hostType.Name,
 	))
-}
-
-func errSchemaFieldUndef(
-	s source,
-	fieldName string,
-	hostType *ast.Definition,
-) Error {
-	return Error{
-		Location: s.Location,
-		Msg: fmt.Sprintf(
-			"field %q is undefined in type %q", fieldName, hostType.Name,
-		),
-	}
 }
 
 func (p *Parser) errCantCompare(s source, left, right Expression) Error {
@@ -935,8 +923,9 @@ func (p *Parser) ParseSelectionSet(
 			if sel.Name != "__typename" {
 				fieldDef = setDef.Fields.ForName(sel.Name)
 				if fieldDef == nil {
-					return sBeforeName, nil, errSchemaFieldUndef(
-						sBeforeName, sel.Name, setDef,
+					return sBeforeName, nil, errMsg(
+						sBeforeName,
+						errMsgUndefFieldInType(sel.Name, setDef.Name),
 					)
 				}
 			}
@@ -1163,7 +1152,7 @@ func (p *Parser) ParseArguments(
 		arg.Constraint = expr
 
 		if arg.Def != nil {
-			if err := p.checkArgConstraint(
+			if err := p.checkConstraintType(
 				sBeforeConstr, arg.Constraint, arg.Def.Type,
 			); err.IsErr() {
 				return sBeforeConstr, nil, err
@@ -1372,24 +1361,31 @@ func (p *Parser) ParseValue(
 				s = s.consumeIgnored()
 			}
 
-			if s, ok = s.consume(":"); ok {
-				s = s.consumeIgnored()
+			if s, ok = s.consume(":"); !ok {
+				return s, nil, errUnexp(s, "expected colon")
+			}
+			s = s.consumeIgnored()
+			if s.isEOF() {
+				return s, nil, errUnexp(s, "expected constraint")
+			}
 
-				if s.isEOF() {
-					return s, nil, errUnexp(s, "expected constraint")
-				}
+			var expr Expression
+			var err Error
+			sBeforeConstr := s
+			if s, expr, err = p.ParseExprLogicalOr(
+				s, expectConstraint,
+			); err.IsErr() {
+				return s, nil, err
+			}
+			setParent(expr, fld)
+			fld.Constraint = expr
 
-				// Has a constraint
-				var expr Expression
-				var err Error
-				s, expr, err = p.ParseExprLogicalOr(
-					s, expectConstraint,
-				)
-				if err.IsErr() {
-					return s, nil, err
+			if fld.Def != nil {
+				if err := p.checkConstraintType(
+					sBeforeConstr, fld.Constraint, fld.Def.Type,
+				); err.IsErr() {
+					return sBeforeConstr, nil, err
 				}
-				setParent(expr, fld)
-				fld.Constraint = expr
 			}
 
 			o.Fields = append(o.Fields, fld)
@@ -2999,9 +2995,16 @@ func errMsgUndefEnumVal(val string) string {
 	return fmt.Sprintf("undefined enum value %q", val)
 }
 
-// checkArgConstraint returns false if the argument constraint type
-// doesn't match the schema argument type.
-func (p *Parser) checkArgConstraint(
+func errMsgUndefFieldInType(fieldName, typeName string) string {
+	return fmt.Sprintf(
+		"field %q is undefined in type %q",
+		fieldName, typeName,
+	)
+}
+
+// checkConstraintType returns false if the argument or object field
+// constraint type doesn't match the schema argument type.
+func (p *Parser) checkConstraintType(
 	s source,
 	e Expression,
 	def *ast.Type,
@@ -3010,135 +3013,135 @@ func (p *Parser) checkArgConstraint(
 	case *ConstrAny:
 	case *ConstrEquals:
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrNotEquals:
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLess:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrGreater:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLessOrEqual:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrGreaterOrEqual:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLenEquals:
 		if !defHasLength(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLenNotEquals:
 		if !defHasLength(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLenLess:
 		if !defHasLength(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLenGreater:
 		if !defHasLength(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLenLessOrEqual:
 		if !defHasLength(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrLenGreaterOrEqual:
 		if !defHasLength(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkArgConstraint(s, v.Value, def)
+		return p.checkConstraintType(s, v.Value, def)
 	case *ConstrMap:
 		if !defIsArray(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Constraint.GetLocation()}
-		return p.checkArgConstraint(s, v.Constraint, def.Elem)
+		return p.checkConstraintType(s, v.Constraint, def.Elem)
 	case *ExprParentheses:
 		s = source{s: s.s, Location: v.Expression.GetLocation()}
-		return p.checkArgConstraint(s, v.Expression, def)
+		return p.checkConstraintType(s, v.Expression, def)
 	case *ExprLogicalNegation:
 		if !defIsBool(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Expression.GetLocation()}
-		return p.checkArgConstraint(s, v.Expression, def)
+		return p.checkConstraintType(s, v.Expression, def)
 	case *ExprModulo:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Dividend.GetLocation()}
-		if err := p.checkArgConstraint(s, v.Dividend, def); err.IsErr() {
+		if err := p.checkConstraintType(s, v.Dividend, def); err.IsErr() {
 			return err
 		}
 		s = source{s: s.s, Location: v.Divisor.GetLocation()}
-		return p.checkArgConstraint(s, v.Divisor, def)
+		return p.checkConstraintType(s, v.Divisor, def)
 	case *ExprDivision:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Dividend.GetLocation()}
-		if err := p.checkArgConstraint(s, v.Dividend, def); err.IsErr() {
+		if err := p.checkConstraintType(s, v.Dividend, def); err.IsErr() {
 			return err
 		}
 		s = source{s: s.s, Location: v.Divisor.GetLocation()}
-		return p.checkArgConstraint(s, v.Divisor, def)
+		return p.checkConstraintType(s, v.Divisor, def)
 	case *ExprMultiplication:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Multiplicant.GetLocation()}
-		if err := p.checkArgConstraint(s, v.Multiplicant, def); err.IsErr() {
+		if err := p.checkConstraintType(s, v.Multiplicant, def); err.IsErr() {
 			return err
 		}
 		s = source{s: s.s, Location: v.Multiplicator.GetLocation()}
-		return p.checkArgConstraint(s, v.Multiplicator, def)
+		return p.checkConstraintType(s, v.Multiplicator, def)
 	case *ExprAddition:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.AddendLeft.GetLocation()}
-		if err := p.checkArgConstraint(s, v.AddendLeft, def); err.IsErr() {
+		if err := p.checkConstraintType(s, v.AddendLeft, def); err.IsErr() {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.AddendRight.GetLocation()}
-		return p.checkArgConstraint(s, v.AddendRight, def)
+		return p.checkConstraintType(s, v.AddendRight, def)
 	case *ExprSubtraction:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Minuend.GetLocation()}
-		if err := p.checkArgConstraint(s, v.Minuend, def); err.IsErr() {
+		if err := p.checkConstraintType(s, v.Minuend, def); err.IsErr() {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Subtrahend.GetLocation()}
-		return p.checkArgConstraint(s, v.Subtrahend, def)
+		return p.checkConstraintType(s, v.Subtrahend, def)
 	case *Int:
 		if !defIsNum(def) {
 			return p.errMsgUnexpType(s, def, v)
@@ -3164,7 +3167,7 @@ func (p *Parser) checkArgConstraint(
 			return p.errMsgUnexpType(s, def, v)
 		}
 		for _, i := range v.Items {
-			if err := p.checkArgConstraint(source{
+			if err := p.checkConstraintType(source{
 				s:        s.s,
 				Location: i.GetLocation(),
 			}, i, def.Elem); err.IsErr() {
@@ -3201,13 +3204,10 @@ func (p *Parser) checkArgConstraint(
 				return errMsg(source{
 					s:        s.s,
 					Location: vf.Location,
-				}, fmt.Sprintf(
-					"undefined field %q in %s",
-					field.Name, def.Name(),
-				))
+				}, errMsgUndefFieldInType(vf.Name, def.Name()))
 			}
 
-			if err := p.checkArgConstraint(
+			if err := p.checkConstraintType(
 				source{
 					s:        s.s,
 					Location: vf.Constraint.GetLocation(),
@@ -3233,13 +3233,13 @@ func (p *Parser) checkArgConstraint(
 		}
 
 		s = source{s: s.s, Location: v.Left.GetLocation()}
-		if err := p.checkArgConstraint(s, v.Left, &ast.Type{
+		if err := p.checkConstraintType(s, v.Left, &ast.Type{
 			NamedType: "Boolean",
 		}); err.IsErr() {
 			return p.errMsgUnexpType(s, def, v)
 		}
 		s = source{s: s.s, Location: v.Right.GetLocation()}
-		return p.checkArgConstraint(s, v.Right, def)
+		return p.checkConstraintType(s, v.Right, def)
 
 	case *ExprNotEqual:
 		if !defIsBool(def) {
@@ -3264,28 +3264,25 @@ func (p *Parser) checkArgConstraint(
 	case *ExprLogicalAnd:
 		for _, e := range v.Expressions {
 			s = source{s: s.s, Location: e.GetLocation()}
-			if err := p.checkArgConstraint(s, e, def); err.IsErr() {
+			if err := p.checkConstraintType(s, e, def); err.IsErr() {
 				return err
 			}
 		}
 	case *ExprLogicalOr:
 		for _, e := range v.Expressions {
 			s = source{s: s.s, Location: e.GetLocation()}
-			if err := p.checkArgConstraint(s, e, def); err.IsErr() {
+			if err := p.checkConstraintType(s, e, def); err.IsErr() {
 				return err
 			}
 		}
 	case *Variable:
 		if v.Type != nil {
-			fmt.Println("CHECK", v.Name)
 			if v.Type != def {
 				return errMsg(s, fmt.Sprintf(
 					"expected type %q but received %q",
 					def, v.Type,
 				))
 			}
-		} else {
-			fmt.Println("SKIP", v.Name)
 		}
 	default:
 		panic(fmt.Errorf("unsupported constraint type: %T", e))

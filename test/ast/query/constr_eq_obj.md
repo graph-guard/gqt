@@ -3,7 +3,7 @@ query {
   x(a: {x:null})
   y(
     a: != {a=$a:1, b:$a},
-    b: {a,b,c},
+    b: {a:*,b:*,c:*},
   )
 }
 ```
@@ -32,8 +32,11 @@ Operation[1:1](query):
       - Argument[5:5](b):
         - ConstrEquals[5:8]:
           - Object[5:8](3 fields):
-            - ObjectField[5:9](a)
-            - ObjectField[5:11](b)
-            - ObjectField[5:13](c)
+            - ObjectField[5:9](a):
+              - Any[5:11]
+            - ObjectField[5:13](b):
+              - Any[5:15]
+            - ObjectField[5:17](c):
+              - Any[5:19]
 
 ```

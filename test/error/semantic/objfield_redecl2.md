@@ -1,7 +1,7 @@
 ```graphql
-query { f( a:{b, c, b} ) }
+query { f( a:{b:*, c:*, b:*} ) }
 ```
 
 ```
-1:21: redeclared object field
+1:25: redeclared object field
 ```
