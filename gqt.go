@@ -797,8 +797,10 @@ func newErrorNoPrefix(s source, msg string) Error {
 type expect int8
 
 const (
-	expectConstraint expect = 0
-	expectValue      expect = 1
+	expectConstraint      expect = 0
+	expectConstraintInMap expect = 1
+	expectValue           expect = 2
+	expectValueInMap      expect = 3
 )
 
 func (p *Parser) ParseSelectionSet(
@@ -1345,6 +1347,14 @@ func (p *Parser) ParseValue(
 				var name []byte
 				if s, name = s.consumeName(); name == nil {
 					return s, nil, errUnexp(s, "expected variable name")
+				}
+
+				if expect == expectValueInMap {
+					return sBeforeDollar, nil, errMsg(
+						sBeforeDollar,
+						"the use of variables inside "+
+							"map constraints is prohibited",
+					)
 				}
 
 				def := &VariableDefinition{
@@ -2200,7 +2210,7 @@ func (p *Parser) ParseConstr(
 			var expr Expression
 			var err Error
 			s, expr, err = p.ParseExprLogicalOr(
-				s, expectConstraint,
+				s, expectConstraintInMap,
 			)
 			if err.IsErr() {
 				return s, nil, err
@@ -2224,8 +2234,14 @@ func (p *Parser) ParseConstr(
 		Value:    expr,
 	}
 
+	if expect == expectConstraintInMap {
+		expect = expectValueInMap
+	} else {
+		expect = expectValue
+	}
+
 	if s, expr, err = p.ParseExprEquality(
-		s, expectValue,
+		s, expect,
 	); err.IsErr() {
 		return s, nil, err
 	}
