@@ -8,5 +8,5 @@ query { f(a=$a: *, b: true == $a) }
 ```
 
 ```
-1:24: can't use "Int!" as "Boolean"
+1:31: expected type "Boolean!" but received "Int!"
 ```
