@@ -716,8 +716,6 @@ func (p *Parser) Parse(src []byte) (
 				p = getParent(p)
 			}
 
-			fmt.Println("RECHECK ", arg.Name)
-			fmt.Printf("RECHECK %#v\n", arg.Constraint.(*ConstrEquals).Value.(*ExprEqual).Right)
 			if err := p.checkArgConstraint(
 				source{
 					s:        s.s,
