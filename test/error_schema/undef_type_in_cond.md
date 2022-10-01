@@ -10,5 +10,5 @@ query { i { ... on Baz { name } } }
 ```
 
 ```
-1:20: type is undefined in schema
+1:20: type Baz is undefined in schema
 ```

@@ -10,5 +10,5 @@ query { foo baz }
 ```
 
 ```
-1:13: field "baz" is undefined in type "Query"
+1:13: field "baz" is undefined in type Query
 ```

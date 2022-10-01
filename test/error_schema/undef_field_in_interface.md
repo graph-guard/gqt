@@ -12,5 +12,5 @@ query { i { foo } }
 ```
 
 ```
-1:13: field "foo" is undefined in type "Interface"
+1:13: field "foo" is undefined in type Interface
 ```

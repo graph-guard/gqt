@@ -44,8 +44,8 @@ type (
 	// Selection can be either of:
 	//
 	//	*SelectionField
-	//	*SelectionMax
 	//	*SelectionInlineFrag
+	//	*SelectionMax
 	Selection Expression
 
 	SelectionField struct {
@@ -78,43 +78,51 @@ type (
 
 	// Expression can be either of:
 	//
-	//	*Variable
-	//	*Int
-	//	*Float
-	//	*String
-	//	*True
-	//	*False
-	//	*Null
-	//	*Enum
-	//	*Array
-	//	*Object
-	//	*ExprModulo
-	//	*ExprDivision
-	//	*ExprMultiplication
-	//	*ExprAddition
-	//	*ExprSubtraction
-	//	*ExprEqual
-	//	*ExprNotEqual
-	//  *ExprLess
-	//  *ExprGreater
-	//  *ExprLessOrEqual
-	//  *ExprGreaterOrEqual
-	//	*ExprParentheses
-	//	*ExprLogicalAnd
-	//	*ExprLogicalOr
-	//	*ExprLogicalNegation
+	//  *Operation
+	//  *ExprParentheses
+	//  *ConstrAny
 	//  *ConstrEquals
 	//  *ConstrNotEquals
 	//  *ConstrLess
-	//  *ConstrGreater
 	//  *ConstrLessOrEqual
+	//  *ConstrGreater
 	//  *ConstrGreaterOrEqual
 	//  *ConstrLenEquals
 	//  *ConstrLenNotEquals
 	//  *ConstrLenLess
-	//  *ConstrLenGreater
 	//  *ConstrLenLessOrEqual
+	//  *ConstrLenGreater
 	//  *ConstrLenGreaterOrEqual
+	//  *ExprModulo
+	//  *ExprDivision
+	//  *ExprMultiplication
+	//  *ExprAddition
+	//  *ExprSubtraction
+	//  *ExprLogicalNegation
+	//  *ExprEqual
+	//  *ExprNotEqual
+	//  *ExprLess
+	//  *ExprLessOrEqual
+	//  *ExprGreater
+	//  *ExprGreaterOrEqual
+	//  *ExprLogicalAnd
+	//  *ExprLogicalOr
+	//  *True
+	//  *False
+	//  *Int
+	//  *Float
+	//  *String
+	//  *Null
+	//  *Enum
+	//  *Array
+	//  *ConstrMap
+	//  *Object
+	//  *VariableRef
+	//  *SelectionInlineFrag
+	//  *ObjectField
+	//  *SelectionField
+	//  *SelectionMax
+	//  *Argument
 	Expression interface {
 		GetParent() Expression
 		GetLocation() Location
@@ -560,6 +568,16 @@ func (e *ExprParentheses) TypeDesignation() string {
 	return e.Expression.TypeDesignation()
 }
 func (e *ConstrAny) TypeDesignation() string {
+	switch p := e.Parent.(type) {
+	case *Argument:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
+	case *ObjectField:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
+	}
 	return "*"
 }
 func (e *ConstrEquals) TypeDesignation() string {
@@ -709,21 +727,12 @@ func (e *Object) TypeDesignation() string {
 	return b.String()
 }
 func (e *VariableRef) TypeDesignation() string {
-	// switch p := e.Declaration.Parent.(type) {
-	// case *Argument:
-	// 	for c := p.Constraint; ; {
-	// 		switch c := p.Constraint.(type) {
-	// 		case *VariableRef:
-	// 			if e == c {
-	// 				return ""
-	// 			}
-	// 		case *ExprParentheses:
-	// 		}
-	// 	}
-	// 	return p.Constraint.TypeDesignation()
-	// case *ObjectField:
-	// 	return p.Constraint.TypeDesignation()
-	// }
+	switch p := e.Declaration.Parent.(type) {
+	case *Argument:
+		return p.Constraint.TypeDesignation()
+	case *ObjectField:
+		return p.Constraint.TypeDesignation()
+	}
 	panic(fmt.Errorf(
 		"unhandled variable declaration parent: %T",
 		e.Declaration.Parent,
@@ -946,7 +955,11 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 		case *SelectionInlineFrag:
 			if p.schema != nil {
 				s.TypeCondition.TypeDef = p.schema.Types[s.TypeCondition.TypeName]
-				p.setTypesSelSet(s.SelectionSet, s.TypeCondition.TypeDef.Fields)
+				var fields ast.FieldList
+				if s.TypeCondition.TypeDef != nil {
+					fields = s.TypeCondition.TypeDef.Fields
+				}
+				p.setTypesSelSet(s.SelectionSet, fields)
 			} else {
 				p.setTypesSelSet(s.SelectionSet, nil)
 			}
@@ -974,8 +987,12 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		exp := top.Expect
 
 		switch e := top.Expr.(type) {
-		case *ConstrAny, *Int, *Float, *True, *False, *String:
+		case *ConstrAny, *Int, *Float, *True, *False, *String, *VariableRef:
 		case *Null:
+			if exp != nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
 		case *ConstrEquals:
 			push(e.Value, exp)
 		case *ConstrNotEquals:
@@ -1041,18 +1058,6 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					push(i, exp.Elem)
 				}
 			}
-		case *VariableRef:
-		// 	if exp != nil {
-		// 		fmt.Println("VAR EXPT", exp)
-		// 		fmt.Println("VARDECL", e.Declaration)
-		// 		fmt.Println("VAR", e.Declaration.Type())
-		// 		fmt.Printf("%T\n", e.Declaration.Parent)
-
-		// 		// errUnexpType()
-		// 	}
-		// 	// if e.Type != exp {
-		// 	// 	errUnexpType()
-		// 	// }
 		case *Enum:
 			e.TypeDef = p.enumVal[e.Value]
 		case *Object:
@@ -1061,8 +1066,12 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				if t.Kind == ast.InputObject {
 					e.TypeDef = t
 					for _, f := range e.Fields {
+						var tp *ast.Type
 						f.Def = t.Fields.ForName(f.Name)
-						p.setTypesExpr(f.Constraint, f.Def.Type)
+						if f.Def != nil {
+							tp = f.Def.Type
+						}
+						p.setTypesExpr(f.Constraint, tp)
 					}
 				}
 			}
@@ -1383,14 +1392,14 @@ func (p *Parser) validateExpr(
 		case *ExprParentheses:
 			push(e.Expression, top.Expect)
 		case *ExprEqual:
-			if !p.assumeCompatibleType(e.Location, e.Left, e.Right) {
+			if !p.assumeComparableType(e.Location, e.Left, e.Right) {
 				ok = false
 				break
 			}
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprNotEqual:
-			if !p.assumeCompatibleType(e.Location, e.Left, e.Right) {
+			if !p.assumeComparableType(e.Location, e.Left, e.Right) {
 				ok = false
 				break
 			}
@@ -1593,22 +1602,17 @@ func (p *Parser) validateExpr(
 			}
 
 			if top.Expect != nil {
-				fmt.Println("VAR EXPT", top.Expect)
-				fmt.Println("VAR", e.Declaration.Type())
-				fmt.Printf("%T\n", e.Declaration.Parent)
-				switch t := e.Declaration.Parent.(type) {
-				case *ObjectField:
-					fmt.Println(" O:", t)
-					fmt.Println(" DEFVAL:", t.Def)
-				case *Argument:
-					fmt.Println(" A:", t)
-					fmt.Println(" DEFVAL:", t.Def.DefaultValue)
-				}
 				if e.Declaration.Type().NamedType != top.Expect.NamedType {
 					p.errUnexpType(top.Expect, top.Expr)
 				}
 			}
 		case *Enum:
+			if p.schema != nil && e.TypeDef == nil {
+				ok = false
+				p.errUndefEnumVal(e)
+				break
+			}
+
 			if top.Expect != nil && top.Expect.NamedType != "String" {
 				ok = false
 				p.errUnexpType(top.Expect, top.Expr)
@@ -1752,13 +1756,6 @@ func (p *Parser) errNestedMaxBlock(s *SelectionMax) {
 		Msg:      "nested max block",
 	})
 }
-
-// func (p *Parser) errTypef(s source, format string, v ...any) {
-// 	p.errors = append(p.errors, Error{
-// 		Location: s.Location,
-// 		Msg:      fmt.Sprintf("mismatching types: "+format, v...),
-// 	})
-// }
 
 func (p *Parser) errUndefType(l Location, name string) {
 	p.errors = append(p.errors, Error{
@@ -1906,13 +1903,6 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 				if s, options = p.ParseSelectionSet(s); s.stop() {
 					return stop(), SelectionSet{}
 				}
-
-				// for _, option := range options.Selections {
-				// 	if v, ok := option.(*SelectionMax); ok {
-				// 		p.newErr(v.Location, "nested max block")
-				// 		return stop(), SelectionSet{}
-				// 	}
-				// }
 
 				if len(options.Selections) < 2 {
 					p.newErr(
@@ -3430,17 +3420,10 @@ func (p *Parser) isString(expr any) bool {
 	return false
 }
 
-func (p *Parser) assumeCompatibleType(
+func (p *Parser) assumeComparableType(
 	l Location,
 	left, right Expression,
 ) (ok bool) {
-	_, lIsVar := left.(*VariableRef)
-	_, rIsVar := right.(*VariableRef)
-	if lIsVar || rIsVar {
-		// TODO check variable types
-		return true
-	}
-
 	if p.isBoolean(left) && !p.isBoolean(right) {
 		p.errMismatchingTypes(l, left, right)
 		return false
@@ -3874,10 +3857,10 @@ func (p *Parser) errUnexpType(
 	})
 }
 
-func (p *Parser) errUndefEnumVal(l Location, val string) {
+func (p *Parser) errUndefEnumVal(e *Enum) {
 	p.errors = append(p.errors, Error{
-		Location: l,
-		Msg:      fmt.Sprintf("undefined enum value %q", val),
+		Location: e.Location,
+		Msg:      fmt.Sprintf("undefined enum value %q", e.Value),
 	})
 }
 

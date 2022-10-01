@@ -8,5 +8,5 @@ query { foo { baz } }
 ```
 
 ```
-1:15: field "baz" is undefined in type "Foo"
+1:15: field "baz" is undefined in type Foo
 ```
