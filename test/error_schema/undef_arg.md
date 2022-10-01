@@ -7,5 +7,5 @@ query { f(b: *) }
 ```
 
 ```
-1:11: argument "b" is undefined on field "f" of type "Query"
+1:11: argument "b" is undefined on field "f" of type Query
 ```

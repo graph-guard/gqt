@@ -8,7 +8,7 @@ query {
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[2:3](max)
   - SelectionMax[2:7](1):
     options:

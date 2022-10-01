@@ -17,5 +17,5 @@ query { foo(a: banana) }
 ```
 
 ```
-1:16: expected type "Color!" but received "Fruit"
+1:16: expected type Color! but received Fruit
 ```

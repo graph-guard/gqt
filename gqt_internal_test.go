@@ -409,36 +409,42 @@ func TestParseNumber(t *testing.T) {
 		Location    Location
 		Input       string
 		ExpectNum   any
-		ExpectErr   Error
+		ExpectErr   []Error
 		ExpectAfter Location
 	}
 
 	run := test.New(t, func(t *testing.T, x T) {
-		a, n, err := source{
+		p := &Parser{}
+		a, n := p.ParseNumber(source{
 			s:        []byte(x.Input),
 			Location: x.Location,
-		}.ParseNumber()
+		})
 		require.Equal(t, x.ExpectNum, n)
-		expect := source{
-			s:        []byte(x.Input),
-			Location: x.ExpectAfter,
+		if len(x.ExpectErr) > 0 {
+			require.Equal(t, x.ExpectErr, p.errors)
+			require.Equal(t, source{}, a)
+		} else {
+			require.Len(t, p.errors, 0)
+			require.Equal(t, source{
+				s:        []byte(x.Input),
+				Location: x.ExpectAfter,
+			}, a)
 		}
-		require.Equal(t, x.ExpectErr, err)
-		require.Equal(t, expect, a)
+
 	})
 
 	run(T{
 		startLoc(),
 		"",
 		nil,
-		Error{},
+		nil,
 		Location{0, 1, 1},
 	})
 	run(T{
 		startLoc(),
 		"x",
 		nil,
-		Error{},
+		nil,
 		Location{0, 1, 1},
 	})
 	run(T{
@@ -448,7 +454,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    0.1234,
 		},
-		Error{},
+		nil,
 		Location{6, 1, 7},
 	})
 	run(T{
@@ -458,7 +464,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    0,
 		},
-		Error{},
+		nil,
 		Location{1, 1, 2},
 	})
 	run(T{
@@ -468,7 +474,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    10.0,
 		},
-		Error{},
+		nil,
 		Location{4, 1, 5},
 	})
 	run(T{
@@ -478,7 +484,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -1,
 		},
-		Error{},
+		nil,
 		Location{2, 1, 3},
 	})
 	run(T{
@@ -488,7 +494,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    0.1234,
 		},
-		Error{},
+		nil,
 		Location{6, 1, 7},
 	})
 	run(T{
@@ -498,7 +504,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -508,36 +514,42 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    6e+5,
 		},
-		Error{},
+		nil,
 		Location{4, 1, 5},
 	})
 	run(T{
 		startLoc(),
 		"6E",
 		nil,
-		Error{
-			Location: Location{2, 1, 3},
-			Msg:      "exponent has no digits",
+		[]Error{
+			{
+				Location: Location{2, 1, 3},
+				Msg:      "exponent has no digits",
+			},
 		},
-		startLoc(),
+		Location{},
 	})
 	run(T{
 		startLoc(),
 		"6E ",
 		nil,
-		Error{
-			Location: Location{2, 1, 3},
-			Msg:      "exponent has no digits",
+		[]Error{
+			{
+				Location: Location{2, 1, 3},
+				Msg:      "exponent has no digits",
+			},
 		},
-		startLoc(),
+		Location{},
 	})
 	run(T{
 		startLoc(),
 		"6Ee",
 		nil,
-		Error{
-			Location: Location{2, 1, 3},
-			Msg:      "exponent has no digits",
+		[]Error{
+			{
+				Location: Location{2, 1, 3},
+				Msg:      "exponent has no digits",
+			},
 		},
 		startLoc(),
 	})
@@ -545,9 +557,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"6E-",
 		nil,
-		Error{
-			Location: Location{3, 1, 4},
-			Msg:      "exponent has no digits",
+		[]Error{
+			{
+				Location: Location{3, 1, 4},
+				Msg:      "exponent has no digits",
+			},
 		},
 		startLoc(),
 	})
@@ -555,9 +569,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"6E- ",
 		nil,
-		Error{
-			Location: Location{3, 1, 4},
-			Msg:      "exponent has no digits",
+		[]Error{
+			{
+				Location: Location{3, 1, 4},
+				Msg:      "exponent has no digits",
+			},
 		},
 		startLoc(),
 	})
@@ -565,9 +581,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"6E-e",
 		nil,
-		Error{
-			Location: Location{3, 1, 4},
-			Msg:      "exponent has no digits",
+		[]Error{
+			{
+				Location: Location{3, 1, 4},
+				Msg:      "exponent has no digits",
+			},
 		},
 		startLoc(),
 	})
@@ -578,7 +596,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -588,7 +606,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -598,7 +616,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -608,7 +626,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -618,7 +636,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -628,7 +646,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -638,7 +656,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -648,7 +666,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -658,7 +676,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -668,7 +686,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -678,7 +696,7 @@ func TestParseNumber(t *testing.T) {
 			Location: startLoc(),
 			Value:    -0.1234,
 		},
-		Error{},
+		nil,
 		Location{7, 1, 8},
 	})
 	run(T{
@@ -688,7 +706,7 @@ func TestParseNumber(t *testing.T) {
 			Location: Location{2, 1, 3},
 			Value:    2,
 		},
-		Error{},
+		nil,
 		Location{3, 1, 4},
 	})
 	run(T{
@@ -698,7 +716,7 @@ func TestParseNumber(t *testing.T) {
 			Location: Location{2, 1, 3},
 			Value:    2,
 		},
-		Error{},
+		nil,
 		Location{3, 1, 4},
 	})
 	run(T{
@@ -708,7 +726,7 @@ func TestParseNumber(t *testing.T) {
 			Location: Location{2, 1, 3},
 			Value:    2,
 		},
-		Error{},
+		nil,
 		Location{3, 1, 4},
 	})
 	run(T{
@@ -718,7 +736,7 @@ func TestParseNumber(t *testing.T) {
 			Location: Location{2, 1, 3},
 			Value:    2,
 		},
-		Error{},
+		nil,
 		Location{3, 1, 4},
 	})
 	run(T{
@@ -728,7 +746,7 @@ func TestParseNumber(t *testing.T) {
 			Location: Location{2, 1, 3},
 			Value:    2,
 		},
-		Error{},
+		nil,
 		Location{3, 1, 4},
 	})
 }

@@ -8,5 +8,5 @@ query { f(a: len != green) }
 ```
 
 ```
-1:21: mismatching types: can't use Color as number
+1:21: expected type Int! but received Color
 ```

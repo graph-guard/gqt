@@ -13,5 +13,5 @@ query { u { ... on InterfaceFooBar { name } } }
 ```
 
 ```
-1:20: type "BazzOrTazz" can never be of type "InterfaceFooBar"
+1:20: type BazzOrTazz can never be of type InterfaceFooBar
 ```

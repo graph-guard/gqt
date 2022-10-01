@@ -9,7 +9,7 @@ query {
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[2:3](foo):
     selections:
       - SelectionField[3:5](bar)

@@ -22,11 +22,11 @@ const (
 func (t OperationType) String() string {
 	switch t {
 	case OperationTypeQuery:
-		return "query"
+		return "Query"
 	case OperationTypeMutation:
-		return "mutation"
+		return "Mutation"
 	case OperationTypeSubscription:
-		return "subscription"
+		return "Subscription"
 	}
 	return ""
 }
@@ -36,8 +36,9 @@ type (
 
 	Operation struct {
 		Location
-		Type       OperationType
-		Selections []Selection
+		Type OperationType
+		SelectionSet
+		Def *ast.Definition
 	}
 
 	// Selection can be either of:
@@ -45,21 +46,32 @@ type (
 	//	*SelectionField
 	//	*SelectionMax
 	//	*SelectionInlineFrag
-	Selection any
+	Selection Expression
 
 	SelectionField struct {
 		Location
-		Parent     any
-		Name       string
-		Arguments  []*Argument
+		Parent Expression
+		Name   string
+		ArgumentList
+		SelectionSet
+		Def *ast.FieldDefinition
+	}
+
+	SelectionSet struct {
+		Location
 		Selections []Selection
+	}
+
+	ArgumentList struct {
+		Location
+		Arguments []*Argument
 	}
 
 	Argument struct {
 		Location
-		Parent             any
+		Parent             Expression
 		Name               string
-		AssociatedVariable *VariableDefinition
+		AssociatedVariable *VariableDeclaration
 		Constraint         Expression
 		Def                *ast.ArgumentDefinition
 	}
@@ -104,276 +116,344 @@ type (
 	//  *ConstrLenLessOrEqual
 	//  *ConstrLenGreaterOrEqual
 	Expression interface {
+		GetParent() Expression
 		GetLocation() Location
-		ValueType(p *Parser) string
+		TypeDesignation() string
+		IsFloat() bool
 	}
 
 	ConstrAny struct {
 		Location
-		Parent any
+		Parent Expression
 	}
 
 	ConstrEquals struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrNotEquals struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLess struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLessOrEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrGreater struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrGreaterOrEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenEquals struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenNotEquals struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenLess struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenLessOrEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenGreater struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenGreaterOrEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  Expression
 	}
 
 	ConstrMap struct {
 		Location
-		Parent     any
+		Parent     Expression
 		Constraint Expression
 	}
 
 	ExprParentheses struct {
 		Location
-		Parent     any
+		Parent     Expression
 		Expression Expression
 	}
 
 	ExprLogicalNegation struct {
 		Location
-		Parent     any
+		Parent     Expression
 		Expression Expression
 	}
 
 	ExprModulo struct {
 		Location
-		Parent   any
+		Parent   Expression
 		Dividend Expression
 		Divisor  Expression
+		Float    bool
 	}
 
 	ExprDivision struct {
 		Location
-		Parent   any
+		Parent   Expression
 		Dividend Expression
 		Divisor  Expression
+		Float    bool
 	}
 
 	ExprMultiplication struct {
 		Location
-		Parent        any
+		Parent        Expression
 		Multiplicant  Expression
 		Multiplicator Expression
+		Float         bool
 	}
 
 	ExprAddition struct {
 		Location
-		Parent      any
+		Parent      Expression
 		AddendLeft  Expression
 		AddendRight Expression
+		Float       bool
 	}
 
 	ExprSubtraction struct {
 		Location
-		Parent     any
+		Parent     Expression
 		Minuend    Expression
 		Subtrahend Expression
+		Float      bool
 	}
 
 	ExprEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprNotEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprLess struct {
 		Location
-		Parent any
+		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprLessOrEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprGreater struct {
 		Location
-		Parent any
+		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprGreaterOrEqual struct {
 		Location
-		Parent any
+		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprLogicalAnd struct {
 		Location
-		Parent      any
+		Parent      Expression
 		Expressions []Expression
 	}
 
 	ExprLogicalOr struct {
 		Location
-		Parent      any
+		Parent      Expression
 		Expressions []Expression
 	}
 
 	Int struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  int64
 	}
 
 	Float struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  float64
 	}
 
 	String struct {
 		Location
-		Parent any
+		Parent Expression
 		Value  string
 	}
 
 	True struct {
 		Location
-		Parent any
+		Parent Expression
 	}
 
 	False struct {
 		Location
-		Parent any
+		Parent Expression
 	}
 
 	Null struct {
 		Location
-		Parent any
+		Parent  Expression
+		TypeDef *ast.Definition
 	}
 
 	Enum struct {
 		Location
-		Parent any
-		Value  string
+		Parent  Expression
+		Value   string
+		TypeDef *ast.Definition
 	}
 
 	Array struct {
 		Location
-		Parent any
-		Items  []Expression
+		Parent      Expression
+		Items       []Expression
+		ItemTypeDef *ast.Definition
 	}
 
 	Object struct {
 		Location
-		Parent any
-		Fields []*ObjectField
+		Parent  Expression
+		Fields  []*ObjectField
+		TypeDef *ast.Definition
 	}
 
 	ObjectField struct {
 		Location
-		Parent             any
+		Parent             Expression
 		Name               string
-		AssociatedVariable *VariableDefinition
+		AssociatedVariable *VariableDeclaration
 		Constraint         Expression
 		Def                *ast.FieldDefinition
 	}
 
-	Variable struct {
+	VariableRef struct {
 		Location
-		Parent any
-		Name   string
-		Type   *ast.Type
+		Parent      Expression
+		Name        string
+		Declaration *VariableDeclaration
 	}
 
 	SelectionMax struct {
 		Location
-		Parent  any
+		Parent  Expression
 		Limit   int
-		Options []Selection
+		Options SelectionSet
 	}
 
 	SelectionInlineFrag struct {
 		Location
-		Parent        any
-		TypeCondition string
-		Selections    []Selection
+		Parent        Expression
+		TypeCondition TypeCondition
+		SelectionSet
+	}
+
+	TypeCondition struct {
+		Location
+		TypeName string
+		TypeDef  *ast.Definition
 	}
 )
 
+func (e *Operation) GetParent() Expression               { return nil }
+func (e *ExprParentheses) GetParent() Expression         { return e.Parent }
+func (e *ConstrAny) GetParent() Expression               { return e.Parent }
+func (e *ConstrEquals) GetParent() Expression            { return e.Parent }
+func (e *ConstrNotEquals) GetParent() Expression         { return e.Parent }
+func (e *ConstrLess) GetParent() Expression              { return e.Parent }
+func (e *ConstrLessOrEqual) GetParent() Expression       { return e.Parent }
+func (e *ConstrGreater) GetParent() Expression           { return e.Parent }
+func (e *ConstrGreaterOrEqual) GetParent() Expression    { return e.Parent }
+func (e *ConstrLenEquals) GetParent() Expression         { return e.Parent }
+func (e *ConstrLenNotEquals) GetParent() Expression      { return e.Parent }
+func (e *ConstrLenLess) GetParent() Expression           { return e.Parent }
+func (e *ConstrLenLessOrEqual) GetParent() Expression    { return e.Parent }
+func (e *ConstrLenGreater) GetParent() Expression        { return e.Parent }
+func (e *ConstrLenGreaterOrEqual) GetParent() Expression { return e.Parent }
+
+func (e *ExprModulo) GetParent() Expression         { return e.Parent }
+func (e *ExprDivision) GetParent() Expression       { return e.Parent }
+func (e *ExprMultiplication) GetParent() Expression { return e.Parent }
+func (e *ExprAddition) GetParent() Expression       { return e.Parent }
+func (e *ExprSubtraction) GetParent() Expression    { return e.Parent }
+
+func (e *ExprLogicalNegation) GetParent() Expression { return e.Parent }
+func (e *ExprEqual) GetParent() Expression           { return e.Parent }
+func (e *ExprNotEqual) GetParent() Expression        { return e.Parent }
+func (e *ExprLess) GetParent() Expression            { return e.Parent }
+func (e *ExprLessOrEqual) GetParent() Expression     { return e.Parent }
+func (e *ExprGreater) GetParent() Expression         { return e.Parent }
+func (e *ExprGreaterOrEqual) GetParent() Expression  { return e.Parent }
+func (e *ExprLogicalAnd) GetParent() Expression      { return e.Parent }
+func (e *ExprLogicalOr) GetParent() Expression       { return e.Parent }
+
+func (e *True) GetParent() Expression        { return e.Parent }
+func (e *False) GetParent() Expression       { return e.Parent }
+func (e *Int) GetParent() Expression         { return e.Parent }
+func (e *Float) GetParent() Expression       { return e.Parent }
+func (e *String) GetParent() Expression      { return e.Parent }
+func (e *Null) GetParent() Expression        { return e.Parent }
+func (e *Enum) GetParent() Expression        { return e.Parent }
+func (e *Array) GetParent() Expression       { return e.Parent }
+func (e *ConstrMap) GetParent() Expression   { return e.Parent }
+func (e *Object) GetParent() Expression      { return e.Parent }
+func (e *VariableRef) GetParent() Expression { return e.Parent }
+
+func (e *SelectionInlineFrag) GetParent() Expression { return e.Parent }
+func (e *ObjectField) GetParent() Expression         { return e.Parent }
+func (e *SelectionField) GetParent() Expression      { return e.Parent }
+func (e *SelectionMax) GetParent() Expression        { return e.Parent }
+func (e *Argument) GetParent() Expression            { return e.Parent }
+
+func (e *Operation) GetLocation() Location               { return e.Location }
 func (e *ExprParentheses) GetLocation() Location         { return e.Location }
 func (e *ConstrAny) GetLocation() Location               { return e.Location }
 func (e *ConstrEquals) GetLocation() Location            { return e.Location }
@@ -405,166 +485,262 @@ func (e *ExprGreaterOrEqual) GetLocation() Location  { return e.Location }
 func (e *ExprLogicalAnd) GetLocation() Location      { return e.Location }
 func (e *ExprLogicalOr) GetLocation() Location       { return e.Location }
 
-func (e *True) GetLocation() Location      { return e.Location }
-func (e *False) GetLocation() Location     { return e.Location }
-func (e *Int) GetLocation() Location       { return e.Location }
-func (e *Float) GetLocation() Location     { return e.Location }
-func (e *String) GetLocation() Location    { return e.Location }
-func (e *Null) GetLocation() Location      { return e.Location }
-func (e *Enum) GetLocation() Location      { return e.Location }
-func (e *Array) GetLocation() Location     { return e.Location }
-func (e *ConstrMap) GetLocation() Location { return e.Location }
-func (e *Object) GetLocation() Location    { return e.Location }
-func (e *Variable) GetLocation() Location  { return e.Location }
+func (e *True) GetLocation() Location        { return e.Location }
+func (e *False) GetLocation() Location       { return e.Location }
+func (e *Int) GetLocation() Location         { return e.Location }
+func (e *Float) GetLocation() Location       { return e.Location }
+func (e *String) GetLocation() Location      { return e.Location }
+func (e *Null) GetLocation() Location        { return e.Location }
+func (e *Enum) GetLocation() Location        { return e.Location }
+func (e *Array) GetLocation() Location       { return e.Location }
+func (e *ConstrMap) GetLocation() Location   { return e.Location }
+func (e *Object) GetLocation() Location      { return e.Location }
+func (e *VariableRef) GetLocation() Location { return e.Location }
 
-func (e *ExprParentheses) ValueType(p *Parser) string {
-	if e.Expression != nil {
-		return e.Expression.ValueType(p)
+func (e *SelectionInlineFrag) GetLocation() Location { return e.Location }
+func (e *ObjectField) GetLocation() Location         { return e.Location }
+func (e *SelectionField) GetLocation() Location      { return e.Location }
+func (e *SelectionMax) GetLocation() Location        { return e.Location }
+func (e *Argument) GetLocation() Location            { return e.Location }
+
+func (e *Operation) IsFloat() bool               { return false }
+func (e *ExprParentheses) IsFloat() bool         { return e.Expression.IsFloat() }
+func (e *ConstrAny) IsFloat() bool               { return false }
+func (e *ConstrEquals) IsFloat() bool            { return false }
+func (e *ConstrNotEquals) IsFloat() bool         { return false }
+func (e *ConstrLess) IsFloat() bool              { return false }
+func (e *ConstrLessOrEqual) IsFloat() bool       { return false }
+func (e *ConstrGreater) IsFloat() bool           { return false }
+func (e *ConstrGreaterOrEqual) IsFloat() bool    { return false }
+func (e *ConstrLenEquals) IsFloat() bool         { return false }
+func (e *ConstrLenNotEquals) IsFloat() bool      { return false }
+func (e *ConstrLenLess) IsFloat() bool           { return false }
+func (e *ConstrLenLessOrEqual) IsFloat() bool    { return false }
+func (e *ConstrLenGreater) IsFloat() bool        { return false }
+func (e *ConstrLenGreaterOrEqual) IsFloat() bool { return false }
+
+func (e *ExprModulo) IsFloat() bool         { return e.Float }
+func (e *ExprDivision) IsFloat() bool       { return e.Float }
+func (e *ExprMultiplication) IsFloat() bool { return e.Float }
+func (e *ExprAddition) IsFloat() bool       { return e.Float }
+func (e *ExprSubtraction) IsFloat() bool    { return e.Float }
+
+func (e *ExprLogicalNegation) IsFloat() bool { return false }
+func (e *ExprEqual) IsFloat() bool           { return false }
+func (e *ExprNotEqual) IsFloat() bool        { return false }
+func (e *ExprLess) IsFloat() bool            { return false }
+func (e *ExprLessOrEqual) IsFloat() bool     { return false }
+func (e *ExprGreater) IsFloat() bool         { return false }
+func (e *ExprGreaterOrEqual) IsFloat() bool  { return false }
+func (e *ExprLogicalAnd) IsFloat() bool      { return false }
+func (e *ExprLogicalOr) IsFloat() bool       { return false }
+
+func (e *True) IsFloat() bool        { return false }
+func (e *False) IsFloat() bool       { return false }
+func (e *Int) IsFloat() bool         { return false }
+func (e *Float) IsFloat() bool       { return true }
+func (e *String) IsFloat() bool      { return false }
+func (e *Null) IsFloat() bool        { return false }
+func (e *Enum) IsFloat() bool        { return false }
+func (e *Array) IsFloat() bool       { return false }
+func (e *ConstrMap) IsFloat() bool   { return false }
+func (e *Object) IsFloat() bool      { return false }
+func (e *VariableRef) IsFloat() bool { return false }
+
+func (e *Argument) IsFloat() bool            { return e.Constraint.IsFloat() }
+func (e *SelectionInlineFrag) IsFloat() bool { return false }
+func (e *ObjectField) IsFloat() bool         { return false }
+func (e *SelectionField) IsFloat() bool      { return false }
+func (e *SelectionMax) IsFloat() bool        { return false }
+
+func (e *Operation) TypeDesignation() string {
+	return e.Type.String()
+}
+func (e *ExprParentheses) TypeDesignation() string {
+	return e.Expression.TypeDesignation()
+}
+func (e *ConstrAny) TypeDesignation() string {
+	return "*"
+}
+func (e *ConstrEquals) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrNotEquals) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLess) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLessOrEqual) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrGreater) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrGreaterOrEqual) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLenEquals) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLenNotEquals) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLenLess) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLenLessOrEqual) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLenGreater) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+func (e *ConstrLenGreaterOrEqual) TypeDesignation() string {
+	return e.Value.TypeDesignation()
+}
+
+func (e *ExprModulo) TypeDesignation() string {
+	if e.Float {
+		return "Float"
 	}
-	return ""
+	return "Int"
 }
-func (e *ConstrAny) ValueType(p *Parser) string { return "*" }
-func (e *ConstrEquals) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
-}
-func (e *ConstrNotEquals) ValueType(p *Parser) string {
-	return e.Value.ValueType(p)
-}
-func (e *ConstrLess) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLessOrEqual) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrGreater) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrGreaterOrEqual) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLenEquals) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLenNotEquals) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLenLess) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLenLessOrEqual) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLenGreater) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ConstrLenGreaterOrEqual) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-
-func (e *ExprModulo) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ExprDivision) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ExprMultiplication) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ExprAddition) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ExprSubtraction) ValueType(p *Parser) string {
-	return "Int|Float"
-}
-func (e *ExprLogicalNegation) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprEqual) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprNotEqual) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprLess) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprLessOrEqual) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprGreater) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprGreaterOrEqual) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprLogicalAnd) ValueType(p *Parser) string {
-	return "Boolean"
-}
-func (e *ExprLogicalOr) ValueType(p *Parser) string {
-	return "Boolean"
-}
-
-func (e *True) ValueType(p *Parser) string   { return "Boolean" }
-func (e *False) ValueType(p *Parser) string  { return "Boolean" }
-func (e *Int) ValueType(p *Parser) string    { return "Int" }
-func (e *Float) ValueType(p *Parser) string  { return "Float" }
-func (e *String) ValueType(p *Parser) string { return "String" }
-func (e *Null) ValueType(p *Parser) string   { return "null" }
-func (e *Enum) ValueType(p *Parser) string {
-	if p.schema == nil {
-		return "enum"
+func (e *ExprDivision) TypeDesignation() string {
+	if e.Float {
+		return "Float"
 	}
-
-	t := p.enumVal[e.Value]
-	if t == nil {
-		return "enum"
-	}
-	return t.Name
+	return "Int"
 }
-func (e *Array) ValueType(p *Parser) string {
-	if p.schema == nil {
-		return "array"
+func (e *ExprMultiplication) TypeDesignation() string {
+	if e.Float {
+		return "Float"
 	}
+	return "Int"
+}
+func (e *ExprAddition) TypeDesignation() string {
+	if e.Float {
+		return "Float"
+	}
+	return "Int"
+}
+func (e *ExprSubtraction) TypeDesignation() string {
+	if e.Float {
+		return "Float"
+	}
+	return "Int"
+}
 
+func (e *ExprLogicalNegation) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprEqual) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprNotEqual) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprLess) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprLessOrEqual) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprGreater) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprGreaterOrEqual) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprLogicalAnd) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *ExprLogicalOr) TypeDesignation() string {
+	return "Boolean"
+}
+
+func (e *True) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *False) TypeDesignation() string {
+	return "Boolean"
+}
+func (e *Int) TypeDesignation() string {
+	return "Int"
+}
+func (e *Float) TypeDesignation() string {
+	return "Float"
+}
+func (e *String) TypeDesignation() string {
+	return "String"
+}
+func (e *Null) TypeDesignation() string {
+	return "null"
+}
+func (e *Enum) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
+	return "enum"
+}
+func (e *Array) TypeDesignation() string {
+	if e.ItemTypeDef != nil {
+		return "[" + e.ItemTypeDef.Name + "]"
+	}
+	return "array"
+}
+func (e *ConstrMap) TypeDesignation() string {
+	return e.Constraint.TypeDesignation()
+}
+func (e *Object) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
 	var b strings.Builder
-	notNull := true
-	foundType := false
-
-	b.WriteRune('[')
-	for _, i := range e.Items {
-		vt := i.ValueType(p)
-		if vt == "null" {
-			notNull = false
-			continue
-		}
-		if !foundType {
-			b.WriteString(vt)
-			foundType = true
+	b.WriteByte('{')
+	for i, f := range e.Fields {
+		b.WriteString(f.Name)
+		b.WriteByte(':')
+		b.WriteString(f.Constraint.TypeDesignation())
+		if i+1 < len(e.Fields) {
+			b.WriteByte(',')
 		}
 	}
-	if notNull {
-		b.WriteRune('!')
-	}
-	b.WriteRune(']')
+	b.WriteByte('}')
 	return b.String()
 }
-func (e *ConstrMap) ValueType(p *Parser) string {
-	return "Array"
-}
-func (e *Object) ValueType(p *Parser) string {
-	if p.schema == nil {
-		return "object"
-	}
-	return "object"
-}
-func (e *Variable) ValueType(p *Parser) string {
-	return "variable"
+func (e *VariableRef) TypeDesignation() string {
+	// switch p := e.Declaration.Parent.(type) {
+	// case *Argument:
+	// 	for c := p.Constraint; ; {
+	// 		switch c := p.Constraint.(type) {
+	// 		case *VariableRef:
+	// 			if e == c {
+	// 				return ""
+	// 			}
+	// 		case *ExprParentheses:
+	// 		}
+	// 	}
+	// 	return p.Constraint.TypeDesignation()
+	// case *ObjectField:
+	// 	return p.Constraint.TypeDesignation()
+	// }
+	panic(fmt.Errorf(
+		"unhandled variable declaration parent: %T",
+		e.Declaration.Parent,
+	))
 }
 
-type VariableDefinition struct {
+func (e *Argument) TypeDesignation() string {
+	return e.Constraint.TypeDesignation()
+}
+func (e *SelectionInlineFrag) TypeDesignation() string { return "" }
+func (e *ObjectField) TypeDesignation() string         { return "" }
+func (e *SelectionField) TypeDesignation() string      { return "" }
+func (e *SelectionMax) TypeDesignation() string        { return "" }
+
+type VariableDeclaration struct {
 	Location Location
 	Name     string
-	Type     *ast.Type
 
 	// References can be any of:
 	//
@@ -576,14 +752,29 @@ type VariableDefinition struct {
 	//
 	//  *Argument
 	//  *ObjectField
-	Parent any
+	Parent Expression
+}
+
+func (v *VariableDeclaration) Type() *ast.Type {
+	switch p := v.Parent.(type) {
+	case *Argument:
+		if p.Def != nil {
+			return p.Def.Type
+		}
+	case *ObjectField:
+		if p.Def != nil {
+			return p.Def.Type
+		}
+	}
+	return nil
 }
 
 type Parser struct {
-	schema  *ast.Schema
-	enumVal map[string]*ast.Definition
-	varDefs map[string]*VariableDefinition
-	varRefs []*Variable
+	schema   *ast.Schema
+	enumVal  map[string]*ast.Definition
+	varDecls map[string]*VariableDeclaration
+	varRefs  []*VariableRef
+	errors   []Error
 }
 
 type Source struct {
@@ -624,19 +815,20 @@ func NewParser(schema []Source) (*Parser, error) {
 
 func Parse(src []byte) (
 	operation *Operation,
-	variables map[string]*VariableDefinition,
-	err Error,
+	variables map[string]*VariableDeclaration,
+	errors []Error,
 ) {
 	return (&Parser{}).Parse(src)
 }
 
 func (p *Parser) Parse(src []byte) (
 	operation *Operation,
-	variables map[string]*VariableDefinition,
-	err Error,
+	variables map[string]*VariableDeclaration,
+	errors []Error,
 ) {
-	p.varDefs = make(map[string]*VariableDefinition)
-	p.varRefs = make([]*Variable, 0)
+	p.errors = p.errors[:0]
+	p.varDecls = make(map[string]*VariableDeclaration)
+	p.varRefs = make([]*VariableRef, 0)
 
 	s := source{
 		Location: Location{
@@ -653,145 +845,981 @@ func (p *Parser) Parse(src []byte) (
 	si := s
 	s, tok = s.consumeToken()
 
-	var typeDef *ast.Definition
-
 	if string(tok) == "query" {
 		o.Type = OperationTypeQuery
-		if p.schema != nil {
-			typeDef = p.schema.Query
-		}
 	} else if string(tok) == "mutation" {
 		o.Type = OperationTypeMutation
-		if p.schema != nil {
-			typeDef = p.schema.Mutation
-		}
 	} else if string(tok) == "subscription" {
 		o.Type = OperationTypeSubscription
-		if p.schema != nil {
-			typeDef = p.schema.Subscription
-		}
 	} else {
-		return nil, nil, errUnexp(
+		p.errUnexpTok(
 			si, "expected query, mutation, or subscription "+
 				"operation definition",
 		)
+		return nil, nil, p.errors
 	}
 
 	s = s.consumeIgnored()
-	if s, o.Selections, err = p.ParseSelectionSet(
-		s, typeDef,
-	); err.IsErr() {
-		return nil, nil, err
+	if s, o.SelectionSet = p.ParseSelectionSet(s); s.stop() {
+		return nil, nil, p.errors
 	}
 	for _, sel := range o.Selections {
 		setParent(sel, o)
 	}
-	if err := validateSelectionSet(s.s, o.Selections); err.IsErr() {
-		return nil, nil, err
+	if !p.validateSelectionSet(
+		s.s, o.Selections,
+	) {
+		return nil, nil, p.errors
 	}
 
+	// Link variable declarations and references
 	for _, r := range p.varRefs {
-		if v, ok := p.varDefs[r.Name]; !ok {
+		if v, ok := p.varDecls[r.Name]; !ok {
 			sc := s
 			sc.Location = r.Location
-			return nil, nil, errMsg(sc, "undefined variable")
+			p.newErr(sc.Location, "undefined variable")
+			return nil, nil, p.errors
 		} else {
+			r.Declaration = v
 			v.References = append(v.References, r)
 		}
 	}
 
+	p.setTypes(o)
+	p.validate(o)
+
+	if len(p.errors) > 0 {
+		o = nil
+		p.varDecls = nil
+	}
+
+	return o, p.varDecls, p.errors
+}
+
+func (p *Parser) setTypes(o *Operation) {
 	if p.schema != nil {
-		// Enrich variable references with types from their argument
-		for _, r := range p.varRefs {
-			r.Type = p.varDefs[r.Name].Type
+		switch o.Type {
+		case OperationTypeQuery:
+			o.Def = p.schema.Query
+		case OperationTypeMutation:
+			o.Def = p.schema.Mutation
+		case OperationTypeSubscription:
+			o.Def = p.schema.Subscription
+		}
+	}
+	var fields ast.FieldList
+	if o.Def != nil {
+		fields = o.Def.Fields
+	}
+	p.setTypesSelSet(o.SelectionSet, fields)
+}
+
+func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
+	find := func(n string) *ast.FieldDefinition {
+		for _, s := range defs {
+			if s.Name == n {
+				return s
+			}
+		}
+		return nil
+	}
+	for _, s := range s.Selections {
+		switch s := s.(type) {
+		case *SelectionField:
+			s.Def = find(s.Name)
+			if s.Def != nil {
+				if t := p.schema.Types[s.Def.Type.NamedType]; t != nil {
+					p.setTypesSelSet(s.SelectionSet, t.Fields)
+				}
+				for _, a := range s.Arguments {
+					a.Def = s.Def.Arguments.ForName(a.Name)
+					if a.Def == nil {
+						continue
+					}
+					var exp *ast.Type
+					if a.Def.Type != nil {
+						exp = a.Def.Type
+					}
+					p.setTypesExpr(a.Constraint, exp)
+				}
+			}
+		case *SelectionInlineFrag:
+			if p.schema != nil {
+				s.TypeCondition.TypeDef = p.schema.Types[s.TypeCondition.TypeName]
+				p.setTypesSelSet(s.SelectionSet, s.TypeCondition.TypeDef.Fields)
+			} else {
+				p.setTypesSelSet(s.SelectionSet, nil)
+			}
+		case *SelectionMax:
+			p.setTypesSelSet(s.Options, defs)
+		}
+	}
+}
+
+func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
+	type S struct {
+		Expr   Expression
+		Expect *ast.Type
+	}
+
+	stack := make([]S, 0, 64)
+	push := func(expression Expression, expect *ast.Type) {
+		stack = append(stack, S{Expr: expression, Expect: expect})
+	}
+
+	push(e, exp)
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		exp := top.Expect
+
+		switch e := top.Expr.(type) {
+		case *ConstrAny, *Int, *Float, *True, *False, *String:
+		case *Null:
+		case *ConstrEquals:
+			push(e.Value, exp)
+		case *ConstrNotEquals:
+			push(e.Value, exp)
+		case *ConstrGreater:
+			push(e.Value, exp)
+		case *ConstrGreaterOrEqual:
+			push(e.Value, exp)
+		case *ConstrLess:
+			push(e.Value, exp)
+		case *ConstrLessOrEqual:
+			push(e.Value, exp)
+		case *ConstrLenEquals:
+			push(e.Value, exp)
+		case *ConstrLenNotEquals:
+			push(e.Value, exp)
+		case *ConstrLenGreater:
+			push(e.Value, exp)
+		case *ConstrLenGreaterOrEqual:
+			push(e.Value, exp)
+		case *ConstrLenLess:
+			push(e.Value, exp)
+		case *ConstrLenLessOrEqual:
+			push(e.Value, exp)
+		case *ConstrMap:
+			push(e.Constraint, exp.Elem)
+		case *ExprParentheses:
+			push(e.Expression, exp)
+		case *ExprEqual:
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprNotEqual:
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprLogicalNegation:
+			push(e.Expression, exp)
+		case *ExprLogicalOr:
+			for _, e := range e.Expressions {
+				push(e, exp)
+			}
+		case *ExprLogicalAnd:
+			for _, e := range e.Expressions {
+				push(e, exp)
+			}
+		case *ExprAddition:
+			push(e.AddendLeft, exp)
+			push(e.AddendRight, exp)
+		case *ExprSubtraction:
+			push(e.Minuend, exp)
+			push(e.Subtrahend, exp)
+		case *ExprMultiplication:
+			push(e.Multiplicant, exp)
+			push(e.Multiplicator, exp)
+		case *ExprDivision:
+			push(e.Dividend, exp)
+			push(e.Divisor, exp)
+		case *ExprModulo:
+			push(e.Dividend, exp)
+			push(e.Divisor, exp)
+		case *Array:
+			if exp != nil && exp.Elem != nil {
+				for _, i := range e.Items {
+					push(i, exp.Elem)
+				}
+			}
+		case *VariableRef:
+		// 	if exp != nil {
+		// 		fmt.Println("VAR EXPT", exp)
+		// 		fmt.Println("VARDECL", e.Declaration)
+		// 		fmt.Println("VAR", e.Declaration.Type())
+		// 		fmt.Printf("%T\n", e.Declaration.Parent)
+
+		// 		// errUnexpType()
+		// 	}
+		// 	// if e.Type != exp {
+		// 	// 	errUnexpType()
+		// 	// }
+		case *Enum:
+			e.TypeDef = p.enumVal[e.Value]
+		case *Object:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.InputObject {
+					e.TypeDef = t
+					for _, f := range e.Fields {
+						f.Def = t.Fields.ForName(f.Name)
+						p.setTypesExpr(f.Constraint, f.Def.Type)
+					}
+				}
+			}
+		default:
+			panic(fmt.Errorf("unhandled type: %T", top.Expr))
+		}
+	}
+}
+
+func (p *Parser) validate(o *Operation) (ok bool) {
+	var def *ast.Definition
+	switch o.Type {
+	case OperationTypeQuery:
+		if p.schema != nil {
+			if p.schema.Query == nil {
+				p.newErr(o.Location, "type Query is undefined")
+				return false
+			}
+			def = p.schema.Query
+		}
+		return p.validateSelSet(o, def)
+	case OperationTypeMutation:
+		if p.schema != nil {
+			if p.schema.Mutation == nil {
+				p.newErr(o.Location, "type Mutation is undefined")
+				return false
+			}
+			def = p.schema.Mutation
+		}
+		return p.validateSelSet(o, def)
+	case OperationTypeSubscription:
+		if p.schema != nil {
+			if p.schema.Subscription == nil {
+				p.newErr(o.Location, "type Subscription is undefined")
+				return false
+			}
+			def = p.schema.Subscription
+		}
+		return p.validateSelSet(o, def)
+	}
+	panic(fmt.Sprintf("unhandled operation type: %v", o.Type))
+}
+
+func (p *Parser) validateSelSet(
+	host Expression,
+	expect *ast.Definition,
+) (ok bool) {
+	ok = true
+	var l Location
+	var s SelectionSet
+	var hostTypeName string
+	switch h := host.(type) {
+	case *Operation:
+		s, l = h.SelectionSet, h.Location
+		hostTypeName = h.Type.String()
+	case *SelectionField:
+		s, l = h.SelectionSet, h.Location
+		if h.Def != nil {
+			hostTypeName = h.Def.Type.String()
+		}
+	case *SelectionInlineFrag:
+		s, l = h.SelectionSet, h.Location
+		hostTypeName = h.TypeCondition.TypeName
+	default:
+		panic(fmt.Errorf("unsupported type: %T", host))
+	}
+
+	parent, _ := host.(*SelectionField)
+	if parent != nil &&
+		expect != nil &&
+		len(s.Selections) < 1 &&
+		len(expect.Fields) > 0 {
+		p.errMissingSelSet(l, parent.Name, hostTypeName)
+		return false
+	}
+
+	for _, s := range s.Selections {
+		switch s := s.(type) {
+		case *SelectionField:
+			var def *ast.FieldDefinition
+			if expect != nil {
+				def = expect.Fields.ForName(s.Name)
+				if def == nil {
+					if s.Name == "__typename" {
+						continue
+					}
+					p.errUndefFieldInType(s.Location, s.Name, expect.Name)
+					ok = false
+					continue
+				}
+			}
+			if !p.validateField(expect, s, def) {
+				ok = false
+				continue
+			}
+		case *SelectionInlineFrag:
+			p.validateInlineFrag(s, expect)
+		case *SelectionMax:
+			for _, s := range s.Options.Selections {
+				switch s := s.(type) {
+				case *SelectionField:
+					if s.Name == "__typename" {
+						ok = false
+						p.errTypenameInMax(s)
+						continue
+					}
+					var def *ast.FieldDefinition
+					if expect != nil {
+						def = expect.Fields.ForName(s.Name)
+						if def == nil {
+							ok = false
+							p.errUndefFieldInType(
+								s.Location, s.Name, expect.Name,
+							)
+							continue
+						}
+					}
+					if !p.validateField(expect, s, def) {
+						ok = false
+						continue
+					}
+				case *SelectionInlineFrag:
+					if !p.validateInlineFrag(s, expect) {
+						ok = false
+						continue
+					}
+				case *SelectionMax:
+					p.errNestedMaxBlock(s)
+					ok = false
+					continue
+				}
+			}
+		}
+	}
+	return ok
+}
+
+func (p *Parser) validateField(
+	host *ast.Definition,
+	f *SelectionField,
+	expect *ast.FieldDefinition,
+) (ok bool) {
+	if expect != nil {
+		args := make(map[string]*Argument, len(f.Arguments))
+		for _, a := range f.Arguments {
+			// Check undefined arguments
+			if ad := expect.Arguments.ForName(a.Name); ad == nil {
+				p.errUndefArg(a, f, host.Name)
+			}
+			args[a.Name] = a
 		}
 
-		// Recheck
-		for _, r := range p.varRefs {
-			var arg *Argument
-			for p := r.Parent; p != nil; {
-				if x, ok := p.(*Argument); ok {
-					arg = x
-					break
+		// Check required arguments
+		for _, a := range expect.Arguments {
+			if a.Type.NonNull && a.DefaultValue == nil {
+				if _, ok := args[a.Name]; !ok {
+					l := f.ArgumentList.Location
+					if len(f.Arguments) < 1 {
+						l = f.Location
+					}
+					p.errMissingArg(l, a)
+					return false
 				}
-				p = getParent(p)
-			}
-
-			if err := p.checkConstraintType(
-				source{
-					s:        s.s,
-					Location: arg.Location,
-				},
-				arg.Constraint,
-				arg.Def.Type,
-			); err.IsErr() {
-				return nil, nil, err
 			}
 		}
 	}
 
-	return o, p.varDefs, Error{}
+	// Check constraints
+	for _, a := range f.Arguments {
+		var exp *ast.Type
+		if a.Def != nil {
+			exp = a.Def.Type
+		}
+
+		p.validateExpr([]any{a}, a.Constraint, exp)
+	}
+
+	var def *ast.Definition
+	if p.schema != nil {
+		def = p.schema.Types[expect.Type.NamedType]
+	}
+	return p.validateSelSet(f, def)
 }
 
-func errUnexp(s source, msg string) Error {
+func (p *Parser) validateExpr(
+	// hostPath defines the path to the origin argument
+	// can contain any of: *Argument, *ObjectField
+	pathToOriginArg []any,
+	e Expression,
+	expect *ast.Type,
+) (ok bool) {
+	ok = true
+	type S struct {
+		Expr   Expression
+		Expect *ast.Type
+	}
+
+	stack := make([]S, 0, 64)
+	push := func(expression Expression, expect *ast.Type) {
+		stack = append(stack, S{Expr: expression, Expect: expect})
+	}
+
+	push(e, expect)
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		switch e := top.Expr.(type) {
+		case *ConstrAny:
+		case *ConstrEquals:
+			push(e.Value, top.Expect)
+		case *ConstrNotEquals:
+			push(e.Value, top.Expect)
+		case *ConstrGreater:
+			if top.Expect == nil {
+				if !p.isNumeric(e.Value) {
+					ok = false
+					p.errExpectedNum(e.Value)
+					break
+				}
+				push(e.Value, top.Expect)
+				break
+			}
+			if top.Expect.NamedType != "Float" &&
+				top.Expect.NamedType != "Int" {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+				break
+			}
+			push(e.Value, top.Expect)
+		case *ConstrGreaterOrEqual:
+			if top.Expect == nil {
+				if !p.isNumeric(e.Value) {
+					ok = false
+					p.errExpectedNum(e.Value)
+					break
+				}
+				push(e.Value, top.Expect)
+				break
+			}
+			if top.Expect.NamedType != "Float" &&
+				top.Expect.NamedType != "Int" {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+				break
+			}
+			push(e.Value, top.Expect)
+		case *ConstrLess:
+			if top.Expect == nil {
+				if !p.isNumeric(e.Value) {
+					ok = false
+					p.errExpectedNum(e.Value)
+					break
+				}
+				push(e.Value, top.Expect)
+				break
+			}
+			if top.Expect.NamedType != "Float" &&
+				top.Expect.NamedType != "Int" {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+				break
+			}
+			push(e.Value, top.Expect)
+		case *ConstrLessOrEqual:
+			if top.Expect == nil {
+				if !p.isNumeric(e.Value) {
+					ok = false
+					p.errExpectedNum(e.Value)
+					break
+				}
+				push(e.Value, top.Expect)
+				break
+			}
+			if top.Expect.NamedType != "Float" &&
+				top.Expect.NamedType != "Int" {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+				break
+			}
+			push(e.Value, top.Expect)
+		case *ConstrLenEquals:
+			push(e.Value, &ast.Type{
+				NamedType: "Int",
+				NonNull:   true,
+			})
+		case *ConstrLenNotEquals:
+			push(e.Value, &ast.Type{
+				NamedType: "Int",
+				NonNull:   true,
+			})
+		case *ConstrLenGreater:
+			push(e.Value, &ast.Type{
+				NamedType: "Int",
+				NonNull:   true,
+			})
+		case *ConstrLenGreaterOrEqual:
+			push(e.Value, &ast.Type{
+				NamedType: "Int",
+				NonNull:   true,
+			})
+		case *ConstrLenLess:
+			push(e.Value, &ast.Type{
+				NamedType: "Int",
+				NonNull:   true,
+			})
+		case *ConstrLenLessOrEqual:
+			push(e.Value, &ast.Type{
+				NamedType: "Int",
+				NonNull:   true,
+			})
+		case *ConstrMap:
+			var exp *ast.Type
+			if top.Expect != nil {
+				exp = top.Expect.Elem
+			}
+			push(e.Constraint, exp)
+		case *ExprParentheses:
+			push(e.Expression, top.Expect)
+		case *ExprEqual:
+			if !p.assumeCompatibleType(e.Location, e.Left, e.Right) {
+				ok = false
+				break
+			}
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprNotEqual:
+			if !p.assumeCompatibleType(e.Location, e.Left, e.Right) {
+				ok = false
+				break
+			}
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprLogicalNegation:
+			if top.Expect != nil && !isTypeBool(top.Expect) {
+				p.errUnexpType(top.Expect, e)
+				ok = false
+				break
+			} else if top.Expect == nil {
+				top.Expect = &ast.Type{NamedType: "Boolean"}
+			}
+			push(e.Expression, top.Expect)
+		case *ExprLogicalOr:
+			objEncountered := false
+			for _, e := range e.Expressions {
+				o := getConstrEqValue[*Object](e)
+				if o != nil && objEncountered {
+					ok = false
+					p.newErr(o.Location, "use single object "+
+						"with multiple field constraints instead of "+
+						"multiple object variants in an OR statement")
+					continue
+				} else if o != nil {
+					objEncountered = true
+				}
+				push(o, top.Expect)
+			}
+		case *ExprLogicalAnd:
+			objEncountered := false
+			for _, e := range e.Expressions {
+				o := getConstrEqValue[*Object](e)
+				if o != nil && objEncountered {
+					ok = false
+					p.newErr(o.Location, "use single object "+
+						"with multiple field constraints instead of "+
+						"multiple object variants in an AND statement")
+					continue
+				} else if o != nil {
+					objEncountered = true
+				}
+				push(o, top.Expect)
+			}
+		case *ExprAddition:
+			if top.Expect == nil {
+				br := false
+				if !p.isNumeric(e.AddendLeft) {
+					p.errExpectedNum(e.AddendLeft)
+					br = true
+				}
+				if !p.isNumeric(e.AddendRight) {
+					p.errExpectedNum(e.AddendRight)
+					br = true
+				}
+				if br {
+					ok = false
+					break
+				}
+			} else if !isTypeNum(top.Expect) {
+				p.errUnexpType(top.Expect, e)
+				ok = false
+				break
+			}
+			push(e.AddendLeft, top.Expect)
+			push(e.AddendRight, top.Expect)
+		case *ExprSubtraction:
+			if top.Expect == nil {
+				br := false
+				if !p.isNumeric(e.Minuend) {
+					p.errExpectedNum(e.Minuend)
+					br = true
+				}
+				if !p.isNumeric(e.Subtrahend) {
+					p.errExpectedNum(e.Subtrahend)
+					br = true
+				}
+				if br {
+					ok = false
+					break
+				}
+			} else if !isTypeNum(top.Expect) {
+				p.errUnexpType(top.Expect, e)
+				ok = false
+				break
+			}
+			push(e.Minuend, top.Expect)
+			push(e.Subtrahend, top.Expect)
+		case *ExprMultiplication:
+			if top.Expect == nil {
+				br := false
+				if !p.isNumeric(e.Multiplicant) {
+					p.errExpectedNum(e.Multiplicant)
+					br = true
+				}
+				if !p.isNumeric(e.Multiplicator) {
+					p.errExpectedNum(e.Multiplicator)
+					br = true
+				}
+				if br {
+					ok = false
+					break
+				}
+			} else if !isTypeNum(top.Expect) {
+				p.errUnexpType(top.Expect, e)
+				ok = false
+				break
+			}
+			push(e.Multiplicant, top.Expect)
+			push(e.Multiplicator, top.Expect)
+		case *ExprDivision:
+			if top.Expect == nil {
+				br := false
+				if !p.isNumeric(e.Dividend) {
+					p.errExpectedNum(e.Dividend)
+					br = true
+				}
+				if !p.isNumeric(e.Divisor) {
+					p.errExpectedNum(e.Divisor)
+					br = true
+				}
+				if br {
+					ok = false
+					break
+				}
+			} else if !isTypeNum(top.Expect) {
+				p.errUnexpType(top.Expect, e)
+				ok = false
+				break
+			}
+			push(e.Dividend, top.Expect)
+			push(e.Divisor, top.Expect)
+		case *ExprModulo:
+			if top.Expect == nil {
+				br := false
+				if !p.isNumeric(e.Dividend) {
+					p.errExpectedNum(e.Dividend)
+					br = true
+				}
+				if !p.isNumeric(e.Divisor) {
+					p.errExpectedNum(e.Divisor)
+					br = true
+				}
+				if br {
+					ok = false
+					break
+				}
+			} else if !isTypeNum(top.Expect) {
+				p.errUnexpType(top.Expect, e)
+				ok = false
+				break
+			}
+			push(e.Dividend, top.Expect)
+			push(e.Divisor, top.Expect)
+		case *Int:
+			if top.Expect != nil && !isTypeNum(top.Expect) {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *Float:
+			if top.Expect != nil && !isTypeFloat(top.Expect) {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *True:
+			if top.Expect != nil && !isTypeBool(top.Expect) {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *False:
+			if top.Expect != nil && !isTypeBool(top.Expect) {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *Null:
+			if top.Expect != nil && top.Expect.NonNull {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *Array:
+			if top.Expect != nil && !typeIsArray(top.Expect) {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+				break
+			}
+			for _, i := range e.Items {
+				var exp *ast.Type
+				if top.Expect != nil {
+					exp = top.Expect.Elem
+				}
+				push(i, exp)
+			}
+		case *VariableRef:
+			for _, o := range pathToOriginArg {
+				if o == e.Declaration.Parent {
+					ok = false
+					p.errConstrSelf(e)
+					break
+				}
+			}
+
+			if top.Expect != nil {
+				fmt.Println("VAR EXPT", top.Expect)
+				fmt.Println("VAR", e.Declaration.Type())
+				fmt.Printf("%T\n", e.Declaration.Parent)
+				switch t := e.Declaration.Parent.(type) {
+				case *ObjectField:
+					fmt.Println(" O:", t)
+					fmt.Println(" DEFVAL:", t.Def)
+				case *Argument:
+					fmt.Println(" A:", t)
+					fmt.Println(" DEFVAL:", t.Def.DefaultValue)
+				}
+				if e.Declaration.Type().NamedType != top.Expect.NamedType {
+					p.errUnexpType(top.Expect, top.Expr)
+				}
+			}
+		case *Enum:
+			if top.Expect != nil && top.Expect.NamedType != "String" {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *String:
+			if top.Expect != nil && top.Expect.NamedType != "String" {
+				ok = false
+				p.errUnexpType(top.Expect, top.Expr)
+			}
+		case *Object:
+			if top.Expect != nil && p.schema != nil {
+				def := p.schema.Types[top.Expect.NamedType]
+				if def != nil && def.Kind != ast.InputObject {
+					ok = false
+					p.errUnexpType(top.Expect, top.Expr)
+					break
+				}
+			}
+			p.validateObject(pathToOriginArg, e, top.Expect)
+		default:
+			panic(fmt.Errorf("unhandled type: %T", top.Expr))
+		}
+	}
+	return ok
+}
+
+// getConstrEqValue returns E if e is ConstrEquals or ConstrNotEquals
+// and the value is of type E, otherwise returns the zero value of E.
+func getConstrEqValue[E Expression](e Expression) (x E) {
+	switch e := e.(type) {
+	case *ConstrEquals:
+		if y, ok := e.Value.(E); ok {
+			return y
+		}
+	case *ConstrNotEquals:
+		if y, ok := e.Value.(E); ok {
+			return y
+		}
+	}
+	return
+}
+
+func (p *Parser) validateObject(
+	pathToOriginArg []any,
+	o *Object,
+	exp *ast.Type,
+) (ok bool) {
+	ok = true
+	if exp != nil && (exp.Elem != nil ||
+		exp.NamedType == "ID" ||
+		exp.NamedType == "String" ||
+		exp.NamedType == "Int" ||
+		exp.NamedType == "Float" ||
+		exp.NamedType == "Boolean") {
+		ok = false
+		p.errUnexpType(exp, o)
+	}
+
+	fieldNames := make(map[string]struct{}, len(o.Fields))
+	validFields := o.Fields
+	if p.schema != nil {
+		validFields = make([]*ObjectField, 0, len(o.Fields))
+		td := p.schema.Types[exp.NamedType]
+
+		for _, f := range o.Fields {
+			// Check undefined fields
+			fd := td.Fields.ForName(f.Name)
+			if fd == nil {
+				ok = false
+				p.errUndefField(f, exp.NamedType)
+				continue
+			}
+			fieldNames[f.Name] = struct{}{}
+			validFields = append(validFields, f)
+		}
+
+		// Check required fields
+		for _, f := range td.Fields {
+			if f.Type.NonNull && f.DefaultValue == nil {
+				if _, ok := fieldNames[f.Name]; !ok {
+					ok = false
+					p.errMissingInputField(o.Location, f)
+				}
+			}
+		}
+	}
+
+	// Check constraints
+	for _, f := range validFields {
+		var exp *ast.Type
+		if f.Def != nil {
+			exp = f.Def.Type
+		}
+		if !p.validateExpr(
+			makeAppend[any](pathToOriginArg, f),
+			f.Constraint,
+			exp,
+		) {
+			ok = false
+		}
+	}
+
+	return ok
+}
+
+func (p *Parser) errConstrSelf(v *VariableRef) {
+	var on string
+	switch v.Declaration.Parent.(type) {
+	case *Argument:
+		on = "argument"
+	case *ObjectField:
+		on = "object field"
+	}
+	p.errors = append(p.errors, Error{
+		Location: v.Location,
+		Msg:      on + " self reference in constraint",
+	})
+}
+
+func (p *Parser) errUnexpTok(s source, msg string) {
 	prefix := "unexpected token, "
 	if s.Index >= len(s.s) {
 		prefix = "unexpected end of file, "
 	}
-	return Error{
+	p.errors = append(p.errors, Error{
 		Location: s.Location,
 		Msg:      prefix + msg,
-	}
+	})
 }
 
-func errTypef(s source, format string, v ...any) Error {
-	return Error{
+func (p *Parser) errTypenameInMax(f *SelectionField) {
+	p.errors = append(p.errors, Error{
+		Location: f.Location,
+		Msg:      "avoid __typename in max selectors",
+	})
+}
+
+func (p *Parser) errNestedMaxBlock(s *SelectionMax) {
+	p.errors = append(p.errors, Error{
 		Location: s.Location,
-		Msg:      fmt.Sprintf("mismatching types: "+format, v...),
-	}
+		Msg:      "nested max block",
+	})
 }
 
-func errSchemaTypeUndef(s source) Error {
-	return Error{
-		Location: s.Location,
-		Msg:      "type is undefined in schema",
-	}
+// func (p *Parser) errTypef(s source, format string, v ...any) {
+// 	p.errors = append(p.errors, Error{
+// 		Location: s.Location,
+// 		Msg:      fmt.Sprintf("mismatching types: "+format, v...),
+// 	})
+// }
+
+func (p *Parser) errUndefType(l Location, name string) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      "type " + name + " is undefined in schema",
+	})
 }
 
-func errSchemaArgUndef(
-	s source,
-	argName string,
-	fieldName string,
-	hostType *ast.Definition,
-) Error {
-	return errMsg(s, fmt.Sprintf(
-		"argument %q is undefined on field %q of type %q",
-		argName, fieldName, hostType.Name,
-	))
+func errFieldTypenameCantHaveArgs() string {
+	return "built-in field \"__typename\" can never have arguments"
 }
 
-func (p *Parser) errCantCompare(s source, left, right Expression) Error {
-	return Error{
-		Location: s.Location,
+func errFieldTypenameCantHaveSels() string {
+	return "built-in field \"__typename\" can never have subselections"
+}
+
+func (p *Parser) errUndefField(f *ObjectField, hostTypeName string) {
+	p.errors = append(p.errors, Error{
+		Location: f.Location,
 		Msg: fmt.Sprintf(
-			"can't compare %s and %s",
-			left.ValueType(p), right.ValueType(p),
+			"field %q is undefined in type %s",
+			f.Name, hostTypeName,
 		),
-	}
+	})
 }
 
-func errMsg(s source, msg string) Error {
-	return Error{
-		Location: s.Location,
-		Msg:      msg,
-	}
+func (p *Parser) errUndefArg(
+	a *Argument,
+	f *SelectionField,
+	hostTypeName string,
+) {
+	p.errors = append(p.errors, Error{
+		Location: a.Location,
+		Msg: fmt.Sprintf(
+			"argument %q is undefined on field %q in type %s",
+			a.Name, f.Name, hostTypeName,
+		),
+	})
 }
 
-func newErrorNoPrefix(s source, msg string) Error {
-	return Error{
+func (p *Parser) errMismatchingTypes(l Location, left, right Expression) {
+	ld := left.TypeDesignation()
+	rd := right.TypeDesignation()
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      fmt.Sprintf("mismatching types %s and %s", ld, rd),
+	})
+}
+
+func (p *Parser) newErr(l Location, msg string) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      msg,
+	})
+}
+
+func (p *Parser) newErrorNoPrefix(s source, msg string) {
+	p.errors = append(p.errors, Error{
 		Location: s.Location,
 		Msg:      msg,
-	}
+	})
 }
 
 type expect int8
@@ -803,26 +1831,25 @@ const (
 	expectValueInMap      expect = 3
 )
 
-func (p *Parser) ParseSelectionSet(
-	s source,
-	setDef *ast.Definition,
-) (source, []Selection, Error) {
-	var ok bool
+func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
+	selset := SelectionSet{Location: s.Location}
 	si := s
+	var ok bool
 	if s, ok = s.consume("{"); !ok {
-		return s, nil, errUnexp(s, "expected selection set")
+		p.errUnexpTok(s, "expected selection set")
+		return stop(), SelectionSet{}
 	}
 
 	fields := map[string]struct{}{}
 	typeConds := map[string]struct{}{}
 
-	var selections []Selection
 	for {
 		s = s.consumeIgnored()
 		var name []byte
 
 		if s.isEOF() {
-			return s, nil, errUnexp(s, "expected selection")
+			p.errUnexpTok(s, "expected selection")
+			return stop(), SelectionSet{}
 		}
 
 		if s, ok = s.consume("}"); ok {
@@ -831,175 +1858,141 @@ func (p *Parser) ParseSelectionSet(
 
 		s = s.consumeIgnored()
 
-		if _, ok := s.consume("..."); ok {
-			var err Error
+		if _, ok = s.consume("..."); ok {
 			var fragInline *SelectionInlineFrag
 			sBefore := s
-			if s, fragInline, err = p.ParseInlineFrag(
-				s, setDef,
-			); err.IsErr() {
-				return s, nil, err
+			if s, fragInline = p.ParseInlineFrag(s); s.stop() {
+				return stop(), SelectionSet{}
 			}
 
-			if _, ok := typeConds[fragInline.TypeCondition]; ok {
-				return sBefore, nil, errMsg(sBefore, "redeclared type condition")
+			if _, ok = typeConds[fragInline.TypeCondition.TypeName]; ok {
+				p.newErr(sBefore.Location, "redeclared type condition")
+				return stop(), SelectionSet{}
 			}
-			typeConds[fragInline.TypeCondition] = struct{}{}
+			typeConds[fragInline.TypeCondition.TypeName] = struct{}{}
 
-			selections = append(selections, fragInline)
+			selset.Selections = append(selset.Selections, fragInline)
 			continue
 		}
 
-		sBeforeName := s
+		lBeforeName := s.Location
 		sel := &SelectionField{Location: s.Location}
 		if s, name = s.consumeName(); name == nil {
-			return s, nil, errUnexp(s, "expected selection")
+			p.errUnexpTok(s, "expected selection")
+			return stop(), SelectionSet{}
 		}
 		sel.Name = string(name)
 
 		s = s.consumeIgnored()
 
 		if sel.Name == "max" {
-			var maxNum any
-			sBeforeMaxNum := s
-			if s, maxNum, _ = s.ParseNumber(); maxNum != nil {
+			lBeforeMaxNum := s.Location
+			var maxNum int64
+			if s, maxNum, ok = s.consumeUnsignedInt(); ok {
 				// Max
 				s = s.consumeIgnored()
-				maxInt, ok := maxNum.(*Int)
 
-				if !ok || maxInt.Value < 1 {
-					return sBeforeMaxNum, nil, errMsg(
-						sBeforeMaxNum, "maximum number of options"+
+				if maxNum < 1 {
+					p.newErr(
+						lBeforeMaxNum,
+						"maximum number of options"+
 							" must be an unsigned integer greater 0",
 					)
+					return stop(), SelectionSet{}
 				}
 
-				var options []Selection
-				var err Error
+				var options SelectionSet
 				sBeforeOptionsBlock := s
-				if s, options, err = p.ParseSelectionSet(
-					s, setDef,
-				); err.IsErr() {
-					return s, nil, err
+				if s, options = p.ParseSelectionSet(s); s.stop() {
+					return stop(), SelectionSet{}
 				}
 
-				for _, option := range options {
-					if v, ok := option.(*SelectionMax); ok {
-						return s, nil, errMsg(source{
-							s:        s.s,
-							Location: v.Location,
-						}, "nested max block")
-					}
-				}
+				// for _, option := range options.Selections {
+				// 	if v, ok := option.(*SelectionMax); ok {
+				// 		p.newErr(v.Location, "nested max block")
+				// 		return stop(), SelectionSet{}
+				// 	}
+				// }
 
-				if len(options) < 2 {
-					return sBeforeOptionsBlock, nil, errMsg(
-						sBeforeOptionsBlock,
+				if len(options.Selections) < 2 {
+					p.newErr(
+						sBeforeOptionsBlock.Location,
 						"max block must have at least 2 selection options",
 					)
-				} else if maxInt.Value > int64(len(options)-1) {
-					return sBeforeMaxNum, nil, errMsg(
-						sBeforeMaxNum,
+					return stop(), SelectionSet{}
+				} else if maxNum > int64(len(options.Selections)-1) {
+					p.newErr(
+						lBeforeMaxNum,
 						"max selections number exceeds number of options-1",
 					)
+					return stop(), SelectionSet{}
 				}
 
 				e := &SelectionMax{
-					Location: sBeforeName.Location,
-					Limit:    int(maxInt.Value),
+					Location: lBeforeName,
+					Limit:    int(maxNum),
 					Options:  options,
 				}
-				selections = append(selections, e)
+				selset.Selections = append(selset.Selections, e)
 				continue
 			}
 		}
 
 		if _, ok := fields[sel.Name]; ok {
-			return sBeforeName, nil, errMsg(sBeforeName, "redeclared field")
+			p.newErr(lBeforeName, "redeclared field")
+			return stop(), SelectionSet{}
 		}
 		fields[sel.Name] = struct{}{}
 
-		var fieldDef *ast.FieldDefinition
-
-		if p.schema != nil {
-			if sel.Name != "__typename" {
-				fieldDef = setDef.Fields.ForName(sel.Name)
-				if fieldDef == nil {
-					return sBeforeName, nil, errMsg(
-						sBeforeName,
-						errMsgUndefFieldInType(sel.Name, setDef.Name),
-					)
-				}
-			}
-		}
-
 		if s.peek1('(') {
-			var err Error
-			if s, sel.Arguments, err = p.ParseArguments(
-				s, setDef, fieldDef,
-			); err.IsErr() {
-				return s, nil, err
+			if sel.Name == "__typename" {
+				p.newErr(s.Location, errFieldTypenameCantHaveArgs())
+				return stop(), SelectionSet{}
+			}
+			if s, sel.ArgumentList = p.ParseArguments(s); s.stop() {
+				return stop(), SelectionSet{}
 			}
 			for _, arg := range sel.Arguments {
 				setParent(arg, sel)
-			}
-		} else if fieldDef != nil {
-			for _, a := range fieldDef.Arguments {
-				if a.Type.NonNull {
-					return sBeforeName, nil, errMsg(
-						sBeforeName, errMsgArgMissing(a),
-					)
-				}
 			}
 		}
 
 		s = s.consumeIgnored()
 
-		var typeDef *ast.Definition
-		if p.schema != nil && fieldDef != nil {
-			typeDef = p.schema.Types[fieldDef.Type.NamedType]
-		}
-
 		if s.peek1('{') {
-			var err Error
-			if s, sel.Selections, err = p.ParseSelectionSet(
-				s, typeDef,
-			); err.IsErr() {
-				return s, nil, err
+			if sel.Name == "__typename" {
+				p.newErr(s.Location, errFieldTypenameCantHaveSels())
+				return stop(), SelectionSet{}
+			}
+
+			if s, sel.SelectionSet = p.ParseSelectionSet(s); s.stop() {
+				return stop(), SelectionSet{}
 			}
 			for _, sub := range sel.Selections {
 				setParent(sub, sel)
 			}
-			if err := validateSelectionSet(s.s, sel.Selections); err.IsErr() {
-				return s, nil, err
-			}
-		} else if p.schema != nil && typeDef != nil {
-			if typeDef.Kind == ast.Object || typeDef.Kind == ast.Interface {
-				return s, nil, errMsg(s, fmt.Sprintf(
-					"missing selection set for selection %q of type %s",
-					sel.Name, typeDef.Name,
-				))
+			if !p.validateSelectionSet(s.s, sel.Selections) {
+				return stop(), SelectionSet{}
 			}
 		}
 
-		selections = append(selections, sel)
+		selset.Selections = append(selset.Selections, sel)
 	}
 
-	if len(selections) < 1 {
-		return si, nil, newErrorNoPrefix(si, "empty selection set")
+	if len(selset.Selections) < 1 {
+		p.newErrorNoPrefix(si, "empty selection set")
+		return stop(), SelectionSet{}
 	}
 
-	return s, selections, Error{}
+	return s, selset
 }
 
-func (p *Parser) ParseInlineFrag(
-	s source,
-	setType *ast.Definition,
-) (source, *SelectionInlineFrag, Error) {
+func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
 	l := s.Location
 	var ok bool
 	if s, ok = s.consume("..."); !ok {
-		return s, nil, errUnexp(s, "expected '...'")
+		p.errUnexpTok(s, "expected '...'")
+		return stop(), nil
 	}
 
 	inlineFrag := &SelectionInlineFrag{Location: l}
@@ -1009,7 +2002,8 @@ func (p *Parser) ParseInlineFrag(
 	sp := s
 	s, tok = s.consumeToken()
 	if string(tok) != "on" {
-		return sp, nil, errUnexp(sp, "expected keyword 'on'")
+		p.errUnexpTok(sp, "expected keyword 'on'")
+		return stop(), nil
 	}
 
 	s = s.consumeIgnored()
@@ -1018,57 +2012,44 @@ func (p *Parser) ParseInlineFrag(
 	var name []byte
 	s, name = s.consumeName()
 	if len(name) < 1 {
-		return s, nil, errUnexp(s, "expected type condition")
+		p.errUnexpTok(s, "expected type condition")
+		return stop(), nil
 	}
-	inlineFrag.TypeCondition = string(name)
-
-	var typeDef *ast.Definition
-	if p.schema != nil {
-		if typeDef, ok = p.schema.Types[inlineFrag.TypeCondition]; !ok {
-			return sBeforeName, nil, errSchemaTypeUndef(sBeforeName)
-		}
-		if err := p.checkTypeCond(
-			sBeforeName, setType, typeDef,
-		); err.IsErr() {
-			return sBeforeName, nil, err
-		}
+	inlineFrag.TypeCondition = TypeCondition{
+		Location: sBeforeName.Location,
+		TypeName: string(name),
 	}
 
 	s = s.consumeIgnored()
-	var sels []Selection
-	var err Error
-	s, sels, err = p.ParseSelectionSet(s, typeDef)
-	if err.IsErr() {
-		return s, nil, err
+	var selset SelectionSet
+	if s, selset = p.ParseSelectionSet(s); s.stop() {
+		return stop(), nil
 	}
-	for _, sel := range sels {
+	for _, sel := range selset.Selections {
 		setParent(sel, inlineFrag)
 	}
 
-	inlineFrag.Selections = sels
-	return s, inlineFrag, Error{}
+	inlineFrag.SelectionSet = selset
+	return s, inlineFrag
 }
 
-func (p *Parser) ParseArguments(
-	s source,
-	hostType *ast.Definition,
-	fieldDef *ast.FieldDefinition,
-) (source, []*Argument, Error) {
+func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 	si := s
 	var ok bool
 	if s, ok = s.consume("("); !ok {
-		return s, nil, errUnexp(s, "expected opening parenthesis")
+		p.errUnexpTok(s, "expected opening parenthesis")
+		return stop(), ArgumentList{}
 	}
 
+	list := ArgumentList{Location: si.Location}
 	names := map[string]struct{}{}
-
-	var arguments []*Argument
 	for {
 		s = s.consumeIgnored()
 		var name []byte
 
 		if s.isEOF() {
-			return s, nil, errUnexp(s, "expected argument")
+			p.errUnexpTok(s, "expected argument")
+			return stop(), ArgumentList{}
 		}
 
 		if s, ok = s.consume(")"); ok {
@@ -1080,23 +2061,17 @@ func (p *Parser) ParseArguments(
 		sBeforeName := s
 		arg := &Argument{Location: s.Location}
 		if s, name = s.consumeName(); name == nil {
-			return s, nil, errUnexp(s, "expected argument name")
+			p.errUnexpTok(s, "expected argument name")
+			return stop(), ArgumentList{}
 		}
 		arg.Name = string(name)
 
 		if _, ok := names[arg.Name]; ok {
-			return sBeforeName, nil, errMsg(sBeforeName, "redeclared argument")
+			p.newErr(sBeforeName.Location, "redeclared argument")
+			return stop(), ArgumentList{}
 		}
 
 		names[arg.Name] = struct{}{}
-
-		if p.schema != nil {
-			if arg.Def = fieldDef.Arguments.ForName(arg.Name); arg.Def == nil {
-				return sBeforeName, nil, errSchemaArgUndef(
-					sBeforeName, arg.Name, fieldDef.Name, hostType,
-				)
-			}
-		}
 
 		s = s.consumeIgnored()
 
@@ -1106,134 +2081,108 @@ func (p *Parser) ParseArguments(
 
 			sBeforeDollar := s
 			if s, ok = s.consume("$"); !ok {
-				return s, nil, errUnexp(s, "expected variable name")
+				p.errUnexpTok(s, "expected variable name")
+				return stop(), ArgumentList{}
 			}
 
 			var name []byte
 			if s, name = s.consumeName(); name == nil {
-				return s, nil, errUnexp(s, "expected variable name")
+				p.errUnexpTok(s, "expected variable name")
+				return stop(), ArgumentList{}
 			}
 
-			var varType *ast.Type
-			if arg.Def != nil {
-				varType = arg.Def.Type
-			}
-
-			def := &VariableDefinition{
+			def := &VariableDeclaration{
 				Location: sBeforeDollar.Location,
 				Parent:   arg,
 				Name:     string(name),
-				Type:     varType,
 			}
 			arg.AssociatedVariable = def
-			if _, ok := p.varDefs[def.Name]; ok {
-				return s, nil, errMsg(sBeforeDollar, "redeclared variable")
+			if _, ok := p.varDecls[def.Name]; ok {
+				p.newErr(sBeforeDollar.Location, "redeclared variable")
+				return stop(), ArgumentList{}
 			}
-			p.varDefs[def.Name] = def
+			p.varDecls[def.Name] = def
 			s = s.consumeIgnored()
 		}
 
 		if s, ok = s.consume(":"); !ok {
-			return s, nil, errUnexp(s, "expected colon")
+			p.errUnexpTok(s, "expected colon")
+			return stop(), ArgumentList{}
 		}
 		s = s.consumeIgnored()
 		if s.isEOF() {
-			return s, nil, errUnexp(s, "expected constraint")
+			p.errUnexpTok(s, "expected constraint")
+			return stop(), ArgumentList{}
 		}
 
 		var expr Expression
-		var err Error
-		sBeforeConstr := s
-		s, expr, err = p.ParseExprLogicalOr(
+		if s, expr = p.ParseExprLogicalOr(
 			s, expectConstraint,
-		)
-		if err.IsErr() {
-			return s, nil, err
+		); s.stop() {
+			return s, ArgumentList{}
 		}
 		setParent(expr, arg)
 		arg.Constraint = expr
 
-		if arg.Def != nil {
-			if err := p.checkConstraintType(
-				sBeforeConstr, arg.Constraint, arg.Def.Type,
-			); err.IsErr() {
-				return sBeforeConstr, nil, err
-			}
-		}
-
-		arguments = append(arguments, arg)
+		list.Arguments = append(list.Arguments, arg)
 		s = s.consumeIgnored()
 
 		if s, ok = s.consume(","); !ok {
 			if s, ok = s.consume(")"); !ok {
-				return s, nil, errUnexp(s, "expected comma or end of argument list")
+				p.errUnexpTok(s, "expected comma or end of argument list")
+				return stop(), ArgumentList{}
 			}
 			break
 		}
 		s = s.consumeIgnored()
 	}
 
-	if len(arguments) < 1 {
-		return si, nil, newErrorNoPrefix(si, "empty argument list")
+	if len(list.Arguments) < 1 {
+		p.newErrorNoPrefix(si, "empty argument list")
+		return stop(), ArgumentList{}
 	}
 
-	if p.schema != nil {
-	ARG_SCAN:
-		for _, a := range fieldDef.Arguments {
-			if !a.Type.NonNull || a.DefaultValue != nil {
-				continue
-			}
-			// Required argument with no default value must be included
-			for _, arg := range arguments {
-				if arg.Name == a.Name {
-					continue ARG_SCAN
-				}
-			}
-			return si, nil, errMsg(si, errMsgArgMissing(a))
-		}
-	}
-
-	return s, arguments, Error{}
+	return s, list
 }
 
 func (p *Parser) ParseValue(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	l := s.Location
 
 	if s.isEOF() {
-		return s, nil, errUnexp(s, "expected value")
+		p.errUnexpTok(s, "expected value")
+		return stop(), nil
 	}
 
 	var str []byte
 	var num any
 	var ok bool
-	var err Error
 	if s, ok = s.consume("("); ok {
 		e := &ExprParentheses{Location: l}
 
 		s = s.consumeIgnored()
 
-		var err Error
-		s, e.Expression, err = p.ParseExprLogicalOr(s, expect)
-		if err.IsErr() {
-			return s, nil, err
+		if s, e.Expression = p.ParseExprLogicalOr(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Expression, e)
 
 		if s, ok = s.consume(")"); !ok {
-			return s, nil, errUnexp(s, "missing closing parenthesis")
+			p.errUnexpTok(s, "missing closing parenthesis")
+			return stop(), nil
 		}
 
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("$"); ok {
-		v := &Variable{Location: l}
+		v := &VariableRef{Location: l}
 
 		var name []byte
 		if s, name = s.consumeName(); name == nil {
-			return s, nil, errUnexp(s, "expected variable name")
+			p.errUnexpTok(s, "expected variable name")
+			return stop(), nil
 		}
 
 		v.Name = string(name)
@@ -1242,19 +2191,19 @@ func (p *Parser) ParseValue(
 
 		s = s.consumeIgnored()
 
-		return s, v, Error{}
+		return s, v
 	} else if s, str, ok = s.consumeString(); ok {
-		return s, &String{Location: l, Value: string(str)}, Error{}
+		return s, &String{Location: l, Value: string(str)}
 	}
 
-	if s, num, err = s.ParseNumber(); err.IsErr() {
-		return s, nil, err
+	if s, num = p.ParseNumber(s); s.stop() {
+		return stop(), nil
 	} else if num != nil {
 		switch v := num.(type) {
 		case *Int:
-			return s, v, Error{}
+			return s, v
 		case *Float:
-			return s, v, Error{}
+			return s, v
 		default:
 			panic(fmt.Errorf("unexpected number type: %#v", num))
 		}
@@ -1265,17 +2214,13 @@ func (p *Parser) ParseValue(
 		s = s.consumeIgnored()
 
 		for {
-			var err Error
 			if s, ok = s.consume("]"); ok {
 				break
 			}
 
 			var expr Expression
-			s, expr, err = p.ParseExprLogicalOr(
-				s, expectConstraint,
-			)
-			if err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprLogicalOr(s, expectConstraint); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 
@@ -1285,7 +2230,8 @@ func (p *Parser) ParseValue(
 
 			if s, ok = s.consume(","); !ok {
 				if s, ok = s.consume("]"); !ok {
-					return s, nil, errUnexp(s, "expected comma or end of array")
+					p.errUnexpTok(s, "expected comma or end of array")
+					return stop(), nil
 				}
 				break
 			}
@@ -1293,7 +2239,7 @@ func (p *Parser) ParseValue(
 		}
 
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("{"); ok {
 		// Object
 		o := &Object{Location: l}
@@ -1306,7 +2252,8 @@ func (p *Parser) ParseValue(
 			var name []byte
 
 			if s.isEOF() {
-				return s, nil, errUnexp(s, "expected object field")
+				p.errUnexpTok(s, "expected object field")
+				return stop(), nil
 			}
 
 			if s, ok = s.consume("}"); ok {
@@ -1321,14 +2268,14 @@ func (p *Parser) ParseValue(
 				Parent:   o,
 			}
 			if s, name = s.consumeName(); name == nil {
-				return s, nil, errUnexp(s, "expected object field name")
+				p.errUnexpTok(s, "expected object field name")
+				return stop(), nil
 			}
 			fld.Name = string(name)
 
 			if _, ok := fieldNames[fld.Name]; ok {
-				return sBeforeName, nil, errMsg(
-					sBeforeName, "redeclared object field",
-				)
+				p.newErr(sBeforeName.Location, "redeclared object field")
+				return stop(), nil
 			}
 
 			fieldNames[fld.Name] = struct{}{}
@@ -1341,69 +2288,64 @@ func (p *Parser) ParseValue(
 
 				sBeforeDollar := s
 				if s, ok = s.consume("$"); !ok {
-					return s, nil, errUnexp(s, "expected variable name")
+					p.errUnexpTok(s, "expected variable name")
+					return stop(), nil
 				}
 
 				var name []byte
 				if s, name = s.consumeName(); name == nil {
-					return s, nil, errUnexp(s, "expected variable name")
+					p.errUnexpTok(s, "expected variable name")
+					return stop(), nil
 				}
 
 				if expect == expectValueInMap {
-					return sBeforeDollar, nil, errMsg(
-						sBeforeDollar,
+					p.newErr(
+						sBeforeDollar.Location,
 						"the use of variables inside "+
 							"map constraints is prohibited",
 					)
+					return stop(), nil
 				}
 
-				def := &VariableDefinition{
+				def := &VariableDeclaration{
 					Location: sBeforeDollar.Location,
 					Parent:   fld,
 					Name:     string(name),
 				}
 				fld.AssociatedVariable = def
-				if _, ok := p.varDefs[def.Name]; ok {
-					return s, nil, errMsg(sBeforeDollar, "redeclared variable")
+				if _, ok := p.varDecls[def.Name]; ok {
+					p.newErr(sBeforeDollar.Location, "redeclared variable")
+					return stop(), nil
 				}
-				p.varDefs[def.Name] = def
+				p.varDecls[def.Name] = def
 
 				s = s.consumeIgnored()
 			}
 
 			if s, ok = s.consume(":"); !ok {
-				return s, nil, errUnexp(s, "expected colon")
+				p.errUnexpTok(s, "expected colon")
+				return stop(), nil
 			}
 			s = s.consumeIgnored()
 			if s.isEOF() {
-				return s, nil, errUnexp(s, "expected constraint")
+				p.errUnexpTok(s, "expected constraint")
+				return stop(), nil
 			}
 
 			var expr Expression
-			var err Error
-			sBeforeConstr := s
-			if s, expr, err = p.ParseExprLogicalOr(
-				s, expectConstraint,
-			); err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprLogicalOr(s, expectConstraint); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, fld)
 			fld.Constraint = expr
-
-			if fld.Def != nil {
-				if err := p.checkConstraintType(
-					sBeforeConstr, fld.Constraint, fld.Def.Type,
-				); err.IsErr() {
-					return sBeforeConstr, nil, err
-				}
-			}
 
 			o.Fields = append(o.Fields, fld)
 			s = s.consumeIgnored()
 
 			if s, ok = s.consume(","); !ok {
 				if s, ok = s.consume("}"); !ok {
-					return s, nil, errUnexp(s, "expected comma or end of object")
+					p.errUnexpTok(s, "expected comma or end of object")
+					return stop(), nil
 				}
 				break
 			}
@@ -1411,55 +2353,47 @@ func (p *Parser) ParseValue(
 		}
 
 		if len(o.Fields) < 1 {
-			return si, nil, newErrorNoPrefix(si, "empty input object")
+			p.newErrorNoPrefix(si, "empty input object")
+			return stop(), nil
 		}
 
-		return s, o, Error{}
+		return s, o
 	}
 
 	s, str = s.consumeName()
 	switch string(str) {
 	case "true":
-		return s, &True{Location: l}, Error{}
+		return s, &True{Location: l}
 	case "false":
-		return s, &False{Location: l}, Error{}
+		return s, &False{Location: l}
 	case "null":
-		return s, &Null{Location: l}, Error{}
+		return s, &Null{Location: l}
 	case "":
-		return s, nil, errUnexp(s, "invalid value")
+		p.errUnexpTok(s, "invalid value")
+		return stop(), nil
 	default:
-		return s, &Enum{Location: l, Value: string(str)}, Error{}
+		return s, &Enum{Location: l, Value: string(str)}
 	}
 }
 
 func (p *Parser) ParseExprUnary(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	l := s.Location
 	var ok bool
-	var err Error
 	if s, ok = s.consume("!"); ok {
 		e := &ExprLogicalNegation{Location: l}
 
 		s = s.consumeIgnored()
 
-		si := s
-		if s, e.Expression, err = p.ParseValue(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Expression = p.ParseValue(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Expression, e)
 
-		if !isBoolean(e.Expression) {
-			return s, nil, errTypef(
-				si, "can't use %s as Boolean", e.Expression.ValueType(p),
-			)
-		}
-
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	}
 	return p.ParseValue(s, expect)
 }
@@ -1467,15 +2401,12 @@ func (p *Parser) ParseExprUnary(
 func (p *Parser) ParseExprMultiplicative(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	si := s
 
 	var result Expression
-	var err Error
-	if s, result, err = p.ParseExprUnary(
-		s, expect,
-	); err.IsErr() {
-		return s, nil, err
+	if s, result = p.ParseExprUnary(s, expect); s.stop() {
+		return stop(), nil
 	}
 
 	for {
@@ -1490,26 +2421,13 @@ func (p *Parser) ParseExprMultiplicative(
 			}
 			setParent(e.Multiplicant, e)
 
-			if !isNumeric(e.Multiplicant) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Multiplicant.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
-			si := s
-			if s, e.Multiplicator, err = p.ParseExprUnary(
-				s, expect,
-			); err.IsErr() {
-				return s, nil, err
+			if s, e.Multiplicator = p.ParseExprUnary(s, expect); s.stop() {
+				return stop(), nil
 			}
 			setParent(e.Multiplicator, e)
 
-			if !isNumeric(e.Multiplicator) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Multiplicator.ValueType(p),
-				)
-			}
+			e.Float = e.Multiplicant.IsFloat() || e.Multiplicator.IsFloat()
 
 			s = s.consumeIgnored()
 			result = e
@@ -1520,26 +2438,13 @@ func (p *Parser) ParseExprMultiplicative(
 			}
 			setParent(e.Dividend, e)
 
-			if !isNumeric(e.Dividend) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Dividend.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
-			si := s
-			if s, e.Divisor, err = p.ParseExprUnary(
-				s, expect,
-			); err.IsErr() {
-				return s, nil, err
+			if s, e.Divisor = p.ParseExprUnary(s, expect); s.stop() {
+				return stop(), nil
 			}
 			setParent(e.Divisor, e)
 
-			if !isNumeric(e.Divisor) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Divisor.ValueType(p),
-				)
-			}
+			e.Float = e.Dividend.IsFloat() || e.Divisor.IsFloat()
 
 			s = s.consumeIgnored()
 			result = e
@@ -1550,32 +2455,19 @@ func (p *Parser) ParseExprMultiplicative(
 			}
 			setParent(e.Dividend, e)
 
-			if !isNumeric(e.Dividend) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Dividend.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
-			si := s
-			if s, e.Divisor, err = p.ParseExprUnary(
-				s, expect,
-			); err.IsErr() {
-				return s, nil, err
+			if s, e.Divisor = p.ParseExprUnary(s, expect); s.stop() {
+				return stop(), nil
 			}
 			setParent(e.Divisor, e)
 
-			if !isNumeric(e.Divisor) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Divisor.ValueType(p),
-				)
-			}
+			e.Float = e.Dividend.IsFloat() || e.Divisor.IsFloat()
 
 			s = s.consumeIgnored()
 			result = e
 		default:
 			s = s.consumeIgnored()
-			return s, result, Error{}
+			return s, result
 		}
 	}
 }
@@ -1583,15 +2475,12 @@ func (p *Parser) ParseExprMultiplicative(
 func (p *Parser) ParseExprAdditive(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	si := s
 
 	var result Expression
-	var err Error
-	if s, result, err = p.ParseExprMultiplicative(
-		s, expect,
-	); err.IsErr() {
-		return s, nil, err
+	if s, result = p.ParseExprMultiplicative(s, expect); s.stop() {
+		return stop(), nil
 	}
 
 	for {
@@ -1606,26 +2495,13 @@ func (p *Parser) ParseExprAdditive(
 			}
 			setParent(e.AddendLeft, e)
 
-			if !isNumeric(e.AddendLeft) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.AddendLeft.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
-			si := s
-			if s, e.AddendRight, err = p.ParseExprMultiplicative(
-				s, expect,
-			); err.IsErr() {
-				return s, nil, err
+			if s, e.AddendRight = p.ParseExprMultiplicative(s, expect); s.stop() {
+				return stop(), nil
 			}
 			setParent(e.AddendRight, e)
 
-			if !isNumeric(e.AddendRight) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.AddendRight.ValueType(p),
-				)
-			}
+			e.Float = e.AddendLeft.IsFloat() || e.AddendRight.IsFloat()
 
 			s = s.consumeIgnored()
 			result = e
@@ -1636,32 +2512,19 @@ func (p *Parser) ParseExprAdditive(
 			}
 			setParent(e.Minuend, e)
 
-			if !isNumeric(e.Minuend) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Minuend.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
-			si := s
-			if s, e.Subtrahend, err = p.ParseExprMultiplicative(
-				s, expect,
-			); err.IsErr() {
-				return s, nil, err
+			if s, e.Subtrahend = p.ParseExprMultiplicative(s, expect); s.stop() {
+				return stop(), nil
 			}
 			setParent(e.Subtrahend, e)
 
-			if !isNumeric(e.Subtrahend) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", e.Subtrahend.ValueType(p),
-				)
-			}
+			e.Float = e.Minuend.IsFloat() || e.Subtrahend.IsFloat()
 
 			s = s.consumeIgnored()
 			result = e
 		default:
 			s = s.consumeIgnored()
-			return s, result, Error{}
+			return s, result
 		}
 	}
 }
@@ -1669,15 +2532,12 @@ func (p *Parser) ParseExprAdditive(
 func (p *Parser) ParseExprRelational(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	l := s.Location
 
 	var left Expression
-	var err Error
-	if s, left, err = p.ParseExprAdditive(
-		s, expect,
-	); err.IsErr() {
-		return s, nil, err
+	if s, left = p.ParseExprAdditive(s, expect); s.stop() {
+		return stop(), nil
 	}
 
 	s = s.consumeIgnored()
@@ -1692,15 +2552,13 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = p.ParseExprAdditive(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Right, e)
 
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume(">="); ok {
 		e := &ExprGreaterOrEqual{
 			Location: l,
@@ -1710,15 +2568,13 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = p.ParseExprAdditive(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+			return s, nil
 		}
 		setParent(e.Right, e)
 
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("<"); ok {
 		e := &ExprLess{
 			Location: l,
@@ -1728,15 +2584,13 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = p.ParseExprAdditive(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Right, e)
 
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume(">"); ok {
 		e := &ExprGreater{
 			Location: l,
@@ -1746,37 +2600,27 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		si := s
-		if s, e.Right, err = p.ParseExprAdditive(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Right, e)
 
-		if !isNumeric(e.Right) {
-			return s, nil, errTypef(si, "can't use %s as number", e.ValueType(p))
-		}
-
 		s = s.consumeIgnored()
-		return s, e, Error{}
+		return s, e
 	}
 	s = s.consumeIgnored()
-	return s, left, Error{}
+	return s, left
 }
 
 func (p *Parser) ParseExprEquality(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	si := s
 
-	var err Error
 	var exprLeft Expression
-	if s, exprLeft, err = p.ParseExprRelational(
-		s, expect,
-	); err.IsErr() {
-		return s, nil, err
+	if s, exprLeft = p.ParseExprRelational(s, expect); s.stop() {
+		return stop(), nil
 	}
 
 	s = s.consumeIgnored()
@@ -1791,19 +2635,13 @@ func (p *Parser) ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = p.ParseExprRelational(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Right = p.ParseExprRelational(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Right, e)
 		s = s.consumeIgnored()
 
-		if err = p.assumeSameType(si, e.Left, e.Right); err.IsErr() {
-			return si, nil, err
-		}
-
-		return s, e, Error{}
+		return s, e
 	}
 	if s, ok = s.consume("!="); ok {
 		e := &ExprNotEqual{
@@ -1814,38 +2652,31 @@ func (p *Parser) ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right, err = p.ParseExprRelational(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, e.Right = p.ParseExprRelational(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(e.Right, e)
 		s = s.consumeIgnored()
 
-		if err = p.assumeSameType(si, e.Left, e.Right); err.IsErr() {
-			return si, nil, err
-		}
-
-		return s, e, Error{}
+		return s, e
 	}
 
 	s = s.consumeIgnored()
-	return s, exprLeft, Error{}
+	return s, exprLeft
 }
 
 func (p *Parser) ParseExprLogicalOr(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	e := &ExprLogicalOr{Location: s.Location}
 
-	var err Error
 	for {
 		var expr Expression
-		if s, expr, err = p.ParseExprLogicalAnd(
+		if s, expr = p.ParseExprLogicalAnd(
 			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		); s.stop() {
+			return s, nil
 		}
 		setParent(expr, e)
 		e.Expressions = append(e.Expressions, expr)
@@ -1855,9 +2686,9 @@ func (p *Parser) ParseExprLogicalOr(
 		var ok bool
 		if s, ok = s.consume("||"); !ok {
 			if len(e.Expressions) < 2 {
-				return s, e.Expressions[0], Error{}
+				return s, e.Expressions[0]
 			}
-			return s, e, Error{}
+			return s, e
 		}
 
 		s = s.consumeIgnored()
@@ -1867,16 +2698,13 @@ func (p *Parser) ParseExprLogicalOr(
 func (p *Parser) ParseExprLogicalAnd(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	e := &ExprLogicalAnd{Location: s.Location}
 
-	var err Error
 	for {
 		var expr Expression
-		if s, expr, err = p.ParseConstr(
-			s, expect,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseConstr(s, expect); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Expressions = append(e.Expressions, expr)
@@ -1886,9 +2714,9 @@ func (p *Parser) ParseExprLogicalAnd(
 		var ok bool
 		if s, ok = s.consume("&&"); !ok {
 			if len(e.Expressions) < 2 {
-				return s, e.Expressions[0], Error{}
+				return s, e.Expressions[0]
 			}
-			return s, e, Error{}
+			return s, e
 		}
 
 		s = s.consumeIgnored()
@@ -1898,29 +2726,26 @@ func (p *Parser) ParseExprLogicalAnd(
 func (p *Parser) ParseConstr(
 	s source,
 	expect expect,
-) (source, Expression, Error) {
+) (source, Expression) {
 	si := s
 	var ok bool
 	var expr Expression
-	var err Error
 
 	if expect == expectValue {
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 
 		s = s.consumeIgnored()
 
-		return s, expr, Error{}
+		return s, expr
 	}
 
 	if s, ok = s.consume("*"); ok {
 		e := &ConstrAny{Location: si.Location}
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("!="); ok {
 		e := &ConstrNotEquals{
 			Location: si.Location,
@@ -1928,17 +2753,15 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Value = expr
 
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("<="); ok {
 		e := &ConstrLessOrEqual{
 			Location: si.Location,
@@ -1946,24 +2769,15 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		si := s
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Value = expr
 
-		if !isNumeric(expr) {
-			return s, nil, errTypef(
-				si, "can't use %s as number", expr.ValueType(p),
-			)
-		}
-
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume(">="); ok {
 		e := &ConstrGreaterOrEqual{
 			Location: si.Location,
@@ -1971,24 +2785,15 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		si := s
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Value = expr
 
-		if !isNumeric(expr) {
-			return s, nil, errTypef(
-				si, "can't use %s as number", expr.ValueType(p),
-			)
-		}
-
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("<"); ok {
 		e := &ConstrLess{
 			Location: si.Location,
@@ -1996,24 +2801,15 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		si := s
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Value = expr
 
-		if !isNumeric(expr) {
-			return s, nil, errTypef(
-				si, "can't use %s as number", expr.ValueType(p),
-			)
-		}
-
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume(">"); ok {
 		e := &ConstrGreater{
 			Location: si.Location,
@@ -2021,24 +2817,15 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		si := s
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Value = expr
 
-		if !isNumeric(expr) {
-			return s, nil, errTypef(
-				si, "can't use %s as number", expr.ValueType(p),
-			)
-		}
-
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	} else if s, ok = s.consume("len"); ok {
 		s = s.consumeIgnored()
 
@@ -2050,26 +2837,16 @@ func (p *Parser) ParseConstr(
 			s = s.consumeIgnored()
 
 			var expr Expression
-			var err Error
 
-			si := s
-			if s, expr, err = p.ParseExprEquality(
-				s, expectValue,
-			); err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 			e.Value = expr
 
-			if !isNumeric(expr) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", expr.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
 
-			return s, e, Error{}
+			return s, e
 		} else if s, ok = s.consume("<="); ok {
 			e := &ConstrLenLessOrEqual{
 				Location: si.Location,
@@ -2077,24 +2854,15 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			si := s
-			if s, expr, err = p.ParseExprEquality(
-				s, expectValue,
-			); err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 			e.Value = expr
 
-			if !isNumeric(expr) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", expr.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
 
-			return s, e, Error{}
+			return s, e
 		} else if s, ok = s.consume(">="); ok {
 			e := &ConstrLenGreaterOrEqual{
 				Location: si.Location,
@@ -2102,24 +2870,15 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			si := s
-			if s, expr, err = p.ParseExprEquality(
-				s, expectValue,
-			); err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 			e.Value = expr
 
-			if !isNumeric(expr) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", expr.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
 
-			return s, e, Error{}
+			return s, e
 		} else if s, ok = s.consume("<"); ok {
 			e := &ConstrLenLess{
 				Location: si.Location,
@@ -2127,24 +2886,15 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			si := s
-			if s, expr, err = p.ParseExprEquality(
-				s, expectValue,
-			); err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 			e.Value = expr
 
-			if !isNumeric(expr) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", expr.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
 
-			return s, e, Error{}
+			return s, e
 		} else if s, ok = s.consume(">"); ok {
 			e := &ConstrLenGreater{
 				Location: si.Location,
@@ -2152,49 +2902,31 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			si := s
-			if s, expr, err = p.ParseExprEquality(
-				s, expectValue,
-			); err.IsErr() {
-				return s, nil, err
+			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 			e.Value = expr
 
-			if !isNumeric(expr) {
-				return s, nil, errTypef(
-					si, "can't use %s as number", expr.ValueType(p),
-				)
-			}
-
 			s = s.consumeIgnored()
 
-			return s, e, Error{}
+			return s, e
 		}
 
-		e := &ConstrGreater{
+		e := &ConstrLenEquals{
 			Location: si.Location,
 			Value:    expr,
 		}
 
-		si := s
-		if s, expr, err = p.ParseExprEquality(
-			s, expectValue,
-		); err.IsErr() {
-			return s, nil, err
+		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			return stop(), nil
 		}
 		setParent(expr, e)
 		e.Value = expr
 
-		if !isNumeric(expr) {
-			return s, nil, errTypef(
-				si, "can't use %s as number", expr.ValueType(p),
-			)
-		}
-
 		s = s.consumeIgnored()
 
-		return s, e, Error{}
+		return s, e
 	}
 
 	if s, ok = s.consume("["); ok {
@@ -2204,26 +2936,26 @@ func (p *Parser) ParseConstr(
 			s = s.consumeIgnored()
 
 			if s.isEOF() {
-				return s, nil, errUnexp(s, "expected map constraint")
+				p.errUnexpTok(s, "expected map constraint")
+				return stop(), nil
 			}
 
 			var expr Expression
-			var err Error
-			s, expr, err = p.ParseExprLogicalOr(
+			if s, expr = p.ParseExprLogicalOr(
 				s, expectConstraintInMap,
-			)
-			if err.IsErr() {
-				return s, nil, err
+			); s.stop() {
+				return stop(), nil
 			}
 			setParent(expr, e)
 			e.Constraint = expr
 
 			s = s.consumeIgnored()
 			if s, ok = s.consume("]"); !ok {
-				return s, nil, errUnexp(s, "expected end of map constraint ']'")
+				p.errUnexpTok(s, "expected end of map constraint ']'")
+				return stop(), nil
 			}
 
-			return s, e, Error{}
+			return s, e
 		} else {
 			s = si
 		}
@@ -2240,23 +2972,34 @@ func (p *Parser) ParseConstr(
 		expect = expectValue
 	}
 
-	if s, expr, err = p.ParseExprEquality(
-		s, expect,
-	); err.IsErr() {
-		return s, nil, err
+	if s, expr = p.ParseExprEquality(s, expect); s.stop() {
+		return stop(), nil
 	}
 	setParent(expr, e)
 	e.Value = expr
 
 	s = s.consumeIgnored()
 
-	return s, e, Error{}
+	return s, e
 }
 
-func (s source) ParseNumber() (_ source, number any, err Error) {
+func (s source) consumeUnsignedInt() (next source, i int64, ok bool) {
+	si := s
+	for s.s[s.Index] >= '0' && s.s[s.Index] <= '9' {
+		s.Index++
+		s.Column++
+	}
+	i, err := strconv.ParseInt(string(s.s[si.Index:s.Index]), 10, 64)
+	if err != nil {
+		return si, 0, false
+	}
+	return s, i, true
+}
+
+func (p *Parser) ParseNumber(s source) (_ source, number any) {
 	si := s
 	if s.Index >= len(s.s) {
-		return si, nil, Error{}
+		return si, nil
 	}
 
 	if s.s[s.Index] == '-' || s.s[s.Index] == '+' {
@@ -2273,16 +3016,18 @@ func (s source) ParseNumber() (_ source, number any, err Error) {
 		}
 		if s.s[s.Index] == 'e' || s.s[s.Index] == 'E' {
 			if s.Index == si.Index {
-				return si, nil, Error{}
+				return si, nil
 			}
 			s.Index++
 			s.Column++
 			if s.Index >= len(s.s) {
-				return si, nil, errMsg(s, "exponent has no digits")
+				p.newErr(s.Location, "exponent has no digits")
+				return stop(), nil
 			}
 			s, _ = s.consumeEitherOf3("+", "-", "")
 			if !s.isDigit() {
-				return si, nil, errMsg(s, "exponent has no digits")
+				p.newErr(s.Location, "exponent has no digits")
+				return stop(), nil
 			}
 		}
 
@@ -2291,19 +3036,19 @@ func (s source) ParseNumber() (_ source, number any, err Error) {
 	}
 	str := string(s.s[si.Index:s.Index])
 	if str == "" {
-		return si, nil, Error{}
+		return si, nil
 	} else if v, err := strconv.ParseInt(str, 10, 64); err == nil {
 		return s, &Int{
 			Location: si.Location,
 			Value:    v,
-		}, Error{}
+		}
 	} else if v, err := strconv.ParseFloat(str, 64); err == nil {
 		return s, &Float{
 			Location: si.Location,
 			Value:    v,
-		}, Error{}
+		}
 	}
-	return si, nil, Error{}
+	return si, nil
 }
 
 type Error struct {
@@ -2326,6 +3071,10 @@ type source struct {
 	Location
 	s []byte
 }
+
+func (s source) stop() bool { return s.s == nil }
+
+func stop() source { return source{} }
 
 func (s source) String() string {
 	c := s.s[s.Index:]
@@ -2523,13 +3272,30 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 	return s, nil, false
 }
 
-func isNumeric(expr any) bool {
+func (p *Parser) isNumeric(expr any) bool {
 	switch e := expr.(type) {
-	case *Variable:
-		// TODO: check schema
+	case *VariableRef:
+		if t := e.Declaration.Type(); t != nil {
+			// Check type based on schema
+			return t.Elem == nil &&
+				(t.NamedType == "Int" ||
+					t.NamedType == "Float")
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isNumeric(v.Constraint)
+		case *ObjectField:
+			return p.isNumeric(v.Constraint)
+		}
+	case *ConstrEquals:
+		return p.isNumeric(e.Value)
+	case *ConstrNotEquals:
+		return p.isNumeric(e.Value)
+	case *ConstrAny:
 		return true
 	case *ExprParentheses:
-		return isNumeric(e.Expression)
+		return p.isNumeric(e.Expression)
 	case *Float:
 		return true
 	case *Int:
@@ -2548,13 +3314,68 @@ func isNumeric(expr any) bool {
 	return false
 }
 
-func isBoolean(expr any) bool {
+func (p *Parser) isInt(expr any) bool {
 	switch e := expr.(type) {
-	case *Variable:
-		// TODO: check schema
+	case *VariableRef:
+		if t := e.Declaration.Type(); t != nil {
+			// Check type based on schema
+			return t.Elem == nil && t.NamedType == "Int"
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isInt(v.Constraint)
+		case *ObjectField:
+			return p.isInt(v.Constraint)
+		}
+	case *ExprParentheses:
+		return p.isInt(e.Expression)
+	case *Int:
+		return true
+	case *ExprAddition:
+		return !e.Float
+	case *ExprSubtraction:
+		return !e.Float
+	case *ExprMultiplication:
+		return !e.Float
+	case *ExprDivision:
+		return !e.Float
+	case *ExprModulo:
+		return !e.Float
+	}
+	return false
+}
+
+func (p *Parser) isBoolean(expr any) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t := e.Declaration.Type(); t != nil {
+			// Check type based on schema
+			return t.Elem == nil && t.NamedType == "Boolean"
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isBoolean(v.Constraint)
+		case *ObjectField:
+			return p.isBoolean(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isBoolean(e.Value)
+	case *ConstrNotEquals:
+		return p.isBoolean(e.Value)
+	case *ConstrGreater:
+		return true
+	case *ConstrGreaterOrEqual:
+		return true
+	case *ConstrLess:
+		return true
+	case *ConstrLessOrEqual:
 		return true
 	case *ExprParentheses:
-		return isBoolean(e.Expression)
+		return p.isBoolean(e.Expression)
 	case *True:
 		return true
 	case *False:
@@ -2581,43 +3402,84 @@ func isBoolean(expr any) bool {
 	return false
 }
 
-func (p *Parser) assumeSameType(s source, left, right Expression) Error {
-	_, lIsVar := left.(*Variable)
-	_, rIsVar := right.(*Variable)
+func (p *Parser) isString(expr any) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t := e.Declaration.Type(); t != nil {
+			// Check type based on schema
+			return t.Elem == nil && t.NamedType == "String"
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isString(v.Constraint)
+		case *ObjectField:
+			return p.isString(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isString(e.Value)
+	case *ConstrNotEquals:
+		return p.isString(e.Value)
+	case *ExprParentheses:
+		return p.isString(e.Expression)
+	case *String:
+		return true
+	}
+	return false
+}
+
+func (p *Parser) assumeCompatibleType(
+	l Location,
+	left, right Expression,
+) (ok bool) {
+	_, lIsVar := left.(*VariableRef)
+	_, rIsVar := right.(*VariableRef)
 	if lIsVar || rIsVar {
 		// TODO check variable types
-		return Error{}
+		return true
 	}
 
-	if isBoolean(left) && !isBoolean(right) {
-		return p.errCantCompare(s, left, right)
-	} else if isNumeric(left) && !isNumeric(right) {
-		return p.errCantCompare(s, left, right)
+	if p.isBoolean(left) && !p.isBoolean(right) {
+		p.errMismatchingTypes(l, left, right)
+		return false
+	} else if p.isNumeric(left) && !p.isNumeric(right) {
+		p.errMismatchingTypes(l, left, right)
+		return false
+	} else if left.IsFloat() && !right.IsFloat() ||
+		!left.IsFloat() && right.IsFloat() {
+		p.errMismatchingTypes(l, left, right)
+		return false
 	}
 	switch left.(type) {
 	case *String:
 		if _, ok := right.(*String); !ok {
-			return p.errCantCompare(s, left, right)
+			p.errMismatchingTypes(l, left, right)
+			return false
 		}
 	case *Enum:
 		if _, ok := right.(*Enum); !ok {
-			return p.errCantCompare(s, left, right)
+			p.errMismatchingTypes(l, left, right)
+			return false
 		}
 	case *Array:
 		if _, ok := right.(*Array); !ok {
-			return p.errCantCompare(s, left, right)
+			p.errMismatchingTypes(l, left, right)
+			return false
 		}
 	case *Object:
 		if _, ok := right.(*Object); !ok {
-			return p.errCantCompare(s, left, right)
+			p.errMismatchingTypes(l, left, right)
+			return false
 		}
 	}
-	return Error{}
+	return true
 }
 
-func setParent(t, parent any) {
+func setParent(t, parent Expression) {
 	switch v := t.(type) {
-	case *Variable:
+	case *VariableRef:
 		v.Parent = parent
 	case *Int:
 		v.Parent = parent
@@ -2710,102 +3572,7 @@ func setParent(t, parent any) {
 	}
 }
 
-func getParent(t any) any {
-	switch v := t.(type) {
-	case *Variable:
-		return v.Parent
-	case *Int:
-		return v.Parent
-	case *Float:
-		return v.Parent
-	case *String:
-		return v.Parent
-	case *True:
-		return v.Parent
-	case *False:
-		return v.Parent
-	case *Null:
-		return v.Parent
-	case *Enum:
-		return v.Parent
-	case *Array:
-		return v.Parent
-	case *Object:
-		return v.Parent
-	case *ExprModulo:
-		return v.Parent
-	case *ExprDivision:
-		return v.Parent
-	case *ExprMultiplication:
-		return v.Parent
-	case *ExprAddition:
-		return v.Parent
-	case *ExprSubtraction:
-		return v.Parent
-	case *ExprEqual:
-		return v.Parent
-	case *ExprNotEqual:
-		return v.Parent
-	case *ExprLess:
-		return v.Parent
-	case *ExprGreater:
-		return v.Parent
-	case *ExprLessOrEqual:
-		return v.Parent
-	case *ExprGreaterOrEqual:
-		return v.Parent
-	case *ExprParentheses:
-		return v.Parent
-	case *ConstrEquals:
-		return v.Parent
-	case *ConstrNotEquals:
-		return v.Parent
-	case *ConstrLess:
-		return v.Parent
-	case *ConstrGreater:
-		return v.Parent
-	case *ConstrLessOrEqual:
-		return v.Parent
-	case *ConstrGreaterOrEqual:
-		return v.Parent
-	case *ConstrLenEquals:
-		return v.Parent
-	case *ConstrLenNotEquals:
-		return v.Parent
-	case *ConstrLenLess:
-		return v.Parent
-	case *ConstrLenGreater:
-		return v.Parent
-	case *ConstrLenLessOrEqual:
-		return v.Parent
-	case *ConstrLenGreaterOrEqual:
-		return v.Parent
-	case *ExprLogicalAnd:
-		return v.Parent
-	case *ExprLogicalOr:
-		return v.Parent
-	case *ExprLogicalNegation:
-		return v.Parent
-	case *SelectionInlineFrag:
-		return v.Parent
-	case *ObjectField:
-		return v.Parent
-	case *SelectionField:
-		return v.Parent
-	case *Argument:
-		return v.Parent
-	case *SelectionMax:
-		return v.Parent
-	case *ConstrMap:
-		return v.Parent
-	case *ConstrAny:
-		return v.Parent
-	default:
-		panic(fmt.Errorf("unsupported type: %T", t))
-	}
-}
-
-func validateSelectionSet(s []byte, set []Selection) Error {
+func (p *Parser) validateSelectionSet(s []byte, set []Selection) (ok bool) {
 	var maxs []*SelectionMax
 	fields := map[string]*SelectionField{}
 	inlineFrags := map[string]*SelectionInlineFrag{}
@@ -2816,43 +3583,41 @@ func validateSelectionSet(s []byte, set []Selection) Error {
 		case *SelectionField:
 			fields[v.Name] = v
 		case *SelectionInlineFrag:
-			inlineFrags[v.TypeCondition] = v
+			inlineFrags[v.TypeCondition.TypeName] = v
 		}
 	}
 
 	if len(maxs) > 1 {
-		return errMsg(source{
-			s:        s,
-			Location: maxs[len(maxs)-1].Location,
-		}, "multiple max blocks in one selection set")
+		p.newErr(
+			maxs[len(maxs)-1].Location,
+			"multiple max blocks in one selection set",
+		)
+		return false
 	}
 
 	for _, m := range maxs {
-		for _, sel := range m.Options {
+		for _, sel := range m.Options.Selections {
 			switch v := sel.(type) {
 			case *SelectionField:
 				if f, ok := fields[v.Name]; ok {
-					return errMsg(source{
-						s: s,
-						Location: furthestLocation(
-							f.Location, v.Location,
-						),
-					}, "redeclared field")
+					p.newErr(
+						furthestLocation(f.Location, v.Location),
+						"redeclared field",
+					)
+					return false
 				}
 			case *SelectionInlineFrag:
-				if c, ok := inlineFrags[v.TypeCondition]; ok {
-					return errMsg(source{
-						s: s,
-						Location: furthestLocation(
-							c.Location, v.Location,
-						),
-					}, "redeclared type condition")
+				if c, ok := inlineFrags[v.TypeCondition.TypeName]; ok {
+					p.newErr(
+						furthestLocation(c.Location, v.Location),
+						"redeclared type condition",
+					)
+					return false
 				}
 			}
 		}
 	}
-
-	return Error{}
+	return true
 }
 
 func furthestLocation(a, b Location) Location {
@@ -2862,462 +3627,308 @@ func furthestLocation(a, b Location) Location {
 	return a
 }
 
-// func Find[T any](document *Operation, path string) (t T) {
-// 	var currentNode any = document
-// 	i := strings.IndexAny(path, ".")
-// 	if i < 0 {
-// 		return
-// 	}
-// 	switch path[:i] {
-// 	case "query":
-// 		if document.Type != OperationTypeQuery {
-// 			return
-// 		}
-// 	case "mutation":
-// 		if document.Type != OperationTypeMutation {
-// 			return
-// 		}
-// 	case "subscription":
-// 		if document.Type != OperationTypeSubscription {
-// 			return
-// 		}
-// 	default:
-// 		return
-// 	}
-// 	path = path[i:]
-
-// 	for path != "" {
-// 		i := strings.IndexAny(path, ".|?")
-// 		if i < 0 {
-// 			break
-// 		}
-// 		next := path[:i]
-// 		if next == "" {
-// 			return
-// 		}
-// 		switch path[i] {
-// 		case '.':
-// 			// Field
-// 		case '|':
-// 			// Argument
-// 		case '?':
-// 			// Type condition
-// 		}
-// 	}
-// 	return
-// }
-
-func (p *Parser) checkTypeCond(
-	s source,
-	hostDef, condTypeDef *ast.Definition,
-) Error {
-	switch condTypeDef.Kind {
-	case ast.Scalar:
-		return errMsg(s, fmt.Sprintf(
-			"fragment can't condition on scalar type %q",
-			condTypeDef.Name,
-		))
-	case ast.Enum:
-		return errMsg(s, fmt.Sprintf(
-			"fragment can't condition on enum type %q",
-			condTypeDef.Name,
-		))
-	case ast.InputObject:
-		return errMsg(s, fmt.Sprintf(
-			"fragment can't condition on input type %q",
-			condTypeDef.Name,
-		))
-	case ast.Object:
-		if hostDef.Name == condTypeDef.Name {
-			return Error{}
+func (p *Parser) validateInlineFrag(
+	frag *SelectionInlineFrag,
+	hostDef *ast.Definition,
+) (ok bool) {
+	if p.schema == nil {
+		if !p.validateCond(frag) {
+			return false
 		}
-		for _, c := range condTypeDef.Interfaces {
+		p.validateSelSet(frag, nil)
+		return true
+	}
+
+	def := p.schema.Types[frag.TypeCondition.TypeName]
+	if def == nil {
+		p.errUndefType(
+			frag.TypeCondition.Location,
+			frag.TypeCondition.TypeName,
+		)
+		return false
+	}
+
+	switch def.Kind {
+	case ast.Scalar:
+		p.errCondOnScalarType(frag)
+		return false
+	case ast.Enum:
+		p.errCondOnEnumType(frag)
+		return false
+	case ast.InputObject:
+		p.errCondOnInputType(frag)
+		return false
+	case ast.Object:
+		if hostDef != nil && hostDef.Name == def.Name {
+			return true
+		}
+		for _, c := range def.Interfaces {
 			if c == hostDef.Name {
 				// condition Object implements the host interface
-				return Error{}
+				return true
 			}
 		}
 		for _, c := range hostDef.Types {
-			if c == condTypeDef.Name {
+			if c == def.Name {
 				// condition Object is part of the host union
-				return Error{}
+				return true
 			}
 		}
 	case ast.Interface:
-		if hostDef.Name == condTypeDef.Name {
-			return Error{}
+		if hostDef.Name == def.Name {
+			return true
 		}
-		impls := p.schema.GetPossibleTypes(condTypeDef)
+		impls := p.schema.GetPossibleTypes(def)
 		for _, t := range impls {
 			if t == hostDef {
-				return Error{}
+				return true
 			}
 			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
-					return Error{}
+					return true
 				}
 			}
 		}
 	case ast.Union:
-		if hostDef.Name == condTypeDef.Name {
-			return Error{}
+		if hostDef.Name == def.Name {
+			return true
 		}
-		impls := p.schema.GetPossibleTypes(condTypeDef)
+		impls := p.schema.GetPossibleTypes(def)
 		for _, t := range impls {
 			if t == hostDef {
-				return Error{}
+				return true
 			}
 			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
-					return Error{}
+					return true
 				}
 			}
 		}
 	}
-	return errMsg(s, fmt.Sprintf(
-		"type %q can never be of type %q",
-		hostDef.Name, condTypeDef.Name,
-	))
-}
-
-func errMsgArgMissing(missingArgument *ast.ArgumentDefinition) string {
-	return fmt.Sprintf(
-		"argument %q of type %q is required but missing",
-		missingArgument.Name, missingArgument.Type,
+	p.errCanNeverBeOfType(
+		frag.TypeCondition.Location, hostDef.Name, def.Name,
 	)
+	return false
 }
 
-func errMsgInputFieldMissing(missingField *ast.FieldDefinition) string {
-	return fmt.Sprintf(
-		"field %q of type %q is required but missing",
-		missingField.Name, missingField.Type,
-	)
-}
-
-func (p *Parser) errMsgUnexpType(
-	s source,
-	expected *ast.Type,
-	actual Expression,
-) Error {
-	return errMsg(s, fmt.Sprintf(
-		"expected type %q but received %q",
-		expected, actual.ValueType(p),
-	))
-}
-
-func errMsgUndefEnumVal(val string) string {
-	return fmt.Sprintf("undefined enum value %q", val)
-}
-
-func errMsgUndefFieldInType(fieldName, typeName string) string {
-	return fmt.Sprintf(
-		"field %q is undefined in type %q",
-		fieldName, typeName,
-	)
-}
-
-// checkConstraintType returns false if the argument or object field
-// constraint type doesn't match the schema argument type.
-func (p *Parser) checkConstraintType(
-	s source,
-	e Expression,
-	def *ast.Type,
-) Error {
-	switch v := e.(type) {
-	case *ConstrAny:
-	case *ConstrEquals:
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrNotEquals:
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLess:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrGreater:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLessOrEqual:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrGreaterOrEqual:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLenEquals:
-		if !defHasLength(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLenNotEquals:
-		if !defHasLength(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLenLess:
-		if !defHasLength(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLenGreater:
-		if !defHasLength(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLenLessOrEqual:
-		if !defHasLength(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrLenGreaterOrEqual:
-		if !defHasLength(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Value.GetLocation()}
-		return p.checkConstraintType(s, v.Value, def)
-	case *ConstrMap:
-		if !defIsArray(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Constraint.GetLocation()}
-		return p.checkConstraintType(s, v.Constraint, def.Elem)
-	case *ExprParentheses:
-		s = source{s: s.s, Location: v.Expression.GetLocation()}
-		return p.checkConstraintType(s, v.Expression, def)
-	case *ExprLogicalNegation:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Expression.GetLocation()}
-		return p.checkConstraintType(s, v.Expression, def)
-	case *ExprModulo:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Dividend.GetLocation()}
-		if err := p.checkConstraintType(s, v.Dividend, def); err.IsErr() {
-			return err
-		}
-		s = source{s: s.s, Location: v.Divisor.GetLocation()}
-		return p.checkConstraintType(s, v.Divisor, def)
-	case *ExprDivision:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Dividend.GetLocation()}
-		if err := p.checkConstraintType(s, v.Dividend, def); err.IsErr() {
-			return err
-		}
-		s = source{s: s.s, Location: v.Divisor.GetLocation()}
-		return p.checkConstraintType(s, v.Divisor, def)
-	case *ExprMultiplication:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Multiplicant.GetLocation()}
-		if err := p.checkConstraintType(s, v.Multiplicant, def); err.IsErr() {
-			return err
-		}
-		s = source{s: s.s, Location: v.Multiplicator.GetLocation()}
-		return p.checkConstraintType(s, v.Multiplicator, def)
-	case *ExprAddition:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.AddendLeft.GetLocation()}
-		if err := p.checkConstraintType(s, v.AddendLeft, def); err.IsErr() {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.AddendRight.GetLocation()}
-		return p.checkConstraintType(s, v.AddendRight, def)
-	case *ExprSubtraction:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Minuend.GetLocation()}
-		if err := p.checkConstraintType(s, v.Minuend, def); err.IsErr() {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Subtrahend.GetLocation()}
-		return p.checkConstraintType(s, v.Subtrahend, def)
-	case *Int:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *Float:
-		if !defIsNum(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *True:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *False:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *String:
-		if def.NamedType != "String" {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *Array:
-		if !defIsArray(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		for _, i := range v.Items {
-			if err := p.checkConstraintType(source{
-				s:        s.s,
-				Location: i.GetLocation(),
-			}, i, def.Elem); err.IsErr() {
-				return err
-			}
-		}
-	case *Null:
-		if def.NonNull {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *Enum:
-		t, ok := p.enumVal[v.Value]
-		if !ok {
-			return errMsg(s, errMsgUndefEnumVal(v.Value))
-		}
-		if def.NamedType != t.Name {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *Object:
-		tp := p.schema.Types[def.Name()]
-
-		if tp.Kind != ast.InputObject {
-			return p.errMsgUnexpType(s, def, v)
-		}
-
-		declaredFields := make(
-			map[string]*ast.FieldDefinition,
-			len(tp.Fields),
-		)
-
-		for _, vf := range v.Fields {
-			field := tp.Fields.ForName(vf.Name)
-			if field == nil {
-				return errMsg(source{
-					s:        s.s,
-					Location: vf.Location,
-				}, errMsgUndefFieldInType(vf.Name, def.Name()))
-			}
-
-			if err := p.checkConstraintType(
-				source{
-					s:        s.s,
-					Location: vf.Constraint.GetLocation(),
-				}, vf.Constraint, field.Type,
-			); err.IsErr() {
-				return err
-			}
-
-			declaredFields[vf.Name] = field
-		}
-
-		for _, f := range tp.Fields {
-			if f.Type.NonNull {
-				if _, ok := declaredFields[f.Name]; !ok {
-					return errMsg(s, errMsgInputFieldMissing(f))
+func (p *Parser) validateCond(frag *SelectionInlineFrag) (ok bool) {
+	ok = true
+	switch frag.TypeCondition.TypeName {
+	case "String", "ID", "Boolean", "Int", "Float":
+		p.errCondOnScalarType(frag)
+		return false
+	case "Mutation", "Query", "Subscription":
+		for par := frag.Parent; par != nil; par = par.GetParent() {
+			switch par := par.(type) {
+			case *Operation:
+				if par.Type.String() != frag.TypeCondition.TypeName {
+					p.errCanNeverBeOfType(
+						frag.TypeCondition.Location,
+						par.Type.String(),
+						frag.TypeCondition.TypeName,
+					)
+					return false
 				}
-			}
-		}
-
-	case *ExprEqual:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-
-		s = source{s: s.s, Location: v.Left.GetLocation()}
-		if err := p.checkConstraintType(s, v.Left, &ast.Type{
-			NamedType: "Boolean",
-		}); err.IsErr() {
-			return p.errMsgUnexpType(s, def, v)
-		}
-		s = source{s: s.s, Location: v.Right.GetLocation()}
-		return p.checkConstraintType(s, v.Right, def)
-
-	case *ExprNotEqual:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *ExprLess:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *ExprLessOrEqual:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *ExprGreater:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *ExprGreaterOrEqual:
-		if !defIsBool(def) {
-			return p.errMsgUnexpType(s, def, v)
-		}
-	case *ExprLogicalAnd:
-		for _, e := range v.Expressions {
-			s = source{s: s.s, Location: e.GetLocation()}
-			if err := p.checkConstraintType(s, e, def); err.IsErr() {
-				return err
-			}
-		}
-	case *ExprLogicalOr:
-		for _, e := range v.Expressions {
-			s = source{s: s.s, Location: e.GetLocation()}
-			if err := p.checkConstraintType(s, e, def); err.IsErr() {
-				return err
-			}
-		}
-	case *Variable:
-		if v.Type != nil {
-			if v.Type != def {
-				return errMsg(s, fmt.Sprintf(
-					"expected type %q but received %q",
-					def, v.Type,
-				))
+			case *SelectionInlineFrag:
+				if par.TypeCondition.TypeName != frag.TypeCondition.TypeName {
+					p.errCanNeverBeOfType(
+						frag.TypeCondition.Location,
+						par.TypeCondition.TypeName,
+						frag.TypeCondition.TypeName,
+					)
+					return false
+				}
 			}
 		}
 	default:
-		panic(fmt.Errorf("unsupported constraint type: %T", e))
+		for par := frag.Parent; par != nil; par = par.GetParent() {
+			switch par := par.(type) {
+			case *Operation:
+				p.errCanNeverBeOfType(
+					frag.TypeCondition.Location,
+					par.Type.String(),
+					frag.TypeCondition.TypeName,
+				)
+				return false
+			case *SelectionInlineFrag:
+				switch par.TypeCondition.TypeName {
+				case "Query", "Mutation", "Subscription":
+					p.errCanNeverBeOfType(
+						frag.TypeCondition.Location,
+						frag.TypeCondition.TypeName,
+						par.TypeCondition.TypeName,
+					)
+					return false
+				default:
+					return true
+				}
+			default:
+				return true
+			}
+		}
 	}
-	return Error{}
+	return ok
 }
 
-func defIsNum(t *ast.Type) bool {
-	return t.NamedType == "Int" || t.NamedType == "Float"
+func (p *Parser) errCondOnScalarType(s *SelectionInlineFrag) {
+	p.errors = append(p.errors, Error{
+		Location: s.TypeCondition.Location,
+		Msg: "fragment can't condition on scalar type " +
+			s.TypeCondition.TypeName,
+	})
 }
 
-func defIsBool(t *ast.Type) bool {
-	return t.NamedType == "Boolean"
+func (p *Parser) errCondOnEnumType(s *SelectionInlineFrag) {
+	p.errors = append(p.errors, Error{
+		Location: s.TypeCondition.Location,
+		Msg: "fragment can't condition on enum type " +
+			s.TypeCondition.TypeName,
+	})
+}
+
+func (p *Parser) errCondOnInputType(s *SelectionInlineFrag) {
+	p.errors = append(p.errors, Error{
+		Location: s.TypeCondition.Location,
+		Msg: "fragment can't condition on input type " +
+			s.TypeCondition.TypeName,
+	})
+}
+
+func (p *Parser) errCanNeverBeOfType(
+	l Location,
+	thisType,
+	cantBeOf string,
+) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg: "type " + thisType +
+			" can never be of type " + cantBeOf,
+	})
+}
+
+func (p *Parser) errMissingArg(
+	l Location, missingArgument *ast.ArgumentDefinition,
+) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg: fmt.Sprintf(
+			"argument %q of type %s is required but missing",
+			missingArgument.Name, missingArgument.Type,
+		),
+	})
+}
+
+func (p *Parser) errMissingInputField(
+	l Location,
+	missingField *ast.FieldDefinition,
+) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg: fmt.Sprintf(
+			"field %q of type %q is required but missing",
+			missingField.Name, missingField.Type,
+		),
+	})
+}
+
+func (p *Parser) errMissingSelSet(
+	l Location, fieldName, hostTypeName string,
+) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg: fmt.Sprintf(
+			"missing selection set for field %q of type %s",
+			fieldName, hostTypeName,
+		),
+	})
+}
+
+func (p *Parser) errExpectedNum(actual Expression) {
+	td := actual.TypeDesignation()
+	p.errors = append(p.errors, Error{
+		Location: actual.GetLocation(),
+		Msg:      "expected number but received " + td,
+	})
+}
+
+func (p *Parser) errExpectedInt(actual Expression) {
+	td := actual.TypeDesignation()
+	p.errors = append(p.errors, Error{
+		Location: actual.GetLocation(),
+		Msg:      "expected Int but received " + td,
+	})
+}
+
+func (p *Parser) errUnexpType(
+	expected *ast.Type,
+	actual Expression,
+) {
+	td := actual.TypeDesignation()
+	p.errors = append(p.errors, Error{
+		Location: actual.GetLocation(),
+		Msg: fmt.Sprintf(
+			"expected type %s but received %s", expected, td,
+		),
+	})
+}
+
+func (p *Parser) errUndefEnumVal(l Location, val string) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      fmt.Sprintf("undefined enum value %q", val),
+	})
+}
+
+func (p *Parser) errUndefFieldInType(
+	l Location, fieldName, typeName string,
+) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg: fmt.Sprintf(
+			"field %q is undefined in type %s",
+			fieldName, typeName,
+		),
+	})
+}
+
+func isTypeNum(t *ast.Type) bool {
+	return t.Elem == nil && (t.NamedType == "Int" || t.NamedType == "Float")
+}
+
+func isTypeFloat(t *ast.Type) bool {
+	return t.Elem == nil && t.NamedType == "Float"
+}
+
+func isTypeBool(t *ast.Type) bool {
+	return t.Elem == nil && t.NamedType == "Boolean"
+}
+
+func isTypeString(t *ast.Type) bool {
+	return t.Elem == nil && t.NamedType == "String"
 }
 
 func defHasLength(t *ast.Type) bool {
-	return t.NamedType == "String" || defIsArray(t)
+	return t.NamedType == "String" || typeIsArray(t)
 }
 
-func defIsArray(t *ast.Type) bool {
+func typeIsArray(t *ast.Type) bool {
 	return t.NamedType == "" && t.Elem != nil
+}
+
+func indexOf[T comparable](s []T, x T) int {
+	for i, v := range s {
+		if v == x {
+			return i
+		}
+	}
+	return -1
+}
+
+func makeAppend[T any](a []T, b ...T) (new []T) {
+	new = make([]T, len(a)+len(b))
+	copy(new, a)
+	copy(new[len(a):], b)
+	return new
 }

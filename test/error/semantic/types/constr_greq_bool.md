@@ -3,5 +3,5 @@ query { f(a: >= true) }
 ```
 
 ```
-1:17: mismatching types: can't use Boolean as number
+1:17: expected number but received Boolean
 ```

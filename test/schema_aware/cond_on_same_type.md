@@ -8,7 +8,7 @@ query { foo { ... on Foo { ... on Foo { name } } } }
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[1:9](foo):
     selections:
       - SelectionInlineFrag[1:15](Foo):

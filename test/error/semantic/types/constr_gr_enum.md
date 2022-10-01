@@ -3,5 +3,5 @@ query { f(a: > ENUMVAL) }
 ```
 
 ```
-1:16: mismatching types: can't use enum as number
+1:16: expected number but received enum
 ```

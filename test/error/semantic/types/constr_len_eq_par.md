@@ -3,5 +3,5 @@ query { f(a: len (false)) }
 ```
 
 ```
-1:18: mismatching types: can't use Boolean as number
+1:19: expected type Int! but received Boolean
 ```

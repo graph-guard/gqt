@@ -7,5 +7,5 @@ query { string(a: "not okay") }
 ```
 
 ```
-1:19: expected type "Int!" but received "String"
+1:19: expected type Int! but received String
 ```

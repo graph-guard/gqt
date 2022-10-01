@@ -3,5 +3,5 @@ query { f(a: len null) }
 ```
 
 ```
-1:18: mismatching types: can't use null as number
+1:18: expected type Int! but received null
 ```

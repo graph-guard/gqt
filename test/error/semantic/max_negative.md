@@ -8,5 +8,5 @@ query {
 ```
 
 ```yaml
-2:7: maximum number of options must be an unsigned integer greater 0
+2:7: unexpected token, expected selection
 ```

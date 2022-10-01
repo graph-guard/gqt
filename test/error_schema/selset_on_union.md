@@ -12,5 +12,5 @@ query { u { foo } }
 ```
 
 ```
-1:13: field "foo" is undefined in type "UnionFooBar"
+1:13: field "foo" is undefined in type UnionFooBar
 ```

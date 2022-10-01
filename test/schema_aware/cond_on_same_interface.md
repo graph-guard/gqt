@@ -11,7 +11,7 @@ query { i { ... on Interface { ... on Interface { name } } } }
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[1:9](i):
     selections:
       - SelectionInlineFrag[1:13](Interface):

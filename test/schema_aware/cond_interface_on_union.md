@@ -13,7 +13,7 @@ query { u { ... on InterfaceFooBar { name } } }
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[1:9](u):
     selections:
       - SelectionInlineFrag[1:13](InterfaceFooBar):

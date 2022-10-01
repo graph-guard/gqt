@@ -10,7 +10,7 @@ query {
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionMax[2:3](3):
     options:
       - SelectionField[3:5](foo)

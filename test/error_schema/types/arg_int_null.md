@@ -7,5 +7,5 @@ query { string(a: null) }
 ```
 
 ```
-1:19: expected type "Int!" but received "null"
+1:19: expected type Int! but received null
 ```

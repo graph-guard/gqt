@@ -7,5 +7,5 @@ query { ... on String { name } }
 ```
 
 ```
-1:16: fragment can't condition on scalar type "String"
+1:16: fragment can't condition on scalar type String
 ```

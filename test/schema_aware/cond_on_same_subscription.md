@@ -7,7 +7,7 @@ subscription { ... on Subscription { ... on Subscription { name } } }
 ```
 
 ```yaml
-Operation[1:1](subscription):
+Operation[1:1](Subscription):
   - SelectionInlineFrag[1:16](Subscription):
     selections:
       - SelectionInlineFrag[1:38](Subscription):

@@ -59,7 +59,7 @@ func writeYAML(
 		if wrf("Operation[%d:%d](%s):", v.Line, v.Column, v.Type) {
 			return
 		}
-		for _, s := range v.Selections {
+		for _, s := range v.SelectionSet.Selections {
 			if n, err = writeYAML(w, indent+1, s); err != nil {
 				return
 			}
@@ -311,7 +311,7 @@ func writeYAML(
 			return
 		}
 		written += n
-	case *Variable:
+	case *VariableRef:
 		if wrf("- Variable[%d:%d](%s)", v.Line, v.Column, v.Name) {
 			return
 		}
@@ -446,7 +446,7 @@ func writeYAML(
 		) {
 			return
 		}
-		if len(v.Options) > 0 {
+		if len(v.Options.Selections) > 0 {
 			if wrBR() {
 				return
 			}
@@ -454,7 +454,7 @@ func writeYAML(
 			if wrf("options:") {
 				return
 			}
-			for _, a := range v.Options {
+			for _, a := range v.Options.Selections {
 				if n, err = writeYAML(w, indent+2, a); err != nil {
 					return
 				}
@@ -463,7 +463,8 @@ func writeYAML(
 		}
 	case *SelectionField:
 		colon := ""
-		if len(v.Selections) > 0 || len(v.Arguments) > 0 {
+		if len(v.SelectionSet.Selections) > 0 ||
+			len(v.ArgumentList.Arguments) > 0 {
 			colon = ":"
 		}
 		if wrf(
@@ -472,7 +473,7 @@ func writeYAML(
 		) {
 			return
 		}
-		if len(v.Arguments) > 0 {
+		if len(v.ArgumentList.Arguments) > 0 {
 			if wrBR() {
 				return
 			}
@@ -480,14 +481,14 @@ func writeYAML(
 			if wrf("arguments:") {
 				return
 			}
-			for _, a := range v.Arguments {
+			for _, a := range v.ArgumentList.Arguments {
 				if n, err = writeYAML(w, indent+2, a); err != nil {
 					return
 				}
 				written += n
 			}
 		}
-		if len(v.Selections) > 0 {
+		if len(v.SelectionSet.Selections) > 0 {
 			if wrBR() {
 				return
 			}
@@ -495,7 +496,7 @@ func writeYAML(
 			if wrf("selections:") {
 				return
 			}
-			for _, a := range v.Selections {
+			for _, a := range v.SelectionSet.Selections {
 				if n, err = writeYAML(w, indent+2, a); err != nil {
 					return
 				}
@@ -530,16 +531,16 @@ func writeYAML(
 		}
 	case *SelectionInlineFrag:
 		colon := ""
-		if len(v.Selections) > 0 {
+		if len(v.SelectionSet.Selections) > 0 {
 			colon = ":"
 		}
 		if wrf(
 			"- SelectionInlineFrag[%d:%d](%s)%s",
-			v.Line, v.Column, v.TypeCondition, colon,
+			v.Line, v.Column, v.TypeCondition.TypeName, colon,
 		) {
 			return
 		}
-		if len(v.Selections) > 0 {
+		if len(v.SelectionSet.Selections) > 0 {
 			if wrBR() {
 				return
 			}
@@ -547,7 +548,7 @@ func writeYAML(
 			if wrf("selections:") {
 				return
 			}
-			for _, a := range v.Selections {
+			for _, a := range v.SelectionSet.Selections {
 				if n, err = writeYAML(w, indent+2, a); err != nil {
 					return
 				}

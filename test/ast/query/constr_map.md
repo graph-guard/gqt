@@ -5,7 +5,7 @@ query {
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[2:3](x):
     arguments:
       - Argument[2:7](a):

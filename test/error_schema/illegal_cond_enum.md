@@ -8,5 +8,5 @@ query { ... on Enum { name } }
 ```
 
 ```
-1:16: fragment can't condition on enum type "Enum"
+1:16: fragment can't condition on enum type Enum
 ```

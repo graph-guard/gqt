@@ -7,7 +7,7 @@ query { f(a: 42) }
 ```
 
 ```yaml
-Operation[1:1](query):
+Operation[1:1](Query):
   - SelectionField[1:9](f):
     arguments:
       - Argument[1:11](a):

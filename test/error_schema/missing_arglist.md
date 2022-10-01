@@ -7,5 +7,5 @@ query { foo }
 ```
 
 ```
-1:9: argument "a" of type "Int!" is required but missing
+1:9: argument "a" of type Int! is required but missing
 ```

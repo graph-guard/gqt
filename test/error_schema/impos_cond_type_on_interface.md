@@ -10,5 +10,5 @@ query { i { ... on Bar { name } } }
 ```
 
 ```
-1:20: type "Interface" can never be of type "Bar"
+1:20: type Interface can never be of type Bar
 ```

@@ -8,5 +8,5 @@ query { ... on Input { name } }
 ```
 
 ```
-1:16: fragment can't condition on input type "Input"
+1:16: fragment can't condition on input type Input
 ```

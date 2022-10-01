@@ -3,5 +3,5 @@ query { f(a: len <= []) }
 ```
 
 ```
-1:21: mismatching types: can't use array as number
+1:21: expected type Int! but received array
 ```

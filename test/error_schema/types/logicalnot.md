@@ -7,5 +7,5 @@ query { foo(a: !false) }
 ```
 
 ```
-1:16: expected type "Int!" but received "Boolean"
+1:16: expected type Int! but received Boolean
 ```

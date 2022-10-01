@@ -3,11 +3,13 @@ package gqt_test
 import (
 	"bytes"
 	"embed"
+	"strings"
 	"testing"
 
 	"github.com/graph-guard/gqt"
 	"github.com/graph-guard/gqt/internal/test"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -28,13 +30,20 @@ func TestParseErr(t *testing.T) {
 	test.ExecDirMD2(
 		t, errorFS, "test/error", "ERR: ",
 		func(t *testing.T, input, expectation string) {
-			d, vars, err := gqt.Parse([]byte(input))
-			require.Equal(
-				t, expectation, err.Error(),
-				"input: %q", input,
-			)
-			require.Zero(t, d)
-			require.Nil(t, vars)
+			expectedErrors := strings.Split(expectation, "\n")
+			_, _, errs := gqt.Parse([]byte(input))
+			for i, e := range expectedErrors {
+				if i >= len(errs) {
+					t.Errorf("missing error: %v", e)
+					continue
+				}
+				assert.Equal(t, e, errs[i].Error())
+			}
+			if d := len(errs) - len(expectedErrors); d > 0 {
+				for _, act := range errs[d:] {
+					t.Errorf("unexpected error: %v", act)
+				}
+			}
 		},
 	)
 }
@@ -43,14 +52,15 @@ func TestParse(t *testing.T) {
 	test.ExecDirMD2(
 		t, astFS, "test/ast", "",
 		func(t *testing.T, input, expectation string) {
+
 			var discard map[string]any
 			require.NoError(
 				t, yaml.Unmarshal([]byte(expectation), &discard),
 				"invalid expectation YAML",
 			)
 
-			o, vars, err := gqt.Parse([]byte(input))
-			require.False(t, err.IsErr(), "unexpected error: %v", err)
+			o, vars, errs := gqt.Parse([]byte(input))
+			require.Nil(t, errs)
 			require.NotNil(t, vars)
 
 			{
@@ -65,8 +75,8 @@ func TestParse(t *testing.T) {
 
 func TestParseEmpty(t *testing.T) {
 	input := `query{x}`
-	opr, vars, err := gqt.Parse([]byte(input))
-	require.False(t, err.IsErr(), "unexpected error: %v", err)
+	opr, vars, errs := gqt.Parse([]byte(input))
+	require.Len(t, errs, 0, "unexpected errors: %v", errs)
 	require.NotNil(t, opr)
 	require.Len(t, vars, 0)
 }
@@ -77,8 +87,8 @@ func TestParseVariables(t *testing.T) {
 			f2(b=$b:*, x=$unused: $c+$b, d: {o1=$x:*})
 		}
 	}`
-	opr, vars, err := gqt.Parse([]byte(input))
-	require.False(t, err.IsErr(), "unexpected error: %v", err)
+	opr, vars, errs := gqt.Parse([]byte(input))
+	require.Len(t, errs, 0, "unexpected errors: %v", errs)
 	require.NotNil(t, opr)
 
 	require.Len(t, vars, 4)
@@ -112,25 +122,25 @@ func TestParseVariables(t *testing.T) {
 
 	require.Equal(
 		t, gqt.Location{Index: 16, Line: 2, Column: 9},
-		vars["b"].References[0].(*gqt.Variable).Location,
+		vars["b"].References[0].(*gqt.VariableRef).Location,
 	)
 	require.Equal(
 		t, gqt.Location{Index: 29, Line: 2, Column: 22},
-		vars["b"].References[1].(*gqt.Variable).Location,
+		vars["b"].References[1].(*gqt.VariableRef).Location,
 	)
 	require.Equal(
 		t, gqt.Location{Index: 63, Line: 3, Column: 29},
-		vars["b"].References[2].(*gqt.Variable).Location,
+		vars["b"].References[2].(*gqt.VariableRef).Location,
 	)
 
 	require.Equal(
 		t, gqt.Location{Index: 60, Line: 3, Column: 26},
-		vars["c"].References[0].(*gqt.Variable).Location,
+		vars["c"].References[0].(*gqt.VariableRef).Location,
 	)
 
 	require.Equal(
 		t, gqt.Location{Index: 19, Line: 2, Column: 12},
-		vars["x"].References[0].(*gqt.Variable).Location,
+		vars["x"].References[0].(*gqt.VariableRef).Location,
 	)
 }
 
@@ -142,8 +152,8 @@ func TestParserSchema(t *testing.T) {
 				{Name: "test_schema_aware", Content: schema},
 			})
 			require.NoError(t, errp, "unexpected GraphQL schema parser error")
-			o, vars, err := p.Parse([]byte(input))
-			require.False(t, err.IsErr(), "unexpected error: %v", err)
+			o, vars, errs := p.Parse([]byte(input))
+			require.Len(t, errs, 0, "unexpected errors: %v", errs)
 			require.NotNil(t, vars)
 
 			{
@@ -160,15 +170,27 @@ func TestParserSchemaErr(t *testing.T) {
 	test.ExecDirMD3(
 		t, errorSchemaFS, "test/error_schema", "ERR: ",
 		func(t *testing.T, schema, input, expectation string) {
+
 			p, errp := gqt.NewParser([]gqt.Source{
 				{Name: "testschema", Content: schema},
 			})
 			require.NoError(t, errp, "unexpected GraphQL schema parser error")
-			d, vars, err := p.Parse([]byte(input))
-			require.Equal(
-				t, expectation, err.Error(),
-				"input: %q", input,
-			)
+
+			expectedErrors := strings.Split(expectation, "\n")
+			d, vars, errs := p.Parse([]byte(input))
+			for i, e := range expectedErrors {
+				if i >= len(errs) {
+					t.Errorf("missing error: %v", e)
+					continue
+				}
+				assert.Equal(t, e, errs[i].Error())
+			}
+			if d := len(errs) - len(expectedErrors); d > 0 {
+				for _, act := range errs[d:] {
+					t.Errorf("unexpected error: %v", act)
+				}
+			}
+
 			require.Zero(t, d)
 			require.Nil(t, vars)
 		},
@@ -245,3 +267,31 @@ func TestParserSchemaErr(t *testing.T) {
 // 	BLUE
 // }
 // `
+
+// func TestValueType(t *testing.T) {
+// 	type T struct {
+// 		Schema string
+// 		E      gqt.Expression
+// 		Expect string
+// 	}
+// 	test := test.New(t, func(t *testing.T, x T) {
+// 		p, err := gqt.NewParser([]gqt.Source{
+// 			{
+// 				Name:    "schema.graphqls",
+// 				Content: x.Schema,
+// 			},
+// 		})
+// 		require.NoError(t, err)
+// 		actual := x.E.ValueType(p)
+// 		require.Equal(t, x.Expect, actual)
+// 	})
+
+// 	test(T{
+// 		E: &gqt.ExprLogicalAnd{
+// 			Expressions: []gqt.Expression{
+// 				&gqt.Int{},
+// 				&gqt.Null{},
+// 			},
+// 		},
+// 	})
+// }

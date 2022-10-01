@@ -8,5 +8,5 @@ query { e { foo } }
 ```
 
 ```
-1:13: field "foo" is undefined in type "Enum"
+1:13: field "foo" is undefined in type Enum
 ```

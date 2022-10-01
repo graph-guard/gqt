@@ -8,5 +8,5 @@ query { ... on Foo { name } }
 ```
 
 ```
-1:16: type "Query" can never be of type "Foo"
+1:16: type Query can never be of type Foo
 ```

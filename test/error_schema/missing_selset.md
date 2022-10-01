@@ -8,5 +8,5 @@ query { foo }
 ```
 
 ```
-1:13: missing selection set for selection "foo" of type Foo
+1:9: missing selection set for field "foo" of type Foo!
 ```

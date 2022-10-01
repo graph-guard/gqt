@@ -3,5 +3,5 @@ query { f(a: <= []) }
 ```
 
 ```
-1:17: mismatching types: can't use array as number
+1:17: expected number but received array
 ```

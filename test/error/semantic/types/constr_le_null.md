@@ -3,5 +3,5 @@ query { f(a: < null) }
 ```
 
 ```
-1:16: mismatching types: can't use null as number
+1:16: expected number but received null
 ```

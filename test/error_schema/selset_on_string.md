@@ -7,5 +7,5 @@ query { e { foo } }
 ```
 
 ```
-1:13: field "foo" is undefined in type "String"
+1:13: field "foo" is undefined in type String
 ```

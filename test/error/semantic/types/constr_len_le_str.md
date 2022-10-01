@@ -3,5 +3,5 @@ query { f(a: len < "text") }
 ```
 
 ```
-1:20: mismatching types: can't use String as number
+1:20: expected type Int! but received String
 ```

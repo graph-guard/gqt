@@ -8,5 +8,5 @@ query { foo { f(b: *) }}
 ```
 
 ```
-1:17: argument "b" is undefined on field "f" of type "Foo"
+1:17: argument "b" is undefined on field "f" of type Foo
 ```
