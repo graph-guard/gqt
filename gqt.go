@@ -1278,81 +1278,106 @@ func (p *Parser) validateExpr(
 	for len(stack) > 0 {
 		top := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
+		expect := top.Expect
 
 		switch e := top.Expr.(type) {
 		case *ConstrAny:
 		case *ConstrEquals:
-			push(e.Value, top.Expect)
+			push(e.Value, expect)
 		case *ConstrNotEquals:
-			push(e.Value, top.Expect)
+			push(e.Value, expect)
 		case *ConstrGreater:
-			if top.Expect == nil {
+			if expect == nil {
 				if !p.isNumeric(e.Value) {
 					ok = false
 					p.errExpectedNum(e.Value)
 					break
 				}
-				push(e.Value, top.Expect)
+				push(e.Value, expect)
 				break
 			}
-			if top.Expect.NamedType != "Float" &&
-				top.Expect.NamedType != "Int" {
+			if expect.NamedType != "Float" && expect.NamedType != "Int" {
+				p.newErr(e.Location, "can't apply numeric constraint "+
+					"'>' (greater than) to non-numeric type "+
+					expect.String())
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
 				break
 			}
-			push(e.Value, top.Expect)
+			if !p.isNumeric(e.Value) {
+				p.errUnexpType(expect, e.Value)
+				ok = false
+				break
+			}
+			push(e.Value, expect)
 		case *ConstrGreaterOrEqual:
-			if top.Expect == nil {
+			if expect == nil {
 				if !p.isNumeric(e.Value) {
 					ok = false
 					p.errExpectedNum(e.Value)
 					break
 				}
-				push(e.Value, top.Expect)
+				push(e.Value, expect)
 				break
 			}
-			if top.Expect.NamedType != "Float" &&
-				top.Expect.NamedType != "Int" {
+			if expect.NamedType != "Float" && expect.NamedType != "Int" {
+				p.newErr(e.Location, "can't apply numeric constraint "+
+					"'>=' (greater than or equal) to non-numeric type "+
+					expect.String())
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
 				break
 			}
-			push(e.Value, top.Expect)
+			if !p.isNumeric(e.Value) {
+				p.errUnexpType(expect, e.Value)
+				ok = false
+				break
+			}
+			push(e.Value, expect)
 		case *ConstrLess:
-			if top.Expect == nil {
+			if expect == nil {
 				if !p.isNumeric(e.Value) {
 					ok = false
 					p.errExpectedNum(e.Value)
 					break
 				}
-				push(e.Value, top.Expect)
+				push(e.Value, expect)
 				break
 			}
-			if top.Expect.NamedType != "Float" &&
-				top.Expect.NamedType != "Int" {
+			if expect.NamedType != "Float" && expect.NamedType != "Int" {
+				p.newErr(e.Location, "can't apply numeric constraint "+
+					"'<' (less than) to non-numeric type "+
+					expect.String())
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
 				break
 			}
-			push(e.Value, top.Expect)
+			if !p.isNumeric(e.Value) {
+				p.errUnexpType(expect, e.Value)
+				ok = false
+				break
+			}
+			push(e.Value, expect)
 		case *ConstrLessOrEqual:
-			if top.Expect == nil {
+			if expect == nil {
 				if !p.isNumeric(e.Value) {
 					ok = false
 					p.errExpectedNum(e.Value)
 					break
 				}
-				push(e.Value, top.Expect)
+				push(e.Value, expect)
 				break
 			}
-			if top.Expect.NamedType != "Float" &&
-				top.Expect.NamedType != "Int" {
+			if expect.NamedType != "Float" && expect.NamedType != "Int" {
+				p.newErr(e.Location, "can't apply numeric constraint "+
+					"'<=' (less than or equal) to non-numeric type "+
+					expect.String())
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
 				break
 			}
-			push(e.Value, top.Expect)
+			if !p.isNumeric(e.Value) {
+				p.errUnexpType(expect, e.Value)
+				ok = false
+				break
+			}
+			push(e.Value, expect)
 		case *ConstrLenEquals:
 			push(e.Value, &ast.Type{
 				NamedType: "Int",
@@ -1385,12 +1410,12 @@ func (p *Parser) validateExpr(
 			})
 		case *ConstrMap:
 			var exp *ast.Type
-			if top.Expect != nil {
-				exp = top.Expect.Elem
+			if expect != nil {
+				exp = expect.Elem
 			}
 			push(e.Constraint, exp)
 		case *ExprParentheses:
-			push(e.Expression, top.Expect)
+			push(e.Expression, expect)
 		case *ExprEqual:
 			if !p.assumeComparableType(e.Location, e.Left, e.Right) {
 				ok = false
@@ -1406,14 +1431,14 @@ func (p *Parser) validateExpr(
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprLogicalNegation:
-			if top.Expect != nil && !isTypeBool(top.Expect) {
-				p.errUnexpType(top.Expect, e)
+			if expect != nil && !isTypeBool(expect) {
+				p.errUnexpType(expect, e)
 				ok = false
 				break
-			} else if top.Expect == nil {
-				top.Expect = &ast.Type{NamedType: "Boolean"}
+			} else if expect == nil {
+				expect = &ast.Type{NamedType: "Boolean"}
 			}
-			push(e.Expression, top.Expect)
+			push(e.Expression, expect)
 		case *ExprLogicalOr:
 			objEncountered := false
 			for _, e := range e.Expressions {
@@ -1427,7 +1452,7 @@ func (p *Parser) validateExpr(
 				} else if o != nil {
 					objEncountered = true
 				}
-				push(o, top.Expect)
+				push(o, expect)
 			}
 		case *ExprLogicalAnd:
 			objEncountered := false
@@ -1442,10 +1467,10 @@ func (p *Parser) validateExpr(
 				} else if o != nil {
 					objEncountered = true
 				}
-				push(o, top.Expect)
+				push(o, expect)
 			}
 		case *ExprAddition:
-			if top.Expect == nil {
+			if expect == nil {
 				br := false
 				if !p.isNumeric(e.AddendLeft) {
 					p.errExpectedNum(e.AddendLeft)
@@ -1459,15 +1484,15 @@ func (p *Parser) validateExpr(
 					ok = false
 					break
 				}
-			} else if !isTypeNum(top.Expect) {
-				p.errUnexpType(top.Expect, e)
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
 				ok = false
 				break
 			}
-			push(e.AddendLeft, top.Expect)
-			push(e.AddendRight, top.Expect)
+			push(e.AddendLeft, expect)
+			push(e.AddendRight, expect)
 		case *ExprSubtraction:
-			if top.Expect == nil {
+			if expect == nil {
 				br := false
 				if !p.isNumeric(e.Minuend) {
 					p.errExpectedNum(e.Minuend)
@@ -1481,15 +1506,15 @@ func (p *Parser) validateExpr(
 					ok = false
 					break
 				}
-			} else if !isTypeNum(top.Expect) {
-				p.errUnexpType(top.Expect, e)
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
 				ok = false
 				break
 			}
-			push(e.Minuend, top.Expect)
-			push(e.Subtrahend, top.Expect)
+			push(e.Minuend, expect)
+			push(e.Subtrahend, expect)
 		case *ExprMultiplication:
-			if top.Expect == nil {
+			if expect == nil {
 				br := false
 				if !p.isNumeric(e.Multiplicant) {
 					p.errExpectedNum(e.Multiplicant)
@@ -1503,15 +1528,15 @@ func (p *Parser) validateExpr(
 					ok = false
 					break
 				}
-			} else if !isTypeNum(top.Expect) {
-				p.errUnexpType(top.Expect, e)
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
 				ok = false
 				break
 			}
-			push(e.Multiplicant, top.Expect)
-			push(e.Multiplicator, top.Expect)
+			push(e.Multiplicant, expect)
+			push(e.Multiplicator, expect)
 		case *ExprDivision:
-			if top.Expect == nil {
+			if expect == nil {
 				br := false
 				if !p.isNumeric(e.Dividend) {
 					p.errExpectedNum(e.Dividend)
@@ -1525,15 +1550,15 @@ func (p *Parser) validateExpr(
 					ok = false
 					break
 				}
-			} else if !isTypeNum(top.Expect) {
-				p.errUnexpType(top.Expect, e)
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
 				ok = false
 				break
 			}
-			push(e.Dividend, top.Expect)
-			push(e.Divisor, top.Expect)
+			push(e.Dividend, expect)
+			push(e.Divisor, expect)
 		case *ExprModulo:
-			if top.Expect == nil {
+			if expect == nil {
 				br := false
 				if !p.isNumeric(e.Dividend) {
 					p.errExpectedNum(e.Dividend)
@@ -1547,48 +1572,48 @@ func (p *Parser) validateExpr(
 					ok = false
 					break
 				}
-			} else if !isTypeNum(top.Expect) {
-				p.errUnexpType(top.Expect, e)
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
 				ok = false
 				break
 			}
-			push(e.Dividend, top.Expect)
-			push(e.Divisor, top.Expect)
+			push(e.Dividend, expect)
+			push(e.Divisor, expect)
 		case *Int:
-			if top.Expect != nil && !isTypeNum(top.Expect) {
+			if expect != nil && !isTypeNum(expect) {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *Float:
-			if top.Expect != nil && !isTypeFloat(top.Expect) {
+			if expect != nil && !isTypeFloat(expect) {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *True:
-			if top.Expect != nil && !isTypeBool(top.Expect) {
+			if expect != nil && !isTypeBool(expect) {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *False:
-			if top.Expect != nil && !isTypeBool(top.Expect) {
+			if expect != nil && !isTypeBool(expect) {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *Null:
-			if top.Expect != nil && top.Expect.NonNull {
+			if expect != nil && expect.NonNull {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *Array:
-			if top.Expect != nil && !typeIsArray(top.Expect) {
+			if expect != nil && !typeIsArray(expect) {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 				break
 			}
 			for _, i := range e.Items {
 				var exp *ast.Type
-				if top.Expect != nil {
-					exp = top.Expect.Elem
+				if expect != nil {
+					exp = expect.Elem
 				}
 				push(i, exp)
 			}
@@ -1601,9 +1626,9 @@ func (p *Parser) validateExpr(
 				}
 			}
 
-			if top.Expect != nil {
-				if e.Declaration.Type().NamedType != top.Expect.NamedType {
-					p.errUnexpType(top.Expect, top.Expr)
+			if expect != nil {
+				if e.Declaration.Type().NamedType != expect.NamedType {
+					p.errUnexpType(expect, top.Expr)
 				}
 			}
 		case *Enum:
@@ -1612,26 +1637,26 @@ func (p *Parser) validateExpr(
 				p.errUndefEnumVal(e)
 				break
 			} else if e.TypeDef != nil &&
-				top.Expect != nil &&
-				top.Expect.NamedType != e.TypeDef.Name {
+				expect != nil &&
+				expect.NamedType != e.TypeDef.Name {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *String:
-			if top.Expect != nil && top.Expect.NamedType != "String" {
+			if expect != nil && expect.NamedType != "String" {
 				ok = false
-				p.errUnexpType(top.Expect, top.Expr)
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *Object:
-			if top.Expect != nil && p.schema != nil {
-				def := p.schema.Types[top.Expect.NamedType]
+			if expect != nil && p.schema != nil {
+				def := p.schema.Types[expect.NamedType]
 				if def != nil && def.Kind != ast.InputObject {
 					ok = false
-					p.errUnexpType(top.Expect, top.Expr)
+					p.errUnexpType(expect, top.Expr)
 					break
 				}
 			}
-			p.validateObject(pathToOriginArg, e, top.Expect)
+			p.validateObject(pathToOriginArg, e, expect)
 		default:
 			panic(fmt.Errorf("unhandled type: %T", top.Expr))
 		}
