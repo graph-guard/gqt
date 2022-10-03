@@ -79,7 +79,6 @@ type (
 	// Expression can be either of:
 	//
 	//  *Operation
-	//  *ExprParentheses
 	//  *ConstrAny
 	//  *ConstrEquals
 	//  *ConstrNotEquals
@@ -93,6 +92,8 @@ type (
 	//  *ConstrLenLessOrEqual
 	//  *ConstrLenGreater
 	//  *ConstrLenGreaterOrEqual
+	//  *ConstrMap
+	//  *ExprParentheses
 	//  *ExprModulo
 	//  *ExprDivision
 	//  *ExprMultiplication
@@ -115,7 +116,6 @@ type (
 	//  *Null
 	//  *Enum
 	//  *Array
-	//  *ConstrMap
 	//  *Object
 	//  *VariableRef
 	//  *SelectionInlineFrag
@@ -412,7 +412,6 @@ type (
 )
 
 func (e *Operation) GetParent() Expression               { return nil }
-func (e *ExprParentheses) GetParent() Expression         { return e.Parent }
 func (e *ConstrAny) GetParent() Expression               { return e.Parent }
 func (e *ConstrEquals) GetParent() Expression            { return e.Parent }
 func (e *ConstrNotEquals) GetParent() Expression         { return e.Parent }
@@ -426,7 +425,9 @@ func (e *ConstrLenLess) GetParent() Expression           { return e.Parent }
 func (e *ConstrLenLessOrEqual) GetParent() Expression    { return e.Parent }
 func (e *ConstrLenGreater) GetParent() Expression        { return e.Parent }
 func (e *ConstrLenGreaterOrEqual) GetParent() Expression { return e.Parent }
+func (e *ConstrMap) GetParent() Expression               { return e.Parent }
 
+func (e *ExprParentheses) GetParent() Expression    { return e.Parent }
 func (e *ExprModulo) GetParent() Expression         { return e.Parent }
 func (e *ExprDivision) GetParent() Expression       { return e.Parent }
 func (e *ExprMultiplication) GetParent() Expression { return e.Parent }
@@ -451,7 +452,6 @@ func (e *String) GetParent() Expression      { return e.Parent }
 func (e *Null) GetParent() Expression        { return e.Parent }
 func (e *Enum) GetParent() Expression        { return e.Parent }
 func (e *Array) GetParent() Expression       { return e.Parent }
-func (e *ConstrMap) GetParent() Expression   { return e.Parent }
 func (e *Object) GetParent() Expression      { return e.Parent }
 func (e *VariableRef) GetParent() Expression { return e.Parent }
 
@@ -512,7 +512,6 @@ func (e *SelectionMax) GetLocation() Location        { return e.Location }
 func (e *Argument) GetLocation() Location            { return e.Location }
 
 func (e *Operation) IsFloat() bool               { return false }
-func (e *ExprParentheses) IsFloat() bool         { return e.Expression.IsFloat() }
 func (e *ConstrAny) IsFloat() bool               { return false }
 func (e *ConstrEquals) IsFloat() bool            { return false }
 func (e *ConstrNotEquals) IsFloat() bool         { return false }
@@ -526,7 +525,9 @@ func (e *ConstrLenLess) IsFloat() bool           { return false }
 func (e *ConstrLenLessOrEqual) IsFloat() bool    { return false }
 func (e *ConstrLenGreater) IsFloat() bool        { return false }
 func (e *ConstrLenGreaterOrEqual) IsFloat() bool { return false }
+func (e *ConstrMap) IsFloat() bool               { return false }
 
+func (e *ExprParentheses) IsFloat() bool    { return e.Expression.IsFloat() }
 func (e *ExprModulo) IsFloat() bool         { return e.Float }
 func (e *ExprDivision) IsFloat() bool       { return e.Float }
 func (e *ExprMultiplication) IsFloat() bool { return e.Float }
@@ -551,7 +552,6 @@ func (e *String) IsFloat() bool      { return false }
 func (e *Null) IsFloat() bool        { return false }
 func (e *Enum) IsFloat() bool        { return false }
 func (e *Array) IsFloat() bool       { return false }
-func (e *ConstrMap) IsFloat() bool   { return false }
 func (e *Object) IsFloat() bool      { return false }
 func (e *VariableRef) IsFloat() bool { return false }
 
@@ -563,9 +563,6 @@ func (e *SelectionMax) IsFloat() bool        { return false }
 
 func (e *Operation) TypeDesignation() string {
 	return e.Type.String()
-}
-func (e *ExprParentheses) TypeDesignation() string {
-	return e.Expression.TypeDesignation()
 }
 func (e *ConstrAny) TypeDesignation() string {
 	switch p := e.Parent.(type) {
@@ -616,7 +613,13 @@ func (e *ConstrLenGreater) TypeDesignation() string {
 func (e *ConstrLenGreaterOrEqual) TypeDesignation() string {
 	return e.Value.TypeDesignation()
 }
+func (e *ConstrMap) TypeDesignation() string {
+	return e.Constraint.TypeDesignation()
+}
 
+func (e *ExprParentheses) TypeDesignation() string {
+	return e.Expression.TypeDesignation()
+}
 func (e *ExprModulo) TypeDesignation() string {
 	if e.Float {
 		return "Float"
@@ -705,9 +708,6 @@ func (e *Array) TypeDesignation() string {
 		return "[" + e.ItemTypeDef.Name + "]"
 	}
 	return "array"
-}
-func (e *ConstrMap) TypeDesignation() string {
-	return e.Constraint.TypeDesignation()
 }
 func (e *Object) TypeDesignation() string {
 	if e.TypeDef != nil {
@@ -1611,9 +1611,9 @@ func (p *Parser) validateExpr(
 				ok = false
 				p.errUndefEnumVal(e)
 				break
-			}
-
-			if top.Expect != nil && top.Expect.NamedType != "String" {
+			} else if e.TypeDef != nil &&
+				top.Expect != nil &&
+				top.Expect.NamedType != e.TypeDef.Name {
 				ok = false
 				p.errUnexpType(top.Expect, top.Expr)
 			}
