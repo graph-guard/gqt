@@ -755,7 +755,7 @@ type VariableDeclaration struct {
 	//
 	//  *Argument
 	//  *ObjectField
-	References []any
+	References []Expression
 
 	// Parent can be any of:
 	//
@@ -1246,7 +1246,7 @@ func (p *Parser) validateField(
 			exp = a.Def.Type
 		}
 
-		p.validateExpr([]any{a}, a.Constraint, exp)
+		p.validateExpr([]Expression{a}, a.Constraint, exp)
 	}
 
 	var def *ast.Definition
@@ -1259,7 +1259,7 @@ func (p *Parser) validateField(
 func (p *Parser) validateExpr(
 	// hostPath defines the path to the origin argument
 	// can contain any of: *Argument, *ObjectField
-	pathToOriginArg []any,
+	pathToOriginArg []Expression,
 	e Expression,
 	expect *ast.Type,
 ) (ok bool) {
@@ -1379,45 +1379,57 @@ func (p *Parser) validateExpr(
 			}
 			push(e.Value, expect)
 		case *ConstrLenEquals:
-			if !defHasLength(expect) {
-				p.errCantApplyLenConstr(e, expect)
-				ok = false
-				break
+			if expect != nil {
+				if !defHasLength(expect) {
+					p.errCantApplyLenConstr(e, expect)
+					ok = false
+					break
+				}
 			}
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenNotEquals:
-			if !defHasLength(expect) {
-				p.errCantApplyLenConstr(e, expect)
-				ok = false
-				break
+			if expect != nil {
+				if !defHasLength(expect) {
+					p.errCantApplyLenConstr(e, expect)
+					ok = false
+					break
+				}
 			}
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenGreater:
-			if !defHasLength(expect) {
-				p.errCantApplyLenConstr(e, expect)
-				ok = false
-				break
+			if expect != nil {
+				if !defHasLength(expect) {
+					p.errCantApplyLenConstr(e, expect)
+					ok = false
+					break
+				}
 			}
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenGreaterOrEqual:
-			if !defHasLength(expect) {
-				p.errCantApplyLenConstr(e, expect)
-				ok = false
-				break
+			if expect != nil {
+				if !defHasLength(expect) {
+					p.errCantApplyLenConstr(e, expect)
+					ok = false
+					break
+				}
 			}
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenLess:
-			if !defHasLength(expect) {
-				p.errCantApplyLenConstr(e, expect)
-				ok = false
-				break
+			if expect != nil {
+				if !defHasLength(expect) {
+					p.errCantApplyLenConstr(e, expect)
+					ok = false
+					break
+				}
 			}
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenLessOrEqual:
-			if !defHasLength(expect) {
-				p.errCantApplyLenConstr(e, expect)
-				ok = false
-				break
+			if expect != nil {
+				if !defHasLength(expect) {
+					p.errCantApplyLenConstr(e, expect)
+					ok = false
+					break
+				}
 			}
 			push(e.Value, typeIntNotNull)
 		case *ConstrMap:
@@ -1693,7 +1705,7 @@ func getConstrEqValue[E Expression](e Expression) (x E) {
 }
 
 func (p *Parser) validateObject(
-	pathToOriginArg []any,
+	pathToOriginArg []Expression,
 	o *Object,
 	exp *ast.Type,
 ) (ok bool) {
@@ -1744,7 +1756,7 @@ func (p *Parser) validateObject(
 			exp = f.Def.Type
 		}
 		if !p.validateExpr(
-			makeAppend[any](pathToOriginArg, f),
+			makeAppend[Expression](pathToOriginArg, f),
 			f.Constraint,
 			exp,
 		) {
@@ -2184,7 +2196,7 @@ func (p *Parser) ParseValue(
 	}
 
 	var str []byte
-	var num any
+	var num Expression
 	var ok bool
 	if s, ok = s.consume("("); ok {
 		e := &ExprParentheses{Location: l}
@@ -3023,7 +3035,7 @@ func (s source) consumeUnsignedInt() (next source, i int64, ok bool) {
 	return s, i, true
 }
 
-func (p *Parser) ParseNumber(s source) (_ source, number any) {
+func (p *Parser) ParseNumber(s source) (_ source, number Expression) {
 	si := s
 	if s.Index >= len(s.s) {
 		return si, nil
@@ -3299,7 +3311,7 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 	return s, nil, false
 }
 
-func (p *Parser) isNumeric(expr any) bool {
+func (p *Parser) isNumeric(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
 		if t := e.Declaration.Type(); t != nil {
@@ -3341,7 +3353,7 @@ func (p *Parser) isNumeric(expr any) bool {
 	return false
 }
 
-func (p *Parser) isInt(expr any) bool {
+func (p *Parser) isInt(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
 		if t := e.Declaration.Type(); t != nil {
@@ -3373,7 +3385,7 @@ func (p *Parser) isInt(expr any) bool {
 	return false
 }
 
-func (p *Parser) isBoolean(expr any) bool {
+func (p *Parser) isBoolean(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
 		if t := e.Declaration.Type(); t != nil {
@@ -3429,7 +3441,7 @@ func (p *Parser) isBoolean(expr any) bool {
 	return false
 }
 
-func (p *Parser) isString(expr any) bool {
+func (p *Parser) isString(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
 		if t := e.Declaration.Type(); t != nil {
