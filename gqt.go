@@ -1379,35 +1379,47 @@ func (p *Parser) validateExpr(
 			}
 			push(e.Value, expect)
 		case *ConstrLenEquals:
-			push(e.Value, &ast.Type{
-				NamedType: "Int",
-				NonNull:   true,
-			})
+			if !defHasLength(expect) {
+				p.errCantApplyLenConstr(e, expect)
+				ok = false
+				break
+			}
+			push(e.Value, typeIntNotNull)
 		case *ConstrLenNotEquals:
-			push(e.Value, &ast.Type{
-				NamedType: "Int",
-				NonNull:   true,
-			})
+			if !defHasLength(expect) {
+				p.errCantApplyLenConstr(e, expect)
+				ok = false
+				break
+			}
+			push(e.Value, typeIntNotNull)
 		case *ConstrLenGreater:
-			push(e.Value, &ast.Type{
-				NamedType: "Int",
-				NonNull:   true,
-			})
+			if !defHasLength(expect) {
+				p.errCantApplyLenConstr(e, expect)
+				ok = false
+				break
+			}
+			push(e.Value, typeIntNotNull)
 		case *ConstrLenGreaterOrEqual:
-			push(e.Value, &ast.Type{
-				NamedType: "Int",
-				NonNull:   true,
-			})
+			if !defHasLength(expect) {
+				p.errCantApplyLenConstr(e, expect)
+				ok = false
+				break
+			}
+			push(e.Value, typeIntNotNull)
 		case *ConstrLenLess:
-			push(e.Value, &ast.Type{
-				NamedType: "Int",
-				NonNull:   true,
-			})
+			if !defHasLength(expect) {
+				p.errCantApplyLenConstr(e, expect)
+				ok = false
+				break
+			}
+			push(e.Value, typeIntNotNull)
 		case *ConstrLenLessOrEqual:
-			push(e.Value, &ast.Type{
-				NamedType: "Int",
-				NonNull:   true,
-			})
+			if !defHasLength(expect) {
+				p.errCantApplyLenConstr(e, expect)
+				ok = false
+				break
+			}
+			push(e.Value, typeIntNotNull)
 		case *ConstrMap:
 			var exp *ast.Type
 			if expect != nil {
@@ -1436,7 +1448,7 @@ func (p *Parser) validateExpr(
 				ok = false
 				break
 			} else if expect == nil {
-				expect = &ast.Type{NamedType: "Boolean"}
+				expect = typeBoolean
 			}
 			push(e.Expression, expect)
 		case *ExprLogicalOr:
@@ -1467,7 +1479,7 @@ func (p *Parser) validateExpr(
 				} else if o != nil {
 					objEncountered = true
 				}
-				push(o, expect)
+				push(e, expect)
 			}
 		case *ExprAddition:
 			if expect == nil {
@@ -1700,26 +1712,26 @@ func (p *Parser) validateObject(
 	validFields := o.Fields
 	if p.schema != nil {
 		validFields = make([]*ObjectField, 0, len(o.Fields))
-		td := p.schema.Types[exp.NamedType]
-
-		for _, f := range o.Fields {
-			// Check undefined fields
-			fd := td.Fields.ForName(f.Name)
-			if fd == nil {
-				ok = false
-				p.errUndefField(f, exp.NamedType)
-				continue
-			}
-			fieldNames[f.Name] = struct{}{}
-			validFields = append(validFields, f)
-		}
-
-		// Check required fields
-		for _, f := range td.Fields {
-			if f.Type.NonNull && f.DefaultValue == nil {
-				if _, ok := fieldNames[f.Name]; !ok {
+		if td := p.schema.Types[exp.NamedType]; td != nil {
+			for _, f := range o.Fields {
+				// Check undefined fields
+				fd := td.Fields.ForName(f.Name)
+				if fd == nil {
 					ok = false
-					p.errMissingInputField(o.Location, f)
+					p.errUndefField(f, exp.NamedType)
+					continue
+				}
+				fieldNames[f.Name] = struct{}{}
+				validFields = append(validFields, f)
+			}
+
+			// Check required fields
+			for _, f := range td.Fields {
+				if f.Type.NonNull && f.DefaultValue == nil {
+					if _, ok := fieldNames[f.Name]; !ok {
+						ok = false
+						p.errMissingInputField(o.Location, f)
+					}
 				}
 			}
 		}
@@ -3816,6 +3828,29 @@ func (p *Parser) errCanNeverBeOfType(
 	})
 }
 
+func (p *Parser) errCantApplyLenConstr(c Expression, expect *ast.Type) {
+	var designation, description string
+	switch c.(type) {
+	case *ConstrLenEquals:
+		designation, description = "'len '", "length equal"
+	case *ConstrLenNotEquals:
+		designation, description = "'len !='", "length not equal"
+	case *ConstrLenGreater:
+		designation, description = "'len >'", "length greater than"
+	case *ConstrLenGreaterOrEqual:
+		designation, description = "'len >='", "length greater than or equal"
+	case *ConstrLenLess:
+		designation, description = "'len <'", "length less than"
+	case *ConstrLenLessOrEqual:
+		designation, description = "'len <='", "length less than or equal"
+	default:
+		panic(fmt.Errorf("unhandled constraint type: %T", c))
+	}
+	p.newErr(c.GetLocation(), "can't apply length constraint "+
+		designation+" ("+description+") to type "+
+		expect.String())
+}
+
 func (p *Parser) errMissingArg(
 	l Location, missingArgument *ast.ArgumentDefinition,
 ) {
@@ -3925,18 +3960,17 @@ func typeIsArray(t *ast.Type) bool {
 	return t.NamedType == "" && t.Elem != nil
 }
 
-func indexOf[T comparable](s []T, x T) int {
-	for i, v := range s {
-		if v == x {
-			return i
-		}
-	}
-	return -1
-}
-
 func makeAppend[T any](a []T, b ...T) (new []T) {
 	new = make([]T, len(a)+len(b))
 	copy(new, a)
 	copy(new[len(a):], b)
 	return new
+}
+
+var typeIntNotNull = &ast.Type{
+	NamedType: "Int",
+	NonNull:   true,
+}
+var typeBoolean = &ast.Type{
+	NamedType: "Boolean",
 }
