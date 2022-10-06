@@ -876,11 +876,6 @@ func (p *Parser) Parse(src []byte) (
 	for _, sel := range o.Selections {
 		setParent(sel, o)
 	}
-	if !p.validateSelectionSet(
-		s.s, o.Selections,
-	) {
-		return nil, nil, p.errors
-	}
 
 	// Link variable declarations and references
 	for _, r := range p.varRefs {
@@ -1152,9 +1147,20 @@ func (p *Parser) validateSelSet(
 		return false
 	}
 
+	fields := map[string]struct{}{}
+	typeConds := map[string]struct{}{}
+	maxBlock := false
+
 	for _, s := range s.Selections {
 		switch s := s.(type) {
 		case *SelectionField:
+			if _, decl := fields[s.Name]; decl {
+				ok = false
+				p.errRedeclField(s)
+				continue
+			}
+			fields[s.Name] = struct{}{}
+
 			var def *ast.FieldDefinition
 			if expect != nil {
 				def = expect.Fields.ForName(s.Name)
@@ -1172,11 +1178,31 @@ func (p *Parser) validateSelSet(
 				continue
 			}
 		case *SelectionInlineFrag:
+			if _, decl := typeConds[s.TypeCondition.TypeName]; decl {
+				ok = false
+				p.errRedeclTypeCond(s)
+				continue
+			}
+			typeConds[s.TypeCondition.TypeName] = struct{}{}
+
 			p.validateInlineFrag(s, expect)
 		case *SelectionMax:
+			if maxBlock {
+				p.errRedeclMax(s)
+				continue
+			}
+
+			maxBlock = true
 			for _, s := range s.Options.Selections {
 				switch s := s.(type) {
 				case *SelectionField:
+					if _, decl := fields[s.Name]; decl {
+						ok = false
+						p.errRedeclField(s)
+						continue
+					}
+					fields[s.Name] = struct{}{}
+
 					if s.Name == "__typename" {
 						ok = false
 						p.errTypenameInMax(s)
@@ -1198,12 +1224,19 @@ func (p *Parser) validateSelSet(
 						continue
 					}
 				case *SelectionInlineFrag:
+					if _, decl := typeConds[s.TypeCondition.TypeName]; decl {
+						ok = false
+						p.errRedeclTypeCond(s)
+						continue
+					}
+					typeConds[s.TypeCondition.TypeName] = struct{}{}
+
 					if !p.validateInlineFrag(s, expect) {
 						ok = false
 						continue
 					}
 				case *SelectionMax:
-					p.errNestedMaxBlock(s)
+					p.errNestedMaxSet(s)
 					ok = false
 					continue
 				}
@@ -1816,10 +1849,17 @@ func (p *Parser) errTypenameInMax(f *SelectionField) {
 	})
 }
 
-func (p *Parser) errNestedMaxBlock(s *SelectionMax) {
+func (p *Parser) errNestedMaxSet(s *SelectionMax) {
 	p.errors = append(p.errors, Error{
 		Location: s.Location,
-		Msg:      "nested max block",
+		Msg:      "nested max set",
+	})
+}
+
+func (p *Parser) errRedeclMax(s *SelectionMax) {
+	p.errors = append(p.errors, Error{
+		Location: s.Location,
+		Msg:      "redeclared max set",
 	})
 }
 
@@ -1871,6 +1911,17 @@ func (p *Parser) errMismatchingTypes(l Location, left, right Expression) {
 	})
 }
 
+func (p *Parser) errRedeclField(f *SelectionField) {
+	p.newErr(f.Location, fmt.Sprintf("redeclared field %q", f.Name))
+}
+
+func (p *Parser) errRedeclTypeCond(f *SelectionInlineFrag) {
+	p.newErr(
+		f.TypeCondition.Location,
+		"redeclared condition for type "+f.TypeCondition.TypeName,
+	)
+}
+
 func (p *Parser) newErr(l Location, msg string) {
 	p.errors = append(p.errors, Error{
 		Location: l,
@@ -1903,9 +1954,6 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 		return stop(), SelectionSet{}
 	}
 
-	fields := map[string]struct{}{}
-	typeConds := map[string]struct{}{}
-
 	for {
 		s = s.consumeIgnored()
 		var name []byte
@@ -1923,17 +1971,9 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 
 		if _, ok = s.consume("..."); ok {
 			var fragInline *SelectionInlineFrag
-			sBefore := s
 			if s, fragInline = p.ParseInlineFrag(s); s.stop() {
 				return stop(), SelectionSet{}
 			}
-
-			if _, ok = typeConds[fragInline.TypeCondition.TypeName]; ok {
-				p.newErr(sBefore.Location, "redeclared type condition")
-				return stop(), SelectionSet{}
-			}
-			typeConds[fragInline.TypeCondition.TypeName] = struct{}{}
-
 			selset.Selections = append(selset.Selections, fragInline)
 			continue
 		}
@@ -1958,8 +1998,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 				if maxNum < 1 {
 					p.newErr(
 						lBeforeMaxNum,
-						"maximum number of options"+
-							" must be an unsigned integer greater 0",
+						"limit of options must be an unsigned integer greater 0",
 					)
 					return stop(), SelectionSet{}
 				}
@@ -1973,15 +2012,13 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 				if len(options.Selections) < 2 {
 					p.newErr(
 						sBeforeOptionsBlock.Location,
-						"max block must have at least 2 selection options",
+						"max set must have at least 2 selection options",
 					)
-					return stop(), SelectionSet{}
 				} else if maxNum > int64(len(options.Selections)-1) {
 					p.newErr(
 						lBeforeMaxNum,
-						"max selections number exceeds number of options-1",
+						"max limit exceeds number of options-1",
 					)
-					return stop(), SelectionSet{}
 				}
 
 				e := &SelectionMax{
@@ -1993,12 +2030,6 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 				continue
 			}
 		}
-
-		if _, ok := fields[sel.Name]; ok {
-			p.newErr(lBeforeName, "redeclared field")
-			return stop(), SelectionSet{}
-		}
-		fields[sel.Name] = struct{}{}
 
 		if s.peek1('(') {
 			if sel.Name == "__typename" {
@@ -2026,9 +2057,6 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 			}
 			for _, sub := range sel.Selections {
 				setParent(sub, sel)
-			}
-			if !p.validateSelectionSet(s.s, sel.Selections) {
-				return stop(), SelectionSet{}
 			}
 		}
 
@@ -3621,61 +3649,6 @@ func setParent(t, parent Expression) {
 	}
 }
 
-func (p *Parser) validateSelectionSet(s []byte, set []Selection) (ok bool) {
-	var maxs []*SelectionMax
-	fields := map[string]*SelectionField{}
-	inlineFrags := map[string]*SelectionInlineFrag{}
-	for _, s := range set {
-		switch v := s.(type) {
-		case *SelectionMax:
-			maxs = append(maxs, v)
-		case *SelectionField:
-			fields[v.Name] = v
-		case *SelectionInlineFrag:
-			inlineFrags[v.TypeCondition.TypeName] = v
-		}
-	}
-
-	if len(maxs) > 1 {
-		p.newErr(
-			maxs[len(maxs)-1].Location,
-			"multiple max blocks in one selection set",
-		)
-		return false
-	}
-
-	for _, m := range maxs {
-		for _, sel := range m.Options.Selections {
-			switch v := sel.(type) {
-			case *SelectionField:
-				if f, ok := fields[v.Name]; ok {
-					p.newErr(
-						furthestLocation(f.Location, v.Location),
-						"redeclared field",
-					)
-					return false
-				}
-			case *SelectionInlineFrag:
-				if c, ok := inlineFrags[v.TypeCondition.TypeName]; ok {
-					p.newErr(
-						furthestLocation(c.Location, v.Location),
-						"redeclared type condition",
-					)
-					return false
-				}
-			}
-		}
-	}
-	return true
-}
-
-func furthestLocation(a, b Location) Location {
-	if a.Index < b.Index {
-		return b
-	}
-	return a
-}
-
 func (p *Parser) validateInlineFrag(
 	frag *SelectionInlineFrag,
 	hostDef *ast.Definition,
@@ -3684,8 +3657,7 @@ func (p *Parser) validateInlineFrag(
 		if !p.validateCond(frag) {
 			return false
 		}
-		p.validateSelSet(frag, nil)
-		return true
+		return p.validateSelSet(frag, nil)
 	}
 
 	def := p.schema.Types[frag.TypeCondition.TypeName]
