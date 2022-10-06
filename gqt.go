@@ -2389,7 +2389,7 @@ func (p *Parser) ParseValue(
 				if expect == expectValueInMap {
 					p.newErr(
 						sBeforeDollar.Location,
-						"the use of variables inside "+
+						"declaration of variables inside "+
 							"map constraints is prohibited",
 					)
 					return stop(), nil
