@@ -1915,6 +1915,10 @@ func (p *Parser) errRedeclField(f *SelectionField) {
 	p.newErr(f.Location, fmt.Sprintf("redeclared field %q", f.Name))
 }
 
+func (p *Parser) errRedeclVar(v *VariableDeclaration) {
+	p.newErr(v.Location, fmt.Sprintf("redeclared variable %q", v.Name))
+}
+
 func (p *Parser) errRedeclTypeCond(f *SelectionInlineFrag) {
 	p.newErr(
 		f.TypeCondition.Location,
@@ -2182,10 +2186,10 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 			}
 			arg.AssociatedVariable = def
 			if _, ok := p.varDecls[def.Name]; ok {
-				p.newErr(sBeforeDollar.Location, "redeclared variable")
-				return stop(), ArgumentList{}
+				p.errRedeclVar(def)
+			} else {
+				p.varDecls[def.Name] = def
 			}
-			p.varDecls[def.Name] = def
 			s = s.consumeIgnored()
 		}
 
@@ -2398,10 +2402,10 @@ func (p *Parser) ParseValue(
 				}
 				fld.AssociatedVariable = def
 				if _, ok := p.varDecls[def.Name]; ok {
-					p.newErr(sBeforeDollar.Location, "redeclared variable")
-					return stop(), nil
+					p.errRedeclVar(def)
+				} else {
+					p.varDecls[def.Name] = def
 				}
-				p.varDecls[def.Name] = def
 
 				s = s.consumeIgnored()
 			}
