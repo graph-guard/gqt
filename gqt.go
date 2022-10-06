@@ -3,6 +3,7 @@ package gqt
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -900,6 +901,9 @@ func (p *Parser) Parse(src []byte) (
 	if len(p.errors) > 0 {
 		o = nil
 		p.varDecls = nil
+		sort.Slice(p.errors, func(i, j int) bool {
+			return p.errors[i].Index < p.errors[j].Index
+		})
 	}
 
 	return o, p.varDecls, p.errors
