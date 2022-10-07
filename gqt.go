@@ -3685,49 +3685,49 @@ func (p *Parser) validateInlineFrag(
 		return false
 	case ast.Object:
 		if hostDef != nil && hostDef.Name == def.Name {
-			return true
+			return p.validateSelSet(frag, def)
 		}
 		for _, c := range def.Interfaces {
 			if c == hostDef.Name {
 				// condition Object implements the host interface
-				return true
+				return p.validateSelSet(frag, def)
 			}
 		}
 		for _, c := range hostDef.Types {
 			if c == def.Name {
 				// condition Object is part of the host union
-				return true
+				return p.validateSelSet(frag, def)
 			}
 		}
 	case ast.Interface:
 		if hostDef.Name == def.Name {
-			return true
+			return p.validateSelSet(frag, def)
 		}
 		impls := p.schema.GetPossibleTypes(def)
 		for _, t := range impls {
 			if t == hostDef {
-				return true
+				return p.validateSelSet(frag, def)
 			}
 			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
-					return true
+					return p.validateSelSet(frag, def)
 				}
 			}
 		}
 	case ast.Union:
 		if hostDef.Name == def.Name {
-			return true
+			return p.validateSelSet(frag, def)
 		}
 		impls := p.schema.GetPossibleTypes(def)
 		for _, t := range impls {
 			if t == hostDef {
-				return true
+				return p.validateSelSet(frag, def)
 			}
 			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
-					return true
+					return p.validateSelSet(frag, def)
 				}
 			}
 		}
