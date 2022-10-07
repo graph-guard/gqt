@@ -1643,6 +1643,94 @@ func (p *Parser) validateExpr(
 			}
 			push(e.Dividend, mustMakeExpectNumNonNull(expect))
 			push(e.Divisor, mustMakeExpectNumNonNull(expect))
+		case *ExprGreater:
+			if expect == nil {
+				br := false
+				if !p.isNumeric(e.Left) {
+					p.errExpectedNum(e.Left)
+					br = true
+				}
+				if !p.isNumeric(e.Right) {
+					p.errExpectedNum(e.Right)
+					br = true
+				}
+				if br {
+					ok = false
+					break TYPESWITCH
+				}
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			push(e.Left, mustMakeExpectNumNonNull(expect))
+			push(e.Right, mustMakeExpectNumNonNull(expect))
+		case *ExprGreaterOrEqual:
+			if expect == nil {
+				br := false
+				if !p.isNumeric(e.Left) {
+					p.errExpectedNum(e.Left)
+					br = true
+				}
+				if !p.isNumeric(e.Right) {
+					p.errExpectedNum(e.Right)
+					br = true
+				}
+				if br {
+					ok = false
+					break TYPESWITCH
+				}
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			push(e.Left, mustMakeExpectNumNonNull(expect))
+			push(e.Right, mustMakeExpectNumNonNull(expect))
+		case *ExprLess:
+			if expect == nil {
+				br := false
+				if !p.isNumeric(e.Left) {
+					p.errExpectedNum(e.Left)
+					br = true
+				}
+				if !p.isNumeric(e.Right) {
+					p.errExpectedNum(e.Right)
+					br = true
+				}
+				if br {
+					ok = false
+					break TYPESWITCH
+				}
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			push(e.Left, mustMakeExpectNumNonNull(expect))
+			push(e.Right, mustMakeExpectNumNonNull(expect))
+		case *ExprLessOrEqual:
+			if expect == nil {
+				br := false
+				if !p.isNumeric(e.Left) {
+					p.errExpectedNum(e.Left)
+					br = true
+				}
+				if !p.isNumeric(e.Right) {
+					p.errExpectedNum(e.Right)
+					br = true
+				}
+				if br {
+					ok = false
+					break TYPESWITCH
+				}
+			} else if !isTypeNum(expect) {
+				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			push(e.Left, mustMakeExpectNumNonNull(expect))
+			push(e.Right, mustMakeExpectNumNonNull(expect))
 		case *Int:
 			if expect != nil && !isTypeNum(expect) {
 				ok = false
