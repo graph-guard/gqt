@@ -707,6 +707,8 @@ func (e *Enum) TypeDesignation() string {
 func (e *Array) TypeDesignation() string {
 	if e.ItemTypeDef != nil {
 		return "[" + e.ItemTypeDef.Name + "]"
+	} else if len(e.Items) > 0 {
+		return "[" + e.Items[0].TypeDesignation() + "]"
 	}
 	return "array"
 }
