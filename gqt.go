@@ -1551,8 +1551,8 @@ func (p *Parser) validateExpr(
 				ok = false
 				break TYPESWITCH
 			}
-			push(e.AddendLeft, expect)
-			push(e.AddendRight, expect)
+			push(e.AddendLeft, mustMakeExpectNumNonNull(expect))
+			push(e.AddendRight, mustMakeExpectNumNonNull(expect))
 		case *ExprSubtraction:
 			if expect == nil {
 				br := false
@@ -1573,8 +1573,8 @@ func (p *Parser) validateExpr(
 				ok = false
 				break TYPESWITCH
 			}
-			push(e.Minuend, expect)
-			push(e.Subtrahend, expect)
+			push(e.Minuend, mustMakeExpectNumNonNull(expect))
+			push(e.Subtrahend, mustMakeExpectNumNonNull(expect))
 		case *ExprMultiplication:
 			if expect == nil {
 				br := false
@@ -1595,8 +1595,8 @@ func (p *Parser) validateExpr(
 				ok = false
 				break TYPESWITCH
 			}
-			push(e.Multiplicant, expect)
-			push(e.Multiplicator, expect)
+			push(e.Multiplicant, mustMakeExpectNumNonNull(expect))
+			push(e.Multiplicator, mustMakeExpectNumNonNull(expect))
 		case *ExprDivision:
 			if expect == nil {
 				br := false
@@ -1617,8 +1617,8 @@ func (p *Parser) validateExpr(
 				ok = false
 				break TYPESWITCH
 			}
-			push(e.Dividend, expect)
-			push(e.Divisor, expect)
+			push(e.Dividend, mustMakeExpectNumNonNull(expect))
+			push(e.Divisor, mustMakeExpectNumNonNull(expect))
 		case *ExprModulo:
 			if expect == nil {
 				br := false
@@ -1639,8 +1639,8 @@ func (p *Parser) validateExpr(
 				ok = false
 				break TYPESWITCH
 			}
-			push(e.Dividend, expect)
-			push(e.Divisor, expect)
+			push(e.Dividend, mustMakeExpectNumNonNull(expect))
+			push(e.Divisor, mustMakeExpectNumNonNull(expect))
 		case *Int:
 			if expect != nil && !isTypeNum(expect) {
 				ok = false
@@ -4085,6 +4085,25 @@ var typeIntNotNull = &ast.Type{
 	NamedType: "Int",
 	NonNull:   true,
 }
+var typeFloatNotNull = &ast.Type{
+	NamedType: "Float",
+	NonNull:   true,
+}
 var typeBoolean = &ast.Type{
 	NamedType: "Boolean",
+}
+
+// mustMakeExpectNumNonNull returns either typeIntNotNull or
+// typeFloatNotNull if t is Int or Float respectively.
+func mustMakeExpectNumNonNull(t *ast.Type) *ast.Type {
+	if t == nil {
+		return nil
+	}
+	if t.Elem != nil || (t.NamedType != "Float" && t.NamedType != "Int") {
+		panic(fmt.Errorf("expected numeric type, received: %#v", t))
+	}
+	if t.NamedType == "Int" {
+		return typeIntNotNull
+	}
+	return typeFloatNotNull
 }
