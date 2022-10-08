@@ -1802,7 +1802,11 @@ func (p *Parser) validateExpr(
 				}
 			}
 		case *Enum:
-			if p.schema != nil && e.TypeDef == nil {
+			if p.schema == nil && expect != nil {
+				ok = false
+				p.errUnexpType(expect, top.Expr)
+				break TYPESWITCH
+			} else if p.schema != nil && e.TypeDef == nil {
 				ok = false
 				p.errUndefEnumVal(e)
 				break TYPESWITCH
