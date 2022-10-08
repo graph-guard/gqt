@@ -1481,14 +1481,32 @@ func (p *Parser) validateExpr(
 		case *ExprParentheses:
 			push(e.Expression, expect)
 		case *ExprEqual:
-			if !p.assumeComparableType(e.Location, e.Left, e.Right) {
+			if !p.assumeValue(e.Left) {
+				ok = false
+			}
+			if !p.assumeValue(e.Right) {
+				ok = false
+			}
+			if !ok {
+				break TYPESWITCH
+			}
+			if !p.assumeComparableValues(e.Location, e.Left, e.Right) {
 				ok = false
 				break TYPESWITCH
 			}
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprNotEqual:
-			if !p.assumeComparableType(e.Location, e.Left, e.Right) {
+			if !p.assumeValue(e.Left) {
+				ok = false
+			}
+			if !p.assumeValue(e.Right) {
+				ok = false
+			}
+			if !ok {
+				break TYPESWITCH
+			}
+			if !p.assumeComparableValues(e.Location, e.Left, e.Right) {
 				ok = false
 				break TYPESWITCH
 			}
@@ -3608,7 +3626,7 @@ func (p *Parser) isString(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) assumeComparableType(
+func (p *Parser) assumeComparableValues(
 	l Location,
 	left, right Expression,
 ) (ok bool) {
@@ -3646,6 +3664,47 @@ func (p *Parser) assumeComparableType(
 		}
 	}
 	return true
+}
+
+// assumeValue return true if expression e doesn't contain
+// any non-ConstrEquals constraints recursively. Otherwise,
+// returns false and pushes errors onto the error stack.
+func (p *Parser) assumeValue(e Expression) (ok bool) {
+	ok = true
+	switch v := e.(type) {
+	case *ConstrAny,
+		*ConstrNotEquals,
+		*ConstrLess,
+		*ConstrLessOrEqual,
+		*ConstrGreater,
+		*ConstrGreaterOrEqual,
+		*ConstrLenEquals,
+		*ConstrLenNotEquals,
+		*ConstrLenLess,
+		*ConstrLenLessOrEqual,
+		*ConstrLenGreater,
+		*ConstrLenGreaterOrEqual,
+		*ConstrMap:
+		p.newErr(e.GetLocation(), "unexpected constraint in value definition")
+		return false
+	case *ConstrEquals:
+		return p.assumeValue(v.Value)
+	case *ExprParentheses:
+		return p.assumeValue(v.Expression)
+	case *Array:
+		for _, i := range v.Items {
+			if !p.assumeValue(i) {
+				ok = false
+			}
+		}
+	case *Object:
+		for _, f := range v.Fields {
+			if !p.assumeValue(f.Constraint) {
+				ok = false
+			}
+		}
+	}
+	return ok
 }
 
 func setParent(t, parent Expression) {
