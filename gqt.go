@@ -585,34 +585,34 @@ func (e *ConstrNotEquals) TypeDesignation() string {
 	return e.Value.TypeDesignation()
 }
 func (e *ConstrLess) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationRelational(e)
 }
 func (e *ConstrLessOrEqual) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationRelational(e)
 }
 func (e *ConstrGreater) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationRelational(e)
 }
 func (e *ConstrGreaterOrEqual) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationRelational(e)
 }
 func (e *ConstrLenEquals) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationLen(e)
 }
 func (e *ConstrLenNotEquals) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationLen(e)
 }
 func (e *ConstrLenLess) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationLen(e)
 }
 func (e *ConstrLenLessOrEqual) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationLen(e)
 }
 func (e *ConstrLenGreater) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationLen(e)
 }
 func (e *ConstrLenGreaterOrEqual) TypeDesignation() string {
-	return e.Value.TypeDesignation()
+	return typeDesignationLen(e)
 }
 func (e *ConstrMap) TypeDesignation() string {
 	return e.Constraint.TypeDesignation()
@@ -706,8 +706,11 @@ func (e *Enum) TypeDesignation() string {
 }
 func (e *Array) TypeDesignation() string {
 	if e.ItemTypeDef != nil {
+		// Determine type designation based on schema
 		return "[" + e.ItemTypeDef.Name + "]"
 	} else if len(e.Items) > 0 {
+		// Determine type designation based on
+		// constraint expression of the first item
 		return "[" + e.Items[0].TypeDesignation() + "]"
 	}
 	return "array"
@@ -732,8 +735,14 @@ func (e *Object) TypeDesignation() string {
 func (e *VariableRef) TypeDesignation() string {
 	switch p := e.Declaration.Parent.(type) {
 	case *Argument:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
 		return p.Constraint.TypeDesignation()
 	case *ObjectField:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
 		return p.Constraint.TypeDesignation()
 	}
 	panic(fmt.Errorf(
@@ -767,18 +776,20 @@ type VariableDeclaration struct {
 	Parent Expression
 }
 
-func (v *VariableDeclaration) Type() *ast.Type {
+func (v *VariableDeclaration) GetInfo() (schemaType *ast.Type, constr Expression) {
 	switch p := v.Parent.(type) {
 	case *Argument:
+		constr = p.Constraint
 		if p.Def != nil {
-			return p.Def.Type
+			schemaType = p.Def.Type
 		}
 	case *ObjectField:
+		constr = p.Constraint
 		if p.Def != nil {
-			return p.Def.Type
+			schemaType = p.Def.Type
 		}
 	}
-	return nil
+	return schemaType, constr
 }
 
 type Parser struct {
@@ -1055,6 +1066,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			push(e.Divisor, exp)
 		case *Array:
 			if exp != nil && exp.Elem != nil {
+				e.ItemTypeDef = p.schema.Types[exp.Elem.NamedType]
 				for _, i := range e.Items {
 					push(i, exp.Elem)
 				}
@@ -1420,7 +1432,7 @@ func (p *Parser) validateExpr(
 			push(e.Value, expect)
 		case *ConstrLenEquals:
 			if expect != nil {
-				if !defHasLength(expect) {
+				if !expectationHasLength(expect) {
 					p.errCantApplyLenConstr(e, expect)
 					ok = false
 					break TYPESWITCH
@@ -1429,7 +1441,7 @@ func (p *Parser) validateExpr(
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenNotEquals:
 			if expect != nil {
-				if !defHasLength(expect) {
+				if !expectationHasLength(expect) {
 					p.errCantApplyLenConstr(e, expect)
 					ok = false
 					break TYPESWITCH
@@ -1438,7 +1450,7 @@ func (p *Parser) validateExpr(
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenGreater:
 			if expect != nil {
-				if !defHasLength(expect) {
+				if !expectationHasLength(expect) {
 					p.errCantApplyLenConstr(e, expect)
 					ok = false
 					break TYPESWITCH
@@ -1447,7 +1459,7 @@ func (p *Parser) validateExpr(
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenGreaterOrEqual:
 			if expect != nil {
-				if !defHasLength(expect) {
+				if !expectationHasLength(expect) {
 					p.errCantApplyLenConstr(e, expect)
 					ok = false
 					break TYPESWITCH
@@ -1456,7 +1468,7 @@ func (p *Parser) validateExpr(
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenLess:
 			if expect != nil {
-				if !defHasLength(expect) {
+				if !expectationHasLength(expect) {
 					p.errCantApplyLenConstr(e, expect)
 					ok = false
 					break TYPESWITCH
@@ -1465,7 +1477,7 @@ func (p *Parser) validateExpr(
 			push(e.Value, typeIntNotNull)
 		case *ConstrLenLessOrEqual:
 			if expect != nil {
-				if !defHasLength(expect) {
+				if !expectationHasLength(expect) {
 					p.errCantApplyLenConstr(e, expect)
 					ok = false
 					break TYPESWITCH
@@ -1513,7 +1525,7 @@ func (p *Parser) validateExpr(
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprLogicalNegation:
-			if expect != nil && !isTypeBool(expect) {
+			if expect != nil && !expectationIsTypeBoolean(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
@@ -1566,8 +1578,24 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.AddendLeft) {
+				p.errUnexpectedNull(
+					e.AddendLeft.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.AddendRight) {
+				p.errUnexpectedNull(
+					e.AddendRight.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
 				ok = false
 				break TYPESWITCH
 			}
@@ -1588,8 +1616,24 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Minuend) {
+				p.errUnexpectedNull(
+					e.Minuend.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Subtrahend) {
+				p.errUnexpectedNull(
+					e.Subtrahend.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
 				ok = false
 				break TYPESWITCH
 			}
@@ -1610,8 +1654,24 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Multiplicant) {
+				p.errUnexpectedNull(
+					e.Multiplicant.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Multiplicator) {
+				p.errUnexpectedNull(
+					e.Multiplicator.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
 				ok = false
 				break TYPESWITCH
 			}
@@ -1632,8 +1692,24 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Dividend) {
+				p.errUnexpectedNull(
+					e.Dividend.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Divisor) {
+				p.errUnexpectedNull(
+					e.Divisor.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
 				ok = false
 				break TYPESWITCH
 			}
@@ -1654,8 +1730,24 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Dividend) {
+				p.errUnexpectedNull(
+					e.Dividend.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
+				ok = false
+				break TYPESWITCH
+			}
+			if containsNull(e.Divisor) {
+				p.errUnexpectedNull(
+					e.Divisor.GetLocation(),
+					mustMakeExpectNumNonNull(expect),
+				)
 				ok = false
 				break TYPESWITCH
 			}
@@ -1676,7 +1768,7 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
@@ -1698,7 +1790,7 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
@@ -1720,7 +1812,7 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
@@ -1742,7 +1834,7 @@ func (p *Parser) validateExpr(
 					ok = false
 					break TYPESWITCH
 				}
-			} else if !isTypeNum(expect) {
+			} else if !expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
@@ -1750,22 +1842,22 @@ func (p *Parser) validateExpr(
 			push(e.Left, mustMakeExpectNumNonNull(expect))
 			push(e.Right, mustMakeExpectNumNonNull(expect))
 		case *Int:
-			if expect != nil && !isTypeNum(expect) {
+			if expect != nil && !expectationIsNum(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 			}
 		case *Float:
-			if expect != nil && !isTypeFloat(expect) {
+			if expect != nil && !expectationIsTypeFloat(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 			}
 		case *True:
-			if expect != nil && !isTypeBool(expect) {
+			if expect != nil && !expectationIsTypeBoolean(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 			}
 		case *False:
-			if expect != nil && !isTypeBool(expect) {
+			if expect != nil && !expectationIsTypeBoolean(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 			}
@@ -1775,7 +1867,7 @@ func (p *Parser) validateExpr(
 				p.errUnexpType(expect, top.Expr)
 			}
 		case *Array:
-			if expect != nil && !typeIsArray(expect) {
+			if expect != nil && !expectationIsArray(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 				break TYPESWITCH
@@ -1796,9 +1888,30 @@ func (p *Parser) validateExpr(
 				}
 			}
 
+			tp, constr := e.Declaration.GetInfo()
 			if expect != nil {
-				if e.Declaration.Type().NamedType != expect.NamedType {
-					p.errUnexpType(expect, top.Expr)
+				if tp == nil {
+					// Check type based on expression of the variable origin
+					switch expect.NamedType {
+					case "Int":
+						if !p.isInt(constr) {
+							p.errUnexpType(expect, e)
+							ok = false
+							break TYPESWITCH
+						}
+					case "Float":
+						if !p.isFloat(constr) {
+							p.errUnexpType(expect, e)
+							ok = false
+							break TYPESWITCH
+						}
+					default:
+						panic(fmt.Errorf(
+							"unhandled type name: %q", expect.NamedType,
+						))
+					}
+				} else if tp.NamedType != expect.NamedType {
+					p.errUnexpType(expect, e)
 				}
 			}
 		case *Enum:
@@ -1817,7 +1930,7 @@ func (p *Parser) validateExpr(
 				p.errUnexpType(expect, top.Expr)
 			}
 		case *String:
-			if expect != nil && expect.NamedType != "String" {
+			if expect != nil && !expectationIsTypeString(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 			}
@@ -1884,7 +1997,7 @@ func (p *Parser) validateObject(
 
 	fieldNames := make(map[string]struct{}, len(o.Fields))
 	validFields := o.Fields
-	if p.schema != nil {
+	if p.schema != nil && exp != nil {
 		validFields = make([]*ObjectField, 0, len(o.Fields))
 		if td := p.schema.Types[exp.NamedType]; td != nil {
 			for _, f := range o.Fields {
@@ -2020,6 +2133,21 @@ func (p *Parser) errMismatchingTypes(l Location, left, right Expression) {
 	p.errors = append(p.errors, Error{
 		Location: l,
 		Msg:      fmt.Sprintf("mismatching types %s and %s", ld, rd),
+	})
+}
+
+func (p *Parser) errUnexpectedNull(l Location, expected *ast.Type) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      "expected type " + expected.String() + " but received null",
+	})
+}
+
+func (p *Parser) errCompareWithNull(l Location, e Expression) {
+	d := e.TypeDesignation()
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      fmt.Sprintf("mismatching types %s and null", d),
 	})
 }
 
@@ -3475,7 +3603,7 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 func (p *Parser) isNumeric(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
-		if t := e.Declaration.Type(); t != nil {
+		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
 			return t.Elem == nil &&
 				(t.NamedType == "Int" ||
@@ -3488,12 +3616,12 @@ func (p *Parser) isNumeric(expr Expression) bool {
 		case *ObjectField:
 			return p.isNumeric(v.Constraint)
 		}
+	case *ConstrAny:
+		return true
 	case *ConstrEquals:
 		return p.isNumeric(e.Value)
 	case *ConstrNotEquals:
 		return p.isNumeric(e.Value)
-	case *ConstrAny:
-		return true
 	case *ExprParentheses:
 		return p.isNumeric(e.Expression)
 	case *Float:
@@ -3517,7 +3645,7 @@ func (p *Parser) isNumeric(expr Expression) bool {
 func (p *Parser) isInt(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
-		if t := e.Declaration.Type(); t != nil {
+		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
 			return t.Elem == nil && t.NamedType == "Int"
 		}
@@ -3528,6 +3656,12 @@ func (p *Parser) isInt(expr Expression) bool {
 		case *ObjectField:
 			return p.isInt(v.Constraint)
 		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isInt(e.Value)
+	case *ConstrNotEquals:
+		return p.isInt(e.Value)
 	case *ExprParentheses:
 		return p.isInt(e.Expression)
 	case *Int:
@@ -3546,10 +3680,44 @@ func (p *Parser) isInt(expr Expression) bool {
 	return false
 }
 
+func (p *Parser) isFloat(expr Expression) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t, _ := e.Declaration.GetInfo(); t != nil {
+			// Check type based on schema
+			return t.Elem == nil && t.NamedType == "Float"
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isFloat(v.Constraint)
+		case *ObjectField:
+			return p.isFloat(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ExprParentheses:
+		return p.isFloat(e.Expression)
+	case *Float:
+		return true
+	case *ExprAddition:
+		return e.Float
+	case *ExprSubtraction:
+		return e.Float
+	case *ExprMultiplication:
+		return e.Float
+	case *ExprDivision:
+		return e.Float
+	case *ExprModulo:
+		return e.Float
+	}
+	return false
+}
+
 func (p *Parser) isBoolean(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
-		if t := e.Declaration.Type(); t != nil {
+		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
 			return t.Elem == nil && t.NamedType == "Boolean"
 		}
@@ -3605,7 +3773,7 @@ func (p *Parser) isBoolean(expr Expression) bool {
 func (p *Parser) isString(expr Expression) bool {
 	switch e := expr.(type) {
 	case *VariableRef:
-		if t := e.Declaration.Type(); t != nil {
+		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
 			return t.Elem == nil && t.NamedType == "String"
 		}
@@ -3622,9 +3790,125 @@ func (p *Parser) isString(expr Expression) bool {
 		return p.isString(e.Value)
 	case *ConstrNotEquals:
 		return p.isString(e.Value)
+	case *ConstrLenGreater:
+		panic("fuck")
 	case *ExprParentheses:
 		return p.isString(e.Expression)
 	case *String:
+		return true
+	}
+	return false
+}
+
+func (p *Parser) isEnum(expr Expression) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t, _ := e.Declaration.GetInfo(); t != nil {
+			// Check type based on schema
+			tp := p.schema.Types[t.NamedType]
+			return t.Elem == nil && tp.Kind == ast.Enum
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isEnum(v.Constraint)
+		case *ObjectField:
+			return p.isEnum(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isEnum(e.Value)
+	case *ConstrNotEquals:
+		return p.isEnum(e.Value)
+	case *ExprParentheses:
+		return p.isEnum(e.Expression)
+	case *Enum:
+		return true
+	}
+	return false
+}
+
+func (p *Parser) isNull(expr Expression) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t, _ := e.Declaration.GetInfo(); t != nil {
+			// Check type based on schema
+			return !t.NonNull
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isNull(v.Constraint)
+		case *ObjectField:
+			return p.isNull(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isNull(e.Value)
+	case *ConstrNotEquals:
+		return p.isNull(e.Value)
+	case *ExprParentheses:
+		return p.isNull(e.Expression)
+	case *Null:
+		return true
+	}
+	return false
+}
+
+func (p *Parser) isObject(expr Expression) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t, _ := e.Declaration.GetInfo(); t != nil {
+			// Check type based on schema
+			tp := p.schema.Types[t.NamedType]
+			return t.Elem == nil && tp.Kind == ast.InputObject
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isObject(v.Constraint)
+		case *ObjectField:
+			return p.isObject(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isObject(e.Value)
+	case *ConstrNotEquals:
+		return p.isObject(e.Value)
+	case *ExprParentheses:
+		return p.isObject(e.Expression)
+	case *Object:
+		return true
+	}
+	return false
+}
+
+func (p *Parser) isArray(expr Expression) bool {
+	switch e := expr.(type) {
+	case *VariableRef:
+		if t, _ := e.Declaration.GetInfo(); t != nil {
+			// Check type based on schema
+			return t.Elem != nil
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isArray(v.Constraint)
+		case *ObjectField:
+			return p.isArray(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isArray(e.Value)
+	case *ConstrNotEquals:
+		return p.isArray(e.Value)
+	case *ExprParentheses:
+		return p.isArray(e.Expression)
+	case *Array:
 		return true
 	}
 	return false
@@ -3634,40 +3918,81 @@ func (p *Parser) assumeComparableValues(
 	l Location,
 	left, right Expression,
 ) (ok bool) {
-	if p.isBoolean(left) && !p.isBoolean(right) {
-		p.errMismatchingTypes(l, left, right)
-		return false
-	} else if p.isNumeric(left) && !p.isNumeric(right) {
-		p.errMismatchingTypes(l, left, right)
-		return false
-	} else if left.IsFloat() && !right.IsFloat() ||
-		!left.IsFloat() && right.IsFloat() {
-		p.errMismatchingTypes(l, left, right)
-		return false
+	switch {
+	case p.isString(left):
+		if !p.isString(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isBoolean(left):
+		if !p.isBoolean(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isFloat(left):
+		if !p.isFloat(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isInt(left):
+		if !p.isInt(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isEnum(left):
+		if !p.isEnum(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isNull(left):
+		if !p.isNull(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isObject(left):
+		if !p.isObject(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
+	case p.isArray(left):
+		if !p.isArray(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		if containsNull(right) {
+			p.errCompareWithNull(l, left)
+			return false
+		}
 	}
-	switch left.(type) {
-	case *String:
-		if _, ok := right.(*String); !ok {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-	case *Enum:
-		if _, ok := right.(*Enum); !ok {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-	case *Array:
-		if _, ok := right.(*Array); !ok {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-	case *Object:
-		if _, ok := right.(*Object); !ok {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-	}
-	return true
+	return ok
 }
 
 // assumeValue return true if expression e doesn't contain
@@ -4054,14 +4379,6 @@ func (p *Parser) errExpectedNum(actual Expression) {
 	})
 }
 
-func (p *Parser) errExpectedInt(actual Expression) {
-	td := actual.TypeDesignation()
-	p.errors = append(p.errors, Error{
-		Location: actual.GetLocation(),
-		Msg:      "expected Int but received " + td,
-	})
-}
-
 func (p *Parser) errUnexpType(
 	expected *ast.Type,
 	actual Expression,
@@ -4094,27 +4411,27 @@ func (p *Parser) errUndefFieldInType(
 	})
 }
 
-func isTypeNum(t *ast.Type) bool {
+func expectationIsNum(t *ast.Type) bool {
 	return t.Elem == nil && (t.NamedType == "Int" || t.NamedType == "Float")
 }
 
-func isTypeFloat(t *ast.Type) bool {
+func expectationIsTypeFloat(t *ast.Type) bool {
 	return t.Elem == nil && t.NamedType == "Float"
 }
 
-func isTypeBool(t *ast.Type) bool {
+func expectationIsTypeBoolean(t *ast.Type) bool {
 	return t.Elem == nil && t.NamedType == "Boolean"
 }
 
-func isTypeString(t *ast.Type) bool {
+func expectationIsTypeString(t *ast.Type) bool {
 	return t.Elem == nil && t.NamedType == "String"
 }
 
-func defHasLength(t *ast.Type) bool {
-	return t.NamedType == "String" || typeIsArray(t)
+func expectationHasLength(t *ast.Type) bool {
+	return t.NamedType == "String" || expectationIsArray(t)
 }
 
-func typeIsArray(t *ast.Type) bool {
+func expectationIsArray(t *ast.Type) bool {
 	return t.NamedType == "" && t.Elem != nil
 }
 
@@ -4259,4 +4576,67 @@ func mustMakeExpectNumNonNull(t *ast.Type) *ast.Type {
 		return typeIntNotNull
 	}
 	return typeFloatNotNull
+}
+
+func typeDesignationLen(e Expression) string {
+	switch p := e.GetParent().(type) {
+	case *Argument:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
+	case *ObjectField:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
+	}
+	return "String|array"
+}
+
+func typeDesignationRelational(e Expression) string {
+	switch p := e.GetParent().(type) {
+	case *Argument:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
+	case *ObjectField:
+		if p.Def != nil {
+			return p.Def.Type.String()
+		}
+	}
+	return "number"
+}
+
+// containsNull returns true if e contains a constraint expecting
+// equality to null.
+func containsNull(e Expression) bool {
+	switch e := e.(type) {
+	case *ConstrAny:
+		return false
+	case *ConstrEquals:
+		return containsNull(e.Value)
+	case *ExprParentheses:
+		return containsNull(e.Expression)
+	case *ExprLogicalAnd:
+		for _, i := range e.Expressions {
+			if containsNull(i) {
+				return true
+			}
+		}
+	case *ExprLogicalOr:
+		for _, i := range e.Expressions {
+			if containsNull(i) {
+				return true
+			}
+		}
+	case *Null:
+		return true
+	case *VariableRef:
+		switch p := e.Declaration.Parent.(type) {
+		case *Argument:
+			return containsNull(p.Constraint)
+		case *ObjectField:
+			return containsNull(p.Constraint)
+		}
+	}
+	return false
 }
