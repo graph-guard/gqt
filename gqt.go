@@ -118,7 +118,7 @@ type (
 	//  *Enum
 	//  *Array
 	//  *Object
-	//  *VariableRef
+	//  *Variable
 	//  *SelectionInlineFrag
 	//  *ObjectField
 	//  *SelectionField
