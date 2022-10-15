@@ -1629,20 +1629,41 @@ func (p *Parser) validateExpr(
 			}
 			push(right, mustMakeExpectNumNonNull(expect))
 			push(left, mustMakeExpectNumNonNull(expect))
-		case *Int, *Float:
+		case *Int:
 			if expect != nil && !expectationIsNum(expect) {
-				ok = false
-				p.errUnexpType(expect, top.Expr)
+				if e.TypeDef == nil ||
+					(e.TypeDef.Name == expect.NamedType &&
+						expect.Elem != nil) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+				}
+			}
+		case *Float:
+			if expect != nil && !expectationIsNum(expect) {
+				if e.TypeDef == nil ||
+					(e.TypeDef.Name == expect.NamedType &&
+						expect.Elem != nil) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+				}
 			}
 		case *True:
 			if expect != nil && !expectationIsTypeBoolean(expect) {
-				ok = false
-				p.errUnexpType(expect, top.Expr)
+				if e.TypeDef == nil ||
+					(e.TypeDef.Name == expect.NamedType &&
+						expect.Elem != nil) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+				}
 			}
 		case *False:
 			if expect != nil && !expectationIsTypeBoolean(expect) {
-				ok = false
-				p.errUnexpType(expect, top.Expr)
+				if e.TypeDef == nil ||
+					(e.TypeDef.Name == expect.NamedType &&
+						expect.Elem != nil) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+				}
 			}
 		case *Null:
 			if expect != nil && expect.NonNull {
@@ -1714,8 +1735,12 @@ func (p *Parser) validateExpr(
 			}
 		case *String:
 			if expect != nil && !expectationIsTypeString(expect) {
-				ok = false
-				p.errUnexpType(expect, top.Expr)
+				if e.TypeDef == nil ||
+					(e.TypeDef.Name == expect.NamedType &&
+						expect.Elem != nil) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+				}
 			}
 		case *Object:
 			p.validateObject(pathToOriginArg, e, expect)
