@@ -322,30 +322,35 @@ type (
 
 	Int struct {
 		Location
-		Parent Expression
-		Value  int64
+		Parent  Expression
+		Value   int64
+		TypeDef *ast.Definition
 	}
 
 	Float struct {
 		Location
-		Parent Expression
-		Value  float64
+		Parent  Expression
+		Value   float64
+		TypeDef *ast.Definition
 	}
 
 	String struct {
 		Location
-		Parent Expression
-		Value  string
+		Parent  Expression
+		Value   string
+		TypeDef *ast.Definition
 	}
 
 	True struct {
 		Location
-		Parent Expression
+		Parent  Expression
+		TypeDef *ast.Definition
 	}
 
 	False struct {
 		Location
-		Parent Expression
+		Parent  Expression
+		TypeDef *ast.Definition
 	}
 
 	Null struct {
@@ -681,18 +686,33 @@ func (e *ExprLogicalOr) TypeDesignation() string {
 }
 
 func (e *True) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
 	return "Boolean"
 }
 func (e *False) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
 	return "Boolean"
 }
 func (e *Int) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
 	return "Int"
 }
 func (e *Float) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
 	return "Float"
 }
 func (e *String) TypeDesignation() string {
+	if e.TypeDef != nil {
+		return e.TypeDef.Name
+	}
 	return "String"
 }
 func (e *Null) TypeDesignation() string {
@@ -999,7 +1019,32 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		exp := top.Expect
 
 		switch e := top.Expr.(type) {
-		case *ConstrAny, *Int, *Float, *True, *False, *String, *Variable:
+		case *ConstrAny, *Variable:
+		case *Int:
+			if exp != nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
+		case *Float:
+			if exp != nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
+		case *True:
+			if exp != nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
+		case *False:
+			if exp != nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
+		case *String:
+			if exp != nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
 		case *Null:
 			if exp != nil {
 				t := p.schema.Types[exp.NamedType]
@@ -1010,25 +1055,25 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		case *ConstrNotEquals:
 			push(e.Value, exp)
 		case *ConstrGreater:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrGreaterOrEqual:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLess:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLessOrEqual:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLenEquals:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLenNotEquals:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLenGreater:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLenGreaterOrEqual:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLenLess:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrLenLessOrEqual:
-			push(e.Value, exp)
+			push(e.Value, nil)
 		case *ConstrMap:
 			push(e.Constraint, exp.Elem)
 		case *ExprParentheses:
@@ -1040,7 +1085,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprLogicalNegation:
-			push(e.Expression, exp)
+			push(e.Expression, nil)
 		case *ExprLogicalOr:
 			for _, e := range e.Expressions {
 				push(e, exp)
@@ -1050,20 +1095,20 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				push(e, exp)
 			}
 		case *ExprAddition:
-			push(e.AddendLeft, exp)
-			push(e.AddendRight, exp)
+			push(e.AddendLeft, nil)
+			push(e.AddendRight, nil)
 		case *ExprSubtraction:
-			push(e.Minuend, exp)
-			push(e.Subtrahend, exp)
+			push(e.Minuend, nil)
+			push(e.Subtrahend, nil)
 		case *ExprMultiplication:
-			push(e.Multiplicant, exp)
-			push(e.Multiplicator, exp)
+			push(e.Multiplicant, nil)
+			push(e.Multiplicator, nil)
 		case *ExprDivision:
-			push(e.Dividend, exp)
-			push(e.Divisor, exp)
+			push(e.Dividend, nil)
+			push(e.Divisor, nil)
 		case *ExprModulo:
-			push(e.Dividend, exp)
-			push(e.Divisor, exp)
+			push(e.Dividend, nil)
+			push(e.Divisor, nil)
 		case *Array:
 			if exp != nil && exp.Elem != nil {
 				e.ItemTypeDef = p.schema.Types[exp.Elem.NamedType]
@@ -4131,7 +4176,7 @@ func expectationIsTypeBoolean(t *ast.Type) bool {
 }
 
 func expectationIsTypeString(t *ast.Type) bool {
-	return t.Elem == nil && t.NamedType == "String"
+	return t.Elem == nil && (t.NamedType == "String" || t.NamedType == "ID")
 }
 
 func expectationHasLength(t *ast.Type) bool {
