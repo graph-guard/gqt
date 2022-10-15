@@ -825,9 +825,17 @@ type Source struct {
 	Content string
 }
 
+func newParser() *Parser {
+	return &Parser{
+		enumVal:  make(map[string]*ast.Definition, 0),
+		varDecls: make(map[string]*VariableDeclaration),
+	}
+}
+
 func NewParser(schema []Source) (*Parser, error) {
+	p := newParser()
 	if len(schema) < 1 {
-		return &Parser{}, nil
+		return p, nil
 	}
 
 	in := make([]*ast.Source, len(schema))
@@ -843,10 +851,7 @@ func NewParser(schema []Source) (*Parser, error) {
 		return nil, err
 	}
 
-	p := &Parser{
-		schema:  s,
-		enumVal: map[string]*ast.Definition{},
-	}
+	p.schema = s
 	for _, t := range s.Types {
 		for _, v := range t.EnumValues {
 			p.enumVal[v.Name] = t
@@ -861,7 +866,7 @@ func Parse(src []byte) (
 	variables map[string]*VariableDeclaration,
 	errors []Error,
 ) {
-	return (&Parser{}).Parse(src)
+	return newParser().Parse(src)
 }
 
 func (p *Parser) Parse(src []byte) (
