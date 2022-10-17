@@ -1,0 +1,55 @@
+schema: >
+  type Query {
+    f_add_r(a: Int):Int
+    f_add_l(a: Int):Int
+    f_sub_r(a: Int):Int
+    f_sub_l(a: Int):Int
+    f_mul_r(a: Int):Int
+    f_mul_l(a: Int):Int
+    f_div_r(a: Int):Int
+    f_div_l(a: Int):Int
+    f_mod_r(a: Int):Int
+    f_mod_l(a: Int):Int
+
+    v(a: [Int!]):Int
+  }
+
+template: >
+  query {
+    f_add_r(a: 1 + $a)
+    f_add_l(a: $a + 1)
+    f_sub_r(a: 1 - $a)
+    f_sub_l(a: $a - 1)
+    f_mul_r(a: 1 * $a)
+    f_mul_l(a: $a * 1)
+    f_div_r(a: 1 / $a)
+    f_div_l(a: $a / 1)
+    f_mod_r(a: 1 % $a)
+    f_mod_l(a: $a % 1)
+
+    v(a=$a: [])
+  }
+
+expect-errors:
+  - '2:18: expected number but received [Int!]'
+  - '3:14: expected number but received [Int!]'
+  - '4:18: expected number but received [Int!]'
+  - '5:14: expected number but received [Int!]'
+  - '6:18: expected number but received [Int!]'
+  - '7:14: expected number but received [Int!]'
+  - '8:18: expected number but received [Int!]'
+  - '9:14: expected number but received [Int!]'
+  - '10:18: expected number but received [Int!]'
+  - '11:14: expected number but received [Int!]'
+
+expect-errors(schemaless):
+  - '2:18: expected number but received array'
+  - '3:14: expected number but received array'
+  - '4:18: expected number but received array'
+  - '5:14: expected number but received array'
+  - '6:18: expected number but received array'
+  - '7:14: expected number but received array'
+  - '8:18: expected number but received array'
+  - '9:14: expected number but received array'
+  - '10:18: expected number but received array'
+  - '11:14: expected number but received array'

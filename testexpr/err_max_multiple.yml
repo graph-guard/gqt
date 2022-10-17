@@ -1,0 +1,33 @@
+schema: >
+  type Query {
+    foo:Int
+    bar:Int
+    fizz:Int
+    buzz:Int
+    muzz:Int
+    tuzz:Int
+  }
+
+template: >
+  query {
+    max 1 {
+      foo
+      bar
+    }
+    max 1 {
+      fizz
+      buzz
+    }
+    max 1 {
+      muzz
+      tuzz
+    }
+  }
+
+expect-errors:
+  - '6:3: redeclared max set'
+  - '10:3: redeclared max set'
+
+expect-errors(schemaless):
+  - '6:3: redeclared max set'
+  - '10:3: redeclared max set'

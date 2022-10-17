@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a:Int, b:Int):Int }
+
+template: >
+  query { f(a:*, b:*,,) }
+
+expect-errors:
+  - '1:20: unexpected token, expected argument name'
+
+expect-errors(schemaless):
+  - '1:20: unexpected token, expected argument name'

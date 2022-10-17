@@ -1,0 +1,42 @@
+schema: >
+  type Query {
+    f(a: Int!): Boolean
+  }
+
+template: >
+  query {
+    f(a: 2 + 3.14)
+  }
+
+expect-errors:
+  - '2:12: expected type Int! but received Float'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "10:2:3"
+      argumentList:
+        location: "11:2:4"
+        arguments:
+        - name: a
+          location: "12:2:5"
+          constraint:
+            constraintType: equals
+            location: "15:2:8"
+            value:
+              expressionType: addition
+              location: "15:2:8"
+              float: true
+              addendLeft:
+                expressionType: int
+                location: "15:2:8"
+                value: 2
+              addendRight:
+                expressionType: float
+                location: "19:2:12"
+                value: 3.14

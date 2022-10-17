@@ -1,0 +1,37 @@
+schema: >
+  type Query {
+    foo(a: Color!): Color!
+  }
+  enum Color {
+    red
+    green
+    blue
+  }
+
+template: >
+  query { foo(a: yellow) }
+
+expect-errors:
+  - '1:16: undefined enum value "yellow"'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      argumentList:
+        location: "11:1:12"
+        arguments:
+        - name: a
+          location: "12:1:13"
+          constraint:
+            constraintType: equals
+            location: "15:1:16"
+            value:
+              expressionType: enum
+              location: "15:1:16"
+              value: yellow

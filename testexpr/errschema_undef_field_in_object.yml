@@ -1,0 +1,49 @@
+schema: >
+  type Query {f(a: Input!):String!}
+  input Input {name: String!}
+
+template: >
+  query { f(a:{name: "okay", inexistent: "not okay"}) }
+
+expect-errors:
+  - '1:28: field "inexistent" is undefined in type Input'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "12:1:13"
+            value:
+              expressionType: object
+              location: "12:1:13"
+              fields:
+              - name: name
+                location: "13:1:14"
+                constraint:
+                  constraintType: equals
+                  location: "19:1:20"
+                  value:
+                    expressionType: string
+                    location: "19:1:20"
+                    value: okay
+              - name: inexistent
+                location: "27:1:28"
+                constraint:
+                  constraintType: equals
+                  location: "39:1:40"
+                  value:
+                    expressionType: string
+                    location: "39:1:40"
+                    value: not okay

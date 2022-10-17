@@ -1,0 +1,11 @@
+schema: >
+  type Query {name: String!}
+
+template: >
+  query { ... on Int { name } }
+
+expect-errors:
+  - "1:16: fragment can't condition on scalar type Int"
+
+expect-errors(schemaless):
+  - "1:16: fragment can't condition on scalar type Int"

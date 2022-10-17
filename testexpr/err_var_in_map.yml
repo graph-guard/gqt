@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int, b: [Int]): Int }
+
+template: >
+  query { f(a: $f, b: [...{f = $f:*}]) }
+
+expect-errors:
+  - '1:30: declaration of variables inside map constraints is prohibited'
+
+expect-errors(schemaless):
+  - '1:30: declaration of variables inside map constraints is prohibited'

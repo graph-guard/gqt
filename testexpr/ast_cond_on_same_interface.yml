@@ -1,0 +1,77 @@
+schema: >
+  type Query {i: Interface!}
+  union FooOrBar = Foo | Bar
+  type Foo implements Interface {name: String!}
+  type Bar implements Interface {name: String!}
+  interface Interface {name: String!}
+
+template: >
+  query { i { ... on Interface { ... on Interface { name } } } }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "8:1:9"
+      type: Interface!
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Interface
+            type: Interface
+          location: "12:1:13"
+          selectionSet:
+            location: "29:1:30"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "38:1:39"
+                typeName: Interface
+                type: Interface
+              location: "31:1:32"
+              selectionSet:
+                location: "48:1:49"
+                selections:
+                - selectionType: field
+                  name: name
+                  location: "50:1:51"
+                  type: String!
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Interface
+          location: "12:1:13"
+          selectionSet:
+            location: "29:1:30"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "38:1:39"
+                typeName: Interface
+              location: "31:1:32"
+              selectionSet:
+                location: "48:1:49"
+                selections:
+                - selectionType: field
+                  name: name
+                  location: "50:1:51"

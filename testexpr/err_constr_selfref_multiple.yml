@@ -1,0 +1,29 @@
+schema: >
+    type Query {
+        f(a: A): Int!
+    }
+    input A { b: B! }
+    input B { a: Int! b: Int! c: Int! }
+
+template: >
+  query {
+    f(
+      a=$a:{
+        b=$b:{
+          b:$b,
+          a:$a,
+          c=$c:$c
+        }
+      }
+    )
+  }
+
+expect-errors:
+  - '5:11: object field self reference in constraint'
+  - '6:11: argument self reference in constraint'
+  - '7:14: object field self reference in constraint'
+
+expect-errors(schemaless):
+  - '5:11: object field self reference in constraint'
+  - '6:11: argument self reference in constraint'
+  - '7:14: object field self reference in constraint'

@@ -1,0 +1,19 @@
+schema: >
+  type Query {
+    foo:Int
+    bar:Int
+  }
+
+template: >
+  query {
+    max 1.5 {
+      foo
+      bar
+    }
+  }
+
+expect-errors:
+  - '2:8: unexpected token, expected selection set'
+
+expect-errors(schemaless):
+  - '2:8: unexpected token, expected selection set'

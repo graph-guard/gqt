@@ -1,0 +1,60 @@
+schema: >
+  type Query {u: FooOrBar!}
+  union FooOrBar = Foo | Bar
+  type Foo implements Interface {name: String!}
+  type Bar implements Interface {name: String!}
+  interface Interface {name: String!}
+
+template: >
+  query { u { ... on Interface { name } } }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      type: FooOrBar!
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Interface
+            type: Interface
+          location: "12:1:13"
+          selectionSet:
+            location: "29:1:30"
+            selections:
+            - selectionType: field
+              name: name
+              location: "31:1:32"
+              type: String!
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Interface
+          location: "12:1:13"
+          selectionSet:
+            location: "29:1:30"
+            selections:
+            - selectionType: field
+              name: name
+              location: "31:1:32"

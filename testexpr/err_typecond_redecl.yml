@@ -1,0 +1,23 @@
+schema: >
+  type Query { u: U }
+  union U = A | B
+  type A { name: String }
+  type B { name: String }
+
+template: >
+  query {
+    u {
+      ...on A{__typename}
+      ...on B{__typename}
+      ...on A{__typename}
+      ...on B{__typename}
+    }
+  }
+
+expect-errors:
+  - '5:11: redeclared condition for type A'
+  - '6:11: redeclared condition for type B'
+
+expect-errors(schemaless):
+  - '5:11: redeclared condition for type A'
+  - '6:11: redeclared condition for type B'

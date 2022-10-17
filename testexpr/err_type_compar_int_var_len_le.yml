@@ -1,0 +1,17 @@
+schema: >
+  type Query {
+    comparison(a: Boolean):Int
+    var(a:[Boolean!]):Int
+  }
+
+template: >
+  query {
+    comparison(a: 42 == $v)
+    var(a=$v: len < 10)
+  }
+
+expect-errors:
+  - '2:17: mismatching types Int and [Boolean!]'
+
+expect-errors(schemaless):
+  - '2:17: mismatching types Int and String|array'

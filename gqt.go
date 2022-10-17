@@ -570,6 +570,7 @@ func (e *SelectionMax) IsFloat() bool        { return false }
 func (e *Operation) TypeDesignation() string {
 	return e.Type.String()
 }
+
 func (e *ConstrAny) TypeDesignation() string {
 	switch p := e.Parent.(type) {
 	case *Argument:
@@ -583,42 +584,55 @@ func (e *ConstrAny) TypeDesignation() string {
 	}
 	return "*"
 }
+
 func (e *ConstrEquals) TypeDesignation() string {
 	return e.Value.TypeDesignation()
 }
+
 func (e *ConstrNotEquals) TypeDesignation() string {
 	return e.Value.TypeDesignation()
 }
+
 func (e *ConstrLess) TypeDesignation() string {
 	return typeDesignationRelational(e)
 }
+
 func (e *ConstrLessOrEqual) TypeDesignation() string {
 	return typeDesignationRelational(e)
 }
+
 func (e *ConstrGreater) TypeDesignation() string {
 	return typeDesignationRelational(e)
 }
+
 func (e *ConstrGreaterOrEqual) TypeDesignation() string {
 	return typeDesignationRelational(e)
 }
+
 func (e *ConstrLenEquals) TypeDesignation() string {
 	return typeDesignationLen(e)
 }
+
 func (e *ConstrLenNotEquals) TypeDesignation() string {
 	return typeDesignationLen(e)
 }
+
 func (e *ConstrLenLess) TypeDesignation() string {
 	return typeDesignationLen(e)
 }
+
 func (e *ConstrLenLessOrEqual) TypeDesignation() string {
 	return typeDesignationLen(e)
 }
+
 func (e *ConstrLenGreater) TypeDesignation() string {
 	return typeDesignationLen(e)
 }
+
 func (e *ConstrLenGreaterOrEqual) TypeDesignation() string {
 	return typeDesignationLen(e)
 }
+
 func (e *ConstrMap) TypeDesignation() string {
 	return e.Constraint.TypeDesignation()
 }
@@ -626,30 +640,35 @@ func (e *ConstrMap) TypeDesignation() string {
 func (e *ExprParentheses) TypeDesignation() string {
 	return e.Expression.TypeDesignation()
 }
+
 func (e *ExprModulo) TypeDesignation() string {
 	if e.Float {
 		return "Float"
 	}
 	return "Int"
 }
+
 func (e *ExprDivision) TypeDesignation() string {
 	if e.Float {
 		return "Float"
 	}
 	return "Int"
 }
+
 func (e *ExprMultiplication) TypeDesignation() string {
 	if e.Float {
 		return "Float"
 	}
 	return "Int"
 }
+
 func (e *ExprAddition) TypeDesignation() string {
 	if e.Float {
 		return "Float"
 	}
 	return "Int"
 }
+
 func (e *ExprSubtraction) TypeDesignation() string {
 	if e.Float {
 		return "Float"
@@ -657,33 +676,15 @@ func (e *ExprSubtraction) TypeDesignation() string {
 	return "Int"
 }
 
-func (e *ExprLogicalNegation) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprEqual) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprNotEqual) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprLess) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprLessOrEqual) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprGreater) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprGreaterOrEqual) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprLogicalAnd) TypeDesignation() string {
-	return "Boolean"
-}
-func (e *ExprLogicalOr) TypeDesignation() string {
-	return "Boolean"
-}
+func (e *ExprLogicalNegation) TypeDesignation() string { return "Boolean" }
+func (e *ExprEqual) TypeDesignation() string           { return "Boolean" }
+func (e *ExprNotEqual) TypeDesignation() string        { return "Boolean" }
+func (e *ExprLess) TypeDesignation() string            { return "Boolean" }
+func (e *ExprLessOrEqual) TypeDesignation() string     { return "Boolean" }
+func (e *ExprGreater) TypeDesignation() string         { return "Boolean" }
+func (e *ExprGreaterOrEqual) TypeDesignation() string  { return "Boolean" }
+func (e *ExprLogicalAnd) TypeDesignation() string      { return "Boolean" }
+func (e *ExprLogicalOr) TypeDesignation() string       { return "Boolean" }
 
 func (e *True) TypeDesignation() string {
 	if e.TypeDef != nil {
@@ -691,50 +692,85 @@ func (e *True) TypeDesignation() string {
 	}
 	return "Boolean"
 }
+
 func (e *False) TypeDesignation() string {
 	if e.TypeDef != nil {
 		return e.TypeDef.Name
 	}
 	return "Boolean"
 }
+
 func (e *Int) TypeDesignation() string {
-	if e.TypeDef != nil {
+	if e.TypeDef != nil && e.TypeDef.Name != "Boolean" &&
+		e.TypeDef.Name != "String" &&
+		e.TypeDef.Name != "ID" &&
+		e.TypeDef.Name != "Float" {
 		return e.TypeDef.Name
 	}
 	return "Int"
 }
+
 func (e *Float) TypeDesignation() string {
-	if e.TypeDef != nil {
+	if e.TypeDef != nil && e.TypeDef.Name != "Boolean" &&
+		e.TypeDef.Name != "String" &&
+		e.TypeDef.Name != "ID" &&
+		e.TypeDef.Name != "Int" {
 		return e.TypeDef.Name
 	}
 	return "Float"
 }
+
 func (e *String) TypeDesignation() string {
-	if e.TypeDef != nil {
+	if e.TypeDef != nil && e.TypeDef.Name != "Boolean" &&
+		e.TypeDef.Name != "Float" &&
+		e.TypeDef.Name != "Int" {
 		return e.TypeDef.Name
 	}
 	return "String"
 }
-func (e *Null) TypeDesignation() string {
-	return "null"
-}
+
+func (e *Null) TypeDesignation() string { return "null" }
+
 func (e *Enum) TypeDesignation() string {
 	if e.TypeDef != nil {
 		return e.TypeDef.Name
 	}
 	return "enum"
 }
+
 func (e *Array) TypeDesignation() string {
 	if e.ItemTypeDef != nil {
 		// Determine type designation based on schema
 		return "[" + e.ItemTypeDef.Name + "]"
-	} else if len(e.Items) > 0 {
-		// Determine type designation based on
-		// constraint expression of the first item
-		return "[" + e.Items[0].TypeDesignation() + "]"
 	}
-	return "array"
+	if len(e.Items) < 1 {
+		return "array"
+	}
+	firstItem := e.Items[0].TypeDesignation()
+	for _, i := range e.Items {
+		if d := i.TypeDesignation(); d == firstItem || d == "null" {
+			continue
+		}
+		// Array item type isn't homogeneous, compose designation
+		var b strings.Builder
+		b.WriteString("array{")
+		for x, i := range e.Items {
+			b.WriteString(i.TypeDesignation())
+			if x+1 < len(e.Items) {
+				b.WriteByte(',')
+			}
+		}
+		b.WriteByte('}')
+		return b.String()
+	}
+	// Determine type designation based on
+	// constraint expression of the first item
+	if firstItem == "null" {
+		return "array"
+	}
+	return "[" + firstItem + "]"
 }
+
 func (e *Object) TypeDesignation() string {
 	if e.TypeDef != nil {
 		return e.TypeDef.Name
@@ -752,6 +788,7 @@ func (e *Object) TypeDesignation() string {
 	b.WriteByte('}')
 	return b.String()
 }
+
 func (e *Variable) TypeDesignation() string {
 	switch p := e.Declaration.Parent.(type) {
 	case *Argument:
@@ -1025,36 +1062,6 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 
 		switch e := top.Expr.(type) {
 		case *ConstrAny, *Variable:
-		case *Int:
-			if exp != nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
-		case *Float:
-			if exp != nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
-		case *True:
-			if exp != nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
-		case *False:
-			if exp != nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
-		case *String:
-			if exp != nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
-		case *Null:
-			if exp != nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
 		case *ConstrEquals:
 			push(e.Value, exp)
 		case *ConstrNotEquals:
@@ -1114,6 +1121,65 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		case *ExprModulo:
 			push(e.Dividend, nil)
 			push(e.Divisor, nil)
+		case *Int:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.Scalar &&
+					t.Name != "ID" &&
+					t.Name != "Float" &&
+					t.Name != "String" &&
+					t.Name != "Boolean" {
+					e.TypeDef = t
+				}
+			}
+		case *Float:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.Scalar &&
+					t.Name != "ID" &&
+					t.Name != "Int" &&
+					t.Name != "String" &&
+					t.Name != "Boolean" {
+					e.TypeDef = t
+				}
+			}
+		case *True:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.Scalar &&
+					t.Name != "ID" &&
+					t.Name != "Int" &&
+					t.Name != "Float" &&
+					t.Name != "String" {
+					e.TypeDef = t
+				}
+			}
+		case *False:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.Scalar &&
+					t.Name != "ID" &&
+					t.Name != "Int" &&
+					t.Name != "Float" &&
+					t.Name != "String" {
+					e.TypeDef = t
+				}
+			}
+		case *String:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.Scalar &&
+					t.Name != "Int" &&
+					t.Name != "Float" &&
+					t.Name != "Boolean" {
+					e.TypeDef = t
+				}
+			}
+		case *Null:
+			if exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				e.TypeDef = t
+			}
 		case *Array:
 			if exp != nil && exp.Elem != nil {
 				e.ItemTypeDef = p.schema.Types[exp.Elem.NamedType]
@@ -1123,9 +1189,19 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			}
 		case *Enum:
 			e.TypeDef = p.enumVal[e.Value]
+			if e.TypeDef == nil && exp != nil && exp.Elem == nil {
+				t := p.schema.Types[exp.NamedType]
+				if t.Kind == ast.Scalar &&
+					t.Name != "ID" &&
+					t.Name != "Int" &&
+					t.Name != "Float" &&
+					t.Name != "String" &&
+					t.Name != "Boolean" {
+					e.TypeDef = t
+				}
+			}
 		case *Object:
 			if exp != nil && exp.Elem == nil {
-
 				if t := p.schema.Types[exp.NamedType]; t != nil &&
 					(t.Kind == ast.InputObject || t.Kind == ast.Scalar &&
 						t.Name != "ID" &&
@@ -1407,34 +1483,18 @@ func (p *Parser) validateExpr(
 			case *ConstrLessOrEqual:
 				val = e.Value
 			}
-			if expect == nil {
-				if !p.isNumeric(val) {
-					ok = false
-					p.errExpectedNum(val)
-					break TYPESWITCH
-				}
-				push(val, expect)
-				break TYPESWITCH
-			} else if !expectationIsNum(expect) {
-				p.errCantApplyConstrRel(
-					val,
-					mustMakeExpectNumNonNull(expect),
-				)
+
+			switch {
+			case expect != nil && !p.expectationIsNum(expect):
+				p.errCantApplyConstrRel(e, expect)
 				ok = false
 				break TYPESWITCH
-			}
-			if containsNullConstant(val) {
-				p.errUnexpectedNull(
-					val.GetLocation(),
-					mustMakeExpectNumNonNull(expect),
-				)
+			case containsNullConstant(val):
+				p.errExpectedNumGotNull(val.GetLocation())
 				ok = false
 				break TYPESWITCH
-			} else if !p.isNumeric(val) {
-				p.errUnexpType(
-					mustMakeExpectNumNonNull(expect),
-					val,
-				)
+			case !p.isNumeric(val):
+				p.errExpectedNum(val)
 				ok = false
 				break TYPESWITCH
 			}
@@ -1457,16 +1517,20 @@ func (p *Parser) validateExpr(
 			case *ConstrLenLessOrEqual:
 				val = e.Value
 			}
-			if expect != nil && !expectationHasLength(expect) {
-				p.errCantApplyConstrLen(e, mustMakeExpectNumNonNull(expect))
+
+			switch {
+			case expect != nil &&
+				!p.expectationIsString(expect) &&
+				!p.expectationIsArray(expect):
+				// Only strings and arrays have a length
+				p.errCantApplyConstrLen(e, expect)
 				ok = false
 				break TYPESWITCH
-			}
-			if containsNullConstant(val) {
+			case containsNullConstant(val):
 				p.errExpectedNumGotNull(val.GetLocation())
 				ok = false
 				break TYPESWITCH
-			} else if !p.isNumeric(val) {
+			case !p.isNumeric(val):
 				p.errExpectedNum(val)
 				ok = false
 				break TYPESWITCH
@@ -1505,14 +1569,21 @@ func (p *Parser) validateExpr(
 			push(right, nil)
 			push(left, nil)
 		case *ExprLogicalNegation:
-			if expect != nil && !expectationIsTypeBoolean(expect) {
+			switch {
+			case expect != nil && !p.expectationIsBool(expect):
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
-			} else if expect == nil {
-				expect = typeBoolean
+			case containsNullConstant(e.Expression):
+				p.errExpectedBoolGotNull(e.Expression.GetLocation())
+				ok = false
+				break TYPESWITCH
+			case !p.isBoolean(e.Expression):
+				p.errExpectedBool(e.Expression)
+				ok = false
+				break TYPESWITCH
 			}
-			push(e.Expression, expect)
+			push(e.Expression, nil)
 		case *ExprLogicalOr:
 			objEncountered := false
 			for _, e := range e.Expressions {
@@ -1563,41 +1634,36 @@ func (p *Parser) validateExpr(
 				left, right = e.Dividend, e.Divisor
 			}
 
-			if expect == nil {
-				br := false
-				if !p.isNumeric(left) {
-					p.errExpectedNum(left)
-					br = true
-				}
-				if !p.isNumeric(right) {
-					p.errExpectedNum(right)
-					br = true
-				}
-				if br {
-					ok = false
-					break TYPESWITCH
-				}
-			} else if !expectationIsNum(expect) {
+			if expect != nil && !p.expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
 			}
-			if containsNullConstant(left) {
-				p.errUnexpectedNull(
-					left.GetLocation(),
-					mustMakeExpectNumNonNull(expect),
-				)
+
+			if !p.isNumeric(left) {
+				p.errExpectedNum(left)
 				ok = false
+			}
+			if !p.isNumeric(right) {
+				p.errExpectedNum(right)
+				ok = false
+			}
+			if !ok {
 				break TYPESWITCH
+			}
+
+			if containsNullConstant(left) {
+				p.errExpectedNumGotNull(left.GetLocation())
+				ok = false
 			}
 			if containsNullConstant(right) {
-				p.errUnexpectedNull(
-					right.GetLocation(),
-					mustMakeExpectNumNonNull(expect),
-				)
+				p.errExpectedNumGotNull(right.GetLocation())
 				ok = false
+			}
+			if !ok {
 				break TYPESWITCH
 			}
+
 			push(right, mustMakeExpectNumNonNull(expect))
 			push(left, mustMakeExpectNumNonNull(expect))
 		case *ExprGreater, *ExprLess,
@@ -1614,70 +1680,58 @@ func (p *Parser) validateExpr(
 				left, right = e.Left, e.Right
 			}
 
-			if expect == nil {
-				br := false
-				if !p.isNumeric(left) {
-					p.errExpectedNum(left)
-					br = true
-				}
-				if !p.isNumeric(right) {
-					p.errExpectedNum(right)
-					br = true
-				}
-				if br {
-					ok = false
-					break TYPESWITCH
-				}
-			} else if !expectationIsNum(expect) {
+			if expect != nil && !p.expectationIsNum(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
 			}
-			push(right, mustMakeExpectNumNonNull(expect))
-			push(left, mustMakeExpectNumNonNull(expect))
+
+			if !p.isNumeric(left) {
+				p.errExpectedNum(left)
+				ok = false
+			}
+			if !p.isNumeric(right) {
+				p.errExpectedNum(right)
+				ok = false
+			}
+			if !ok {
+				break TYPESWITCH
+			}
+
+			push(right, nil)
+			push(left, nil)
 		case *Int:
-			if expect != nil && !expectationIsNum(expect) {
-				if e.TypeDef == nil ||
-					(e.TypeDef.Name == expect.NamedType &&
-						expect.Elem != nil) {
-					ok = false
-					p.errUnexpType(expect, top.Expr)
-				}
+			if expect != nil && !p.expectationIsNum(expect) {
+				ok = false
+				p.errUnexpType(expect, top.Expr)
+				break TYPESWITCH
 			}
 		case *Float:
-			if expect != nil && !expectationIsNum(expect) {
-				if e.TypeDef == nil ||
-					(e.TypeDef.Name == expect.NamedType &&
-						expect.Elem != nil) {
-					ok = false
-					p.errUnexpType(expect, top.Expr)
-				}
+			if expect != nil && !p.expectationIsFloat(expect) {
+				ok = false
+				p.errUnexpType(expect, top.Expr)
+				break TYPESWITCH
 			}
 		case *True:
-			if expect != nil && !expectationIsTypeBoolean(expect) {
-				if e.TypeDef == nil ||
-					(e.TypeDef.Name == expect.NamedType &&
-						expect.Elem != nil) {
-					ok = false
-					p.errUnexpType(expect, top.Expr)
-				}
+			if expect != nil && !p.expectationIsBool(expect) {
+				ok = false
+				p.errUnexpType(expect, top.Expr)
+				break TYPESWITCH
 			}
 		case *False:
-			if expect != nil && !expectationIsTypeBoolean(expect) {
-				if e.TypeDef == nil ||
-					(e.TypeDef.Name == expect.NamedType &&
-						expect.Elem != nil) {
-					ok = false
-					p.errUnexpType(expect, top.Expr)
-				}
+			if expect != nil && !p.expectationIsBool(expect) {
+				ok = false
+				p.errUnexpType(expect, top.Expr)
+				break TYPESWITCH
 			}
 		case *Null:
 			if expect != nil && expect.NonNull {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
+				break TYPESWITCH
 			}
 		case *Array:
-			if expect != nil && !expectationIsArray(expect) {
+			if expect != nil && !p.expectationIsArray(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 				break TYPESWITCH
@@ -1698,38 +1752,19 @@ func (p *Parser) validateExpr(
 				}
 			}
 
-			tp, constr := e.Declaration.GetInfo()
+			tp, _ := e.Declaration.GetInfo()
 			if expect != nil {
-				if tp == nil {
-					// Check type based on expression of the variable origin
-					switch expect.NamedType {
-					case "Int":
-						if !p.isInt(constr) {
-							p.errUnexpType(expect, e)
-							ok = false
-							break TYPESWITCH
-						}
-					case "Float":
-						if !p.isFloat(constr) {
-							p.errUnexpType(expect, e)
-							ok = false
-							break TYPESWITCH
-						}
-					default:
-						panic(fmt.Errorf(
-							"unhandled type name: %q", expect.NamedType,
-						))
-					}
-				} else if !areTypesCompatible(expect, tp) {
+				if !areTypesCompatible(expect, tp) {
 					p.errUnexpType(expect, e)
 				}
 			}
 		case *Enum:
-			if p.schema == nil && expect != nil {
+			if expect != nil && !p.expectationIsEnum(expect) {
 				ok = false
 				p.errUnexpType(expect, top.Expr)
 				break TYPESWITCH
-			} else if p.schema != nil && e.TypeDef == nil {
+			}
+			if p.schema != nil && e.TypeDef == nil {
 				ok = false
 				p.errUndefEnumVal(e)
 				break TYPESWITCH
@@ -1740,13 +1775,9 @@ func (p *Parser) validateExpr(
 				p.errUnexpType(expect, top.Expr)
 			}
 		case *String:
-			if expect != nil && !expectationIsTypeString(expect) {
-				if e.TypeDef == nil ||
-					(e.TypeDef.Name == expect.NamedType &&
-						expect.Elem != nil) {
-					ok = false
-					p.errUnexpType(expect, top.Expr)
-				}
+			if expect != nil && !p.expectationIsString(expect) {
+				ok = false
+				p.errUnexpType(expect, top.Expr)
 			}
 		case *Object:
 			p.validateObject(pathToOriginArg, e, expect)
@@ -1780,43 +1811,26 @@ func (p *Parser) validateObject(
 ) (ok bool) {
 	ok = true
 
-	if exp != nil {
-		if p.schema != nil {
-			def := p.schema.Types[exp.NamedType]
-			if def != nil && def.Kind != ast.InputObject {
-				ok = false
-				// Make sure the object doesn't contain any
-				// recursive variable references, otherwise
-				// printing the object type will result in an endless loop.
-				if p.checkObjectVarRefs(o) {
-					p.errUnexpType(exp, o)
-				}
-				return
-			}
-		} else if exp.Elem != nil ||
-			exp.NamedType == "ID" ||
-			exp.NamedType == "String" ||
-			exp.NamedType == "Int" ||
-			exp.NamedType == "Float" ||
-			exp.NamedType == "Boolean" {
-			ok = false
-			// Make sure the object doesn't contain any
-			// recursive variable references, otherwise
-			// printing the object type will result in an endless loop.
-			if p.checkObjectVarRefs(o) {
-				p.errUnexpType(exp, o)
-			}
+	if exp != nil && !p.expectationIsObject(exp) {
+		ok = false
+		// Make sure the object doesn't contain any
+		// recursive variable references, otherwise
+		// printing the object type will result in an endless loop.
+		if p.checkObjectVarRefs(o) {
+			p.errUnexpType(exp, o)
 		}
+		return
 	}
 
 	fieldNames := make(map[string]struct{}, len(o.Fields))
 	validFields := o.Fields
 	if p.schema != nil && exp != nil {
 		validFields = make([]*ObjectField, 0, len(o.Fields))
-		if td := p.schema.Types[exp.NamedType]; td != nil {
+		d := p.schema.Types[exp.NamedType]
+		if d != nil && d.Kind != ast.Scalar {
 			for _, f := range o.Fields {
 				// Check undefined fields
-				fd := td.Fields.ForName(f.Name)
+				fd := d.Fields.ForName(f.Name)
 				if fd == nil {
 					ok = false
 					p.errUndefField(f, exp.NamedType)
@@ -1827,9 +1841,9 @@ func (p *Parser) validateObject(
 			}
 
 			// Check required fields
-			for _, f := range td.Fields {
+			for _, f := range d.Fields {
 				if f.Type.NonNull && f.DefaultValue == nil {
-					if _, ok := fieldNames[f.Name]; !ok {
+					if _, exists := fieldNames[f.Name]; !exists {
 						ok = false
 						p.errMissingInputField(o.Location, f)
 					}
@@ -1884,7 +1898,7 @@ func (p *Parser) errUnexpTok(s source, msg string) {
 func (p *Parser) errTypenameInMax(f *SelectionField) {
 	p.errors = append(p.errors, Error{
 		Location: f.Location,
-		Msg:      "avoid __typename in max selectors",
+		Msg:      "avoid __typename in max sets",
 	})
 }
 
@@ -1947,13 +1961,6 @@ func (p *Parser) errMismatchingTypes(l Location, left, right Expression) {
 	p.errors = append(p.errors, Error{
 		Location: l,
 		Msg:      fmt.Sprintf("mismatching types %s and %s", ld, rd),
-	})
-}
-
-func (p *Parser) errUnexpectedNull(l Location, expected *ast.Type) {
-	p.errors = append(p.errors, Error{
-		Location: l,
-		Msg:      "expected type " + expected.String() + " but received null",
 	})
 }
 
@@ -3443,74 +3450,6 @@ func (p *Parser) isNumeric(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isInt(expr Expression) bool {
-	switch e := expr.(type) {
-	case *Variable:
-		if t, _ := e.Declaration.GetInfo(); t != nil {
-			// Check type based on schema
-			return t.Elem == nil && t.NamedType == "Int"
-		}
-		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isInt(v.Constraint)
-		case *ObjectField:
-			return p.isInt(v.Constraint)
-		}
-	case *ConstrAny, *Int:
-		return true
-	case *ConstrEquals:
-		return p.isInt(e.Value)
-	case *ConstrNotEquals:
-		return p.isInt(e.Value)
-	case *ExprParentheses:
-		return p.isInt(e.Expression)
-	case *ExprAddition:
-		return !e.Float
-	case *ExprSubtraction:
-		return !e.Float
-	case *ExprMultiplication:
-		return !e.Float
-	case *ExprDivision:
-		return !e.Float
-	case *ExprModulo:
-		return !e.Float
-	}
-	return false
-}
-
-func (p *Parser) isFloat(expr Expression) bool {
-	switch e := expr.(type) {
-	case *Variable:
-		if t, _ := e.Declaration.GetInfo(); t != nil {
-			// Check type based on schema
-			return t.Elem == nil && t.NamedType == "Float"
-		}
-		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isFloat(v.Constraint)
-		case *ObjectField:
-			return p.isFloat(v.Constraint)
-		}
-	case *ConstrAny, *Float:
-		return true
-	case *ExprParentheses:
-		return p.isFloat(e.Expression)
-	case *ExprAddition:
-		return e.Float
-	case *ExprSubtraction:
-		return e.Float
-	case *ExprMultiplication:
-		return e.Float
-	case *ExprDivision:
-		return e.Float
-	case *ExprModulo:
-		return e.Float
-	}
-	return false
-}
-
 func (p *Parser) isBoolean(expr Expression) bool {
 	switch e := expr.(type) {
 	case *Variable:
@@ -3712,15 +3651,6 @@ func (p *Parser) assumeComparableValues(
 			p.errCompareWithNull(l, left)
 			return false
 		}
-	// case p.isInt(left):
-	// 	if !p.isNumeric(right) {
-	// 		p.errMismatchingTypes(l, left, right)
-	// 		return false
-	// 	}
-	// 	if containsNull(right) {
-	// 		p.errCompareWithNull(l, left)
-	// 		return false
-	// 	}
 	case p.isEnum(left):
 		if !p.isEnum(right) {
 			p.errMismatchingTypes(l, left, right)
@@ -4164,10 +4094,25 @@ func (p *Parser) errExpectedNum(actual Expression) {
 	})
 }
 
+func (p *Parser) errExpectedBool(actual Expression) {
+	td := actual.TypeDesignation()
+	p.errors = append(p.errors, Error{
+		Location: actual.GetLocation(),
+		Msg:      "expected type Boolean but received " + td,
+	})
+}
+
 func (p *Parser) errExpectedNumGotNull(l Location) {
 	p.errors = append(p.errors, Error{
 		Location: l,
 		Msg:      "expected number but received null",
+	})
+}
+
+func (p *Parser) errExpectedBoolGotNull(l Location) {
+	p.errors = append(p.errors, Error{
+		Location: l,
+		Msg:      "expected type Boolean but received null",
 	})
 }
 
@@ -4203,24 +4148,123 @@ func (p *Parser) errUndefFieldInType(
 	})
 }
 
-func expectationIsNum(t *ast.Type) bool {
-	return t.Elem == nil && (t.NamedType == "Int" || t.NamedType == "Float")
+func (p *Parser) expectationIsNum(t *ast.Type) bool {
+	if t.Elem != nil {
+		return false
+	}
+	if p.schema == nil {
+		return t.NamedType == "Int" || t.NamedType == "Float"
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is custom scalar type?
+	return x != nil && (x.Kind == ast.Scalar &&
+		x.Name != "ID" &&
+		x.Name != "String" &&
+		x.Name != "Boolean")
 }
 
-func expectationIsTypeBoolean(t *ast.Type) bool {
-	return t.Elem == nil && t.NamedType == "Boolean"
+func (p *Parser) expectationIsFloat(t *ast.Type) bool {
+	if t.Elem != nil {
+		return false
+	}
+	if p.schema == nil {
+		return t.NamedType == "Float"
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is custom scalar type?
+	return x != nil && (x.Kind == ast.Scalar &&
+		x.Name != "ID" &&
+		x.Name != "Int" &&
+		x.Name != "String" &&
+		x.Name != "Boolean")
 }
 
-func expectationIsTypeString(t *ast.Type) bool {
-	return t.Elem == nil && (t.NamedType == "String" || t.NamedType == "ID")
+func (p *Parser) expectationIsBool(t *ast.Type) bool {
+	if t.Elem != nil {
+		return false
+	}
+	if p.schema == nil {
+		return t.NamedType == "Boolean"
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is custom scalar type?
+	return x != nil && (x.Kind == ast.Scalar &&
+		x.Name != "ID" &&
+		x.Name != "Int" &&
+		x.Name != "Float" &&
+		x.Name != "String")
 }
 
-func expectationHasLength(t *ast.Type) bool {
-	return t.NamedType == "String" || expectationIsArray(t)
+func (p *Parser) expectationIsString(t *ast.Type) bool {
+	if t.Elem != nil {
+		return false
+	}
+	if p.schema == nil {
+		return t.NamedType == "String" || t.NamedType == "ID"
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is custom scalar type?
+	return x != nil && (x.Kind == ast.Scalar &&
+		x.Name != "Int" &&
+		x.Name != "Float" &&
+		x.Name != "Boolean")
 }
 
-func expectationIsArray(t *ast.Type) bool {
-	return t.NamedType == "" && t.Elem != nil
+func (p *Parser) expectationIsEnum(t *ast.Type) bool {
+	if t.Elem != nil {
+		return false
+	}
+	if p.schema == nil {
+		return false
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is enum type or custom scalar type?
+	return x != nil && (x.Kind == ast.Enum ||
+		(x.Kind == ast.Scalar &&
+			x.Name != "ID" &&
+			x.Name != "Int" &&
+			x.Name != "Float" &&
+			x.Name != "String" &&
+			x.Name != "Boolean"))
+}
+
+func (p *Parser) expectationIsObject(t *ast.Type) bool {
+	if t.Elem != nil {
+		return false
+	}
+	if p.schema == nil {
+		return t.NamedType != "ID" &&
+			t.NamedType != "Int" &&
+			t.NamedType != "Float" &&
+			t.NamedType != "String" &&
+			t.NamedType != "Boolean"
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is input type or custom scalar type?
+	return x != nil && (x.Kind == ast.InputObject ||
+		(x.Kind == ast.Scalar &&
+			x.Name != "ID" &&
+			x.Name != "Int" &&
+			x.Name != "Float" &&
+			x.Name != "String" &&
+			x.Name != "Boolean"))
+}
+
+func (p *Parser) expectationIsArray(t *ast.Type) bool {
+	if t.Elem != nil {
+		return true
+	}
+	if p.schema == nil {
+		return true
+	}
+	x := p.schema.Types[t.NamedType]
+	// Is custom scalar type?
+	return x != nil && (x.Kind == ast.Scalar &&
+		x.Name != "ID" &&
+		x.Name != "Int" &&
+		x.Name != "Float" &&
+		x.Name != "String" &&
+		x.Name != "Boolean")
 }
 
 func makeAppend[T any](a []T, b ...T) (new []T) {
@@ -4347,23 +4391,18 @@ var typeFloatNotNull = &ast.Type{
 	NamedType: "Float",
 	NonNull:   true,
 }
-var typeBoolean = &ast.Type{
-	NamedType: "Boolean",
-}
 
 // mustMakeExpectNumNonNull returns either typeIntNotNull or
 // typeFloatNotNull if t is Int or Float respectively.
 func mustMakeExpectNumNonNull(t *ast.Type) *ast.Type {
-	if t == nil {
-		return nil
+	if t != nil && t.Elem == nil {
+		if t.NamedType == "Int" {
+			return typeIntNotNull
+		} else if t.NamedType == "Float" {
+			return typeFloatNotNull
+		}
 	}
-	if t.Elem != nil || (t.NamedType != "Float" && t.NamedType != "Int") {
-		panic(fmt.Errorf("expected numeric type, received: %#v", t))
-	}
-	if t.NamedType == "Int" {
-		return typeIntNotNull
-	}
-	return typeFloatNotNull
+	return t
 }
 
 func typeDesignationLen(e Expression) string {
@@ -4432,6 +4471,10 @@ func containsNullConstant(e Expression) bool {
 // areTypesCompatible returns true if a and b are compatible
 // not taking nullability into account.
 func areTypesCompatible(a, b *ast.Type) bool {
+	if a == nil && b != nil || a != nil && b == nil {
+		return false
+	}
+
 	if a.Elem != nil && b.Elem != nil {
 		return areTypesCompatible(a.Elem, b.Elem)
 	} else if (a.Elem == nil && b.Elem != nil) ||

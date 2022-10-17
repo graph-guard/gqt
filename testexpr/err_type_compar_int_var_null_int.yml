@@ -1,0 +1,19 @@
+schema: >
+  type Query {
+    comparisonEq (a:Boolean):Int
+    varL1        (a:Int):Int
+    varL2        (a:Int):Int
+  }
+
+template: >
+  query {
+    comparisonEq(a: 42 == $l1)
+    varL1(a=$l1: $l2)
+    varL2(a=$l2: null)
+  }
+
+expect-errors:
+  - '2:19: mismatching types Int and null'
+
+expect-errors(schemaless):
+  - '2:19: mismatching types Int and null'

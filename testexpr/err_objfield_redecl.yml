@@ -1,0 +1,12 @@
+schema: >
+  type Query { f(a: Input): Int }
+  input Input { b: Int, c: Int }
+
+template: >
+  query { f( a:{b:1, c:2, b:3} ) }
+
+expect-errors:
+  - '1:25: redeclared object field'
+
+expect-errors(schemaless):
+  - '1:25: redeclared object field'

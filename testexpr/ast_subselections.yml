@@ -1,0 +1,66 @@
+schema: >
+  type Query {
+    foo: Foo!
+    fazz: Int!
+  }
+  type Foo {
+    bar: Int!
+    baz: Int!
+  }
+
+template: >
+  query {
+    foo {
+      bar
+      baz
+    }
+    fazz
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "10:2:3"
+      type: Foo!
+      selectionSet:
+        location: "14:2:7"
+        selections:
+        - selectionType: field
+          name: bar
+          location: "20:3:5"
+          type: Int!
+        - selectionType: field
+          name: baz
+          location: "28:4:5"
+          type: Int!
+    - selectionType: field
+      name: fazz
+      location: "38:6:3"
+      type: Int!
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "10:2:3"
+      selectionSet:
+        location: "14:2:7"
+        selections:
+        - selectionType: field
+          name: bar
+          location: "20:3:5"
+        - selectionType: field
+          name: baz
+          location: "28:4:5"
+    - selectionType: field
+      name: fazz
+      location: "38:6:3"

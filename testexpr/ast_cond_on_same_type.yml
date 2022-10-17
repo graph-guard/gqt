@@ -1,0 +1,74 @@
+schema: >
+  type Query {foo: Foo!}
+  type Foo {name: String!}
+
+template: >
+  query { foo { ... on Foo { ... on Foo { name } } } }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      type: Foo!
+      selectionSet:
+        location: "12:1:13"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "21:1:22"
+            typeName: Foo
+            type: Foo
+          location: "14:1:15"
+          selectionSet:
+            location: "25:1:26"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "34:1:35"
+                typeName: Foo
+                type: Foo
+              location: "27:1:28"
+              selectionSet:
+                location: "38:1:39"
+                selections:
+                - selectionType: field
+                  name: name
+                  location: "40:1:41"
+                  type: String!
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      selectionSet:
+        location: "12:1:13"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "21:1:22"
+            typeName: Foo
+          location: "14:1:15"
+          selectionSet:
+            location: "25:1:26"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "34:1:35"
+                typeName: Foo
+              location: "27:1:28"
+              selectionSet:
+                location: "38:1:39"
+                selections:
+                - selectionType: field
+                  name: name
+                  location: "40:1:41"

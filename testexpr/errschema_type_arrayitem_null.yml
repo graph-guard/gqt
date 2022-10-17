@@ -1,0 +1,35 @@
+schema: >
+  type Query {foo(a: [Int!]!): Int!}
+
+template: >
+  query { foo(a: [ null ]) }
+
+expect-errors:
+  - '1:18: expected type Int! but received null'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      argumentList:
+        location: "11:1:12"
+        arguments:
+        - name: a
+          location: "12:1:13"
+          constraint:
+            constraintType: equals
+            location: "15:1:16"
+            value:
+              expressionType: array
+              location: "15:1:16"
+              items:
+              - constraintType: equals
+                location: "17:1:18"
+                value:
+                  expressionType: "null"
+                  location: "17:1:18"

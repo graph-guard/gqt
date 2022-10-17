@@ -1,0 +1,12 @@
+schema: >
+  type Mutation { f:Foo }
+  type Foo { bar:Int }
+
+template: >
+  mutation { ... on Foo { bar } }
+
+expect-errors:
+  - '1:19: type Mutation can never be of type Foo'
+
+expect-errors(schemaless):
+  - '1:19: type Mutation can never be of type Foo'

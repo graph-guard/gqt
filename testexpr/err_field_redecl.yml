@@ -1,0 +1,24 @@
+schema: >
+  type Query { a:Int b:B }
+  type B { bb:Int }
+
+template: >
+  query {
+    a
+    b{
+      bb
+      bb
+    }
+    a
+    b{bb}
+  }
+
+expect-errors:
+  - '5:5: redeclared field "bb"'
+  - '7:3: redeclared field "a"'
+  - '8:3: redeclared field "b"'
+
+expect-errors(schemaless):
+  - '5:5: redeclared field "bb"'
+  - '7:3: redeclared field "a"'
+  - '8:3: redeclared field "b"'

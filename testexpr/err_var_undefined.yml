@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int):Int }
+
+template: >
+  query { f(a: < $x) }
+
+expect-errors:
+  - '1:16: undefined variable'
+
+expect-errors(schemaless):
+  - '1:16: undefined variable'

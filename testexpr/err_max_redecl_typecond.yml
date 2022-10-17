@@ -1,0 +1,27 @@
+schema: >
+  type Query {
+    foo:Int
+    bar:Int
+    fizz:Int
+    buzz:Int
+  }
+
+template: >
+  query {
+    bar
+    max 1 {
+      foo
+      ... on Query {
+        buzz
+      }
+    }
+    ... on Query {
+      fizz
+    }
+  }
+
+expect-errors:
+  - '9:10: redeclared condition for type Query'
+
+expect-errors(schemaless):
+  - '9:10: redeclared condition for type Query'

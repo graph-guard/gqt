@@ -1,0 +1,12 @@
+schema: >
+  type Query { f:Int }
+  type Subscription { f:Int }
+
+template: >
+  query { ... on Subscription { __typename } }
+
+expect-errors:
+  - '1:16: type Query can never be of type Subscription'
+
+expect-errors(schemaless):
+  - '1:16: type Query can never be of type Subscription'

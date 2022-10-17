@@ -1,0 +1,13 @@
+schema: >
+  type Query { f(a: Foo!): Int! }
+  input Foo { foo: Bar! }
+  input Bar { bar: Int! }
+
+template: >
+  query { f(a:{foo=$foo:{bar:$foo}}) }
+
+expect-errors:
+  - '1:28: object field self reference in constraint'
+
+expect-errors(schemaless):
+  - '1:28: object field self reference in constraint'

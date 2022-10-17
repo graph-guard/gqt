@@ -1,0 +1,55 @@
+schema: >
+  type Query {
+    f_add_r(a: Int):Int
+    f_add_l(a: Int):Int
+    f_sub_r(a: Int):Int
+    f_sub_l(a: Int):Int
+    f_mul_r(a: Int):Int
+    f_mul_l(a: Int):Int
+    f_div_r(a: Int):Int
+    f_div_l(a: Int):Int
+    f_mod_r(a: Int):Int
+    f_mod_l(a: Int):Int
+
+    v(a: Boolean):Int
+  }
+
+template: >
+  query {
+    f_add_r(a: 1 + $a)
+    f_add_l(a: $a + 1)
+    f_sub_r(a: 1 - $a)
+    f_sub_l(a: $a - 1)
+    f_mul_r(a: 1 * $a)
+    f_mul_l(a: $a * 1)
+    f_div_r(a: 1 / $a)
+    f_div_l(a: $a / 1)
+    f_mod_r(a: 1 % $a)
+    f_mod_l(a: $a % 1)
+
+    v(a=$a: false)
+  }
+
+expect-errors:
+  - '2:18: expected number but received Boolean'
+  - '3:14: expected number but received Boolean'
+  - '4:18: expected number but received Boolean'
+  - '5:14: expected number but received Boolean'
+  - '6:18: expected number but received Boolean'
+  - '7:14: expected number but received Boolean'
+  - '8:18: expected number but received Boolean'
+  - '9:14: expected number but received Boolean'
+  - '10:18: expected number but received Boolean'
+  - '11:14: expected number but received Boolean'
+
+expect-errors(schemaless):
+  - '2:18: expected number but received Boolean'
+  - '3:14: expected number but received Boolean'
+  - '4:18: expected number but received Boolean'
+  - '5:14: expected number but received Boolean'
+  - '6:18: expected number but received Boolean'
+  - '7:14: expected number but received Boolean'
+  - '8:18: expected number but received Boolean'
+  - '9:14: expected number but received Boolean'
+  - '10:18: expected number but received Boolean'
+  - '11:14: expected number but received Boolean'

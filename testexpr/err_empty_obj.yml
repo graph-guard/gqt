@@ -1,0 +1,12 @@
+schema: >
+  type Query { f(a: Input): Int }
+  input Input { x: Int }
+
+template: >
+  query {f(a:{})}
+
+expect-errors:
+  - '1:13: empty input object'
+
+expect-errors(schemaless):
+  - '1:13: empty input object'

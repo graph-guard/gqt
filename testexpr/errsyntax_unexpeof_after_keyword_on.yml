@@ -1,0 +1,10 @@
+schema:
+  type Query { f:Int }
+
+template: 'query { ...on'
+
+expect-errors:
+  - '1:14: unexpected end of file, expected type condition'
+
+expect-errors(schemaless):
+  - '1:14: unexpected end of file, expected type condition'

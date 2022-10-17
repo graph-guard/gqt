@@ -1,0 +1,165 @@
+# Tests the constraint "len" against incompatible types.
+
+schema: >
+  type Query {
+    checkconstant_true        (a:String) :Int
+    checkconstant_false       (a:String) :Int
+    checkconstant_null        (a:String) :Int
+    checkconstant_string      (a:String) :Int
+    checkconstant_id          (a:String) :Int
+    checkconstant_enum        (a:String) :Int
+    checkconstant_object      (a:String) :Int
+    checkconstant_array       (a:String) :Int
+    checkconstant_array_empty (a:String) :Int
+
+    ref1_true        (a:String):Int
+    ref1_false       (a:String):Int
+    ref1_null        (a:String):Int
+    ref1_string      (a:String):Int
+    ref1_id          (a:String):Int
+    ref1_enum        (a:String):Int
+    ref1_object      (a:String):Int
+    ref1_array       (a:String):Int
+    ref1_array_empty (a:String):Int
+
+    ref2_true        (a:String):Int
+    ref2_false       (a:String):Int
+    ref2_null        (a:String):Int
+    ref2_string      (a:String):Int
+    ref2_id          (a:String):Int
+    ref2_enum        (a:String):Int
+    ref2_object      (a:String):Int
+    ref2_array       (a:String):Int
+    ref2_array_empty (a:String):Int
+
+    variable_true        (a:Boolean):Int
+    variable_false       (a:Boolean):Int
+    variable_null        (a:Boolean):Int
+    variable_string      (a:String) :Int
+    variable_id          (a:ID) :Int
+    variable_enum        (a:Color)  :Int
+    variable_object      (a:In)     :Int
+    variable_array       (a:[Int])  :Int
+    variable_array_empty (a:[Int])  :Int
+
+    constant_true        (a:Boolean):Int
+    constant_false       (a:Boolean):Int
+    constant_null        (a:Boolean):Int
+    constant_string      (a:String) :Int
+    constant_id          (a:ID) :Int
+    constant_enum        (a:Color)  :Int
+    constant_object      (a:In)     :Int
+    constant_array       (a:[Int])  :Int
+    constant_array_empty (a:[Int])  :Int
+  }
+  enum Color { red green blue }
+  input In { f:Int }
+
+template: >
+  query {
+    checkconstant_true        (a: len true)
+    checkconstant_false       (a: len false)
+    checkconstant_null        (a: len null)
+    checkconstant_string      (a: len "string")
+    checkconstant_id          (a: len "id")
+    checkconstant_enum        (a: len red)
+    checkconstant_object      (a: len {f:42})
+    checkconstant_array       (a: len [1])
+    checkconstant_array_empty (a: len [])
+    ref1_true                 (a: len $true)
+    ref1_false                (a: len $false)
+    ref1_null                 (a: len $null)
+    ref1_string               (a: len $string)
+    ref1_id                   (a: len $id)
+    ref1_enum                 (a: len $enum)
+    ref1_object               (a: len $object)
+    ref1_array                (a: len $array)
+    ref1_array_empty          (a: len $array_empty)
+    ref2_true                 (a: len $var_true)
+    ref2_false                (a: len $var_false)
+    ref2_null                 (a: len $var_null)
+    ref2_string               (a: len $var_string)
+    ref2_id                   (a: len $var_id)
+    ref2_enum                 (a: len $var_enum)
+    ref2_object               (a: len $var_object)
+    ref2_array                (a: len $var_array)
+    ref2_array_empty          (a: len $var_array_empty)
+
+    variable_true        (a=$var_true:        $true)
+    variable_false       (a=$var_false:       $false)
+    variable_null        (a=$var_null:        $null)
+    variable_string      (a=$var_string:      $string)
+    variable_id          (a=$var_id:          $id)
+    variable_enum        (a=$var_enum:        $enum)
+    variable_object      (a=$var_object:      $object)
+    variable_array       (a=$var_array:       $array)
+    variable_array_empty (a=$var_array_empty: $array_empty)
+
+    constant_true        (a=$true:        true)
+    constant_false       (a=$false:       false)
+    constant_null        (a=$null:        null)
+    constant_string      (a=$string:      "string")
+    constant_id          (a=$id:          "id")
+    constant_enum        (a=$enum:        red)
+    constant_object      (a=$object:      {f:42})
+    constant_array       (a=$array:       [1])
+    constant_array_empty (a=$array_empty: [])
+  }
+
+expect-errors:
+  - '2:37: expected number but received Boolean'
+  - '3:37: expected number but received Boolean'
+  - '4:37: expected number but received null'
+  - '5:37: expected number but received String'
+  - '6:37: expected number but received String'
+  - '7:37: expected number but received Color'
+  - '8:37: expected number but received {f:Int}'
+  - '9:37: expected number but received [Int]'
+  - '10:37: expected number but received array'
+  - '11:37: expected number but received Boolean'
+  - '12:37: expected number but received Boolean'
+  - '13:37: expected number but received null'
+  - '14:37: expected number but received String'
+  - '15:37: expected number but received ID'
+  - '16:37: expected number but received Color'
+  - '17:37: expected number but received In'
+  - '18:37: expected number but received [Int]'
+  - '19:37: expected number but received [Int]'
+  - '20:37: expected number but received Boolean'
+  - '21:37: expected number but received Boolean'
+  - '22:37: expected number but received null'
+  - '23:37: expected number but received String'
+  - '24:37: expected number but received ID'
+  - '25:37: expected number but received Color'
+  - '26:37: expected number but received In'
+  - '27:37: expected number but received [Int]'
+  - '28:37: expected number but received [Int]'
+
+expect-errors(schemaless):
+  - '2:37: expected number but received Boolean'
+  - '3:37: expected number but received Boolean'
+  - '4:37: expected number but received null'
+  - '5:37: expected number but received String'
+  - '6:37: expected number but received String'
+  - '7:37: expected number but received enum' # no type info
+  - '8:37: expected number but received {f:Int}'
+  - '9:37: expected number but received [Int]'
+  - '10:37: expected number but received array'
+  - '11:37: expected number but received Boolean'
+  - '12:37: expected number but received Boolean'
+  - '13:37: expected number but received null'
+  - '14:37: expected number but received String'
+  - '15:37: expected number but received String' # no type info
+  - '16:37: expected number but received enum' # no type info
+  - '17:37: expected number but received {f:Int}' # no type info
+  - '18:37: expected number but received [Int]'
+  - '19:37: expected number but received array' # no type info
+  - '20:37: expected number but received Boolean'
+  - '21:37: expected number but received Boolean'
+  - '22:37: expected number but received null'
+  - '23:37: expected number but received String'
+  - '24:37: expected number but received String' # no type info
+  - '25:37: expected number but received enum' # no type info
+  - '26:37: expected number but received {f:Int}' # no type info
+  - '27:37: expected number but received [Int]'
+  - '28:37: expected number but received array' # no type info

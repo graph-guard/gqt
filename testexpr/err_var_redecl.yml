@@ -1,0 +1,17 @@
+schema: >
+  type Query {
+    f1(a:Int):Int
+    f2(a:Int):Int
+    f3(a:Int):Int
+  }
+
+template: >
+  query { f1(a=$a:*) f2(a=$a:*) f3(a=$a:*) }
+
+expect-errors:
+  - '1:25: redeclared variable "a"'
+  - '1:36: redeclared variable "a"'
+
+expect-errors(schemaless):
+  - '1:25: redeclared variable "a"'
+  - '1:36: redeclared variable "a"'

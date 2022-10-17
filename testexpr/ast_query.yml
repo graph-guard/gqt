@@ -1,0 +1,343 @@
+schema: >
+  type Query {i: Interface!}
+  interface Interface {
+    string: String!
+    boolean: Boolean!
+    union: UnionFooBar
+  }
+  type Foo implements Interface {
+    string: String!
+    boolean: Boolean!
+    union: UnionFooBar
+  }
+  type Bar {
+    string: String!
+    boolean: Boolean!
+    union: UnionFooBar
+  }
+  union UnionFooBar = Foo | Bar
+
+template: >
+  query {
+    i {
+      __typename
+      string
+      boolean
+      union {
+        ... on Interface {
+          __typename
+          string
+          boolean
+          union { __typename }
+        }
+        ... on Foo {
+          __typename
+          string
+          boolean
+          union { __typename }
+        }
+        ... on Bar {
+          __typename
+          string
+          boolean
+          union { __typename }
+        }
+        ... on UnionFooBar {
+          ... on Bar { __typename }
+          ... on Foo { __typename }
+        }
+      }
+    }
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "10:2:3"
+      type: Interface!
+      selectionSet:
+        location: "12:2:5"
+        selections:
+        - selectionType: field
+          name: __typename
+          location: "18:3:5"
+        - selectionType: field
+          name: string
+          location: "33:4:5"
+          type: String!
+        - selectionType: field
+          name: boolean
+          location: "44:5:5"
+          type: Boolean!
+        - selectionType: field
+          name: union
+          location: "56:6:5"
+          type: UnionFooBar
+          selectionSet:
+            location: "62:6:11"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "77:7:14"
+                typeName: Interface
+                type: Interface
+              location: "70:7:7"
+              selectionSet:
+                location: "87:7:24"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "97:8:9"
+                - selectionType: field
+                  name: string
+                  location: "116:9:9"
+                  type: String!
+                - selectionType: field
+                  name: boolean
+                  location: "131:10:9"
+                  type: Boolean!
+                - selectionType: field
+                  name: union
+                  location: "147:11:9"
+                  type: UnionFooBar
+                  selectionSet:
+                    location: "153:11:15"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "155:11:17"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "189:13:14"
+                typeName: Foo
+                type: Foo
+              location: "182:13:7"
+              selectionSet:
+                location: "193:13:18"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "203:14:9"
+                - selectionType: field
+                  name: string
+                  location: "222:15:9"
+                  type: String!
+                - selectionType: field
+                  name: boolean
+                  location: "237:16:9"
+                  type: Boolean!
+                - selectionType: field
+                  name: union
+                  location: "253:17:9"
+                  type: UnionFooBar
+                  selectionSet:
+                    location: "259:17:15"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "261:17:17"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "295:19:14"
+                typeName: Bar
+                type: Bar
+              location: "288:19:7"
+              selectionSet:
+                location: "299:19:18"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "309:20:9"
+                - selectionType: field
+                  name: string
+                  location: "328:21:9"
+                  type: String!
+                - selectionType: field
+                  name: boolean
+                  location: "343:22:9"
+                  type: Boolean!
+                - selectionType: field
+                  name: union
+                  location: "359:23:9"
+                  type: UnionFooBar
+                  selectionSet:
+                    location: "365:23:15"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "367:23:17"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "401:25:14"
+                typeName: UnionFooBar
+                type: UnionFooBar
+              location: "394:25:7"
+              selectionSet:
+                location: "413:25:26"
+                selections:
+                - selectionType: inlineFragment
+                  typeCondition:
+                    location: "430:26:16"
+                    typeName: Bar
+                    type: Bar
+                  location: "423:26:9"
+                  selectionSet:
+                    location: "434:26:20"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "436:26:22"
+                - selectionType: inlineFragment
+                  typeCondition:
+                    location: "464:27:16"
+                    typeName: Foo
+                    type: Foo
+                  location: "457:27:9"
+                  selectionSet:
+                    location: "468:27:20"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "470:27:22"
+
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "10:2:3"
+      selectionSet:
+        location: "12:2:5"
+        selections:
+        - selectionType: field
+          name: __typename
+          location: "18:3:5"
+        - selectionType: field
+          name: string
+          location: "33:4:5"
+        - selectionType: field
+          name: boolean
+          location: "44:5:5"
+        - selectionType: field
+          name: union
+          location: "56:6:5"
+          selectionSet:
+            location: "62:6:11"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "77:7:14"
+                typeName: Interface
+              location: "70:7:7"
+              selectionSet:
+                location: "87:7:24"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "97:8:9"
+                - selectionType: field
+                  name: string
+                  location: "116:9:9"
+                - selectionType: field
+                  name: boolean
+                  location: "131:10:9"
+                - selectionType: field
+                  name: union
+                  location: "147:11:9"
+                  selectionSet:
+                    location: "153:11:15"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "155:11:17"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "189:13:14"
+                typeName: Foo
+              location: "182:13:7"
+              selectionSet:
+                location: "193:13:18"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "203:14:9"
+                - selectionType: field
+                  name: string
+                  location: "222:15:9"
+                - selectionType: field
+                  name: boolean
+                  location: "237:16:9"
+                - selectionType: field
+                  name: union
+                  location: "253:17:9"
+                  selectionSet:
+                    location: "259:17:15"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "261:17:17"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "295:19:14"
+                typeName: Bar
+              location: "288:19:7"
+              selectionSet:
+                location: "299:19:18"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "309:20:9"
+                - selectionType: field
+                  name: string
+                  location: "328:21:9"
+                - selectionType: field
+                  name: boolean
+                  location: "343:22:9"
+                - selectionType: field
+                  name: union
+                  location: "359:23:9"
+                  selectionSet:
+                    location: "365:23:15"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "367:23:17"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "401:25:14"
+                typeName: UnionFooBar
+              location: "394:25:7"
+              selectionSet:
+                location: "413:25:26"
+                selections:
+                - selectionType: inlineFragment
+                  typeCondition:
+                    location: "430:26:16"
+                    typeName: Bar
+                  location: "423:26:9"
+                  selectionSet:
+                    location: "434:26:20"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "436:26:22"
+                - selectionType: inlineFragment
+                  typeCondition:
+                    location: "464:27:16"
+                    typeName: Foo
+                  location: "457:27:9"
+                  selectionSet:
+                    location: "468:27:20"
+                    selections:
+                    - selectionType: field
+                      name: __typename
+                      location: "470:27:22"

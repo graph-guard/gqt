@@ -1,0 +1,43 @@
+schema: >
+  type Query {f(a: Input!):Int!}
+  input Input {
+    req: Int!
+    opt: Int
+  }
+
+template: >
+  query { f(a: {opt: 42}) }
+
+expect-errors:
+  - '1:14: field "req" of type "Int!" is required but missing'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: object
+              location: "13:1:14"
+              fields:
+              - name: opt
+                location: "14:1:15"
+                constraint:
+                  constraintType: equals
+                  location: "19:1:20"
+                  value:
+                    expressionType: int
+                    location: "19:1:20"
+                    value: 42

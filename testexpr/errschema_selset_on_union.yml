@@ -1,0 +1,29 @@
+schema: >
+  type Query {
+      u: UnionFooBar!
+  }
+  type Foo { string: String! }
+  type Bar { string: String! }
+  union UnionFooBar = Foo | Bar
+
+template: >
+  query { u { foo } }
+
+expect-errors:
+  - '1:13: field "foo" is undefined in type UnionFooBar'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: field
+          name: foo
+          location: "12:1:13"

@@ -1,0 +1,80 @@
+schema: >
+  type Query {
+    f(a: [Int!]): Int
+  }
+
+template: >
+  query {
+    f(a: [> 5, < 10])
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "10:2:3"
+      type: Int
+      argumentList:
+        location: "11:2:4"
+        arguments:
+        - name: a
+          location: "12:2:5"
+          type: '[Int!]'
+          constraint:
+            constraintType: equals
+            location: "15:2:8"
+            value:
+              expressionType: array
+              location: "15:2:8"
+              itemType: 'Int'
+              items:
+              - constraintType: greaterThan
+                location: "16:2:9"
+                value:
+                  expressionType: int
+                  location: "18:2:11"
+                  value: 5
+              - constraintType: lessThan
+                location: "21:2:14"
+                value:
+                  expressionType: int
+                  location: "23:2:16"
+                  value: 10
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "10:2:3"
+      argumentList:
+        location: "11:2:4"
+        arguments:
+        - name: a
+          location: "12:2:5"
+          constraint:
+            constraintType: equals
+            location: "15:2:8"
+            value:
+              expressionType: array
+              location: "15:2:8"
+              items:
+              - constraintType: greaterThan
+                location: "16:2:9"
+                value:
+                  expressionType: int
+                  location: "18:2:11"
+                  value: 5
+              - constraintType: lessThan
+                location: "21:2:14"
+                value:
+                  expressionType: int
+                  location: "23:2:16"
+                  value: 10

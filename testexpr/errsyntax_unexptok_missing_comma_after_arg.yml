@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a:Int, b:Int):Int }
+
+template: >
+  query { f(a:* b:*) }
+
+expect-errors:
+  - '1:15: unexpected token, expected comma or end of argument list'
+
+expect-errors(schemaless):
+  - '1:15: unexpected token, expected comma or end of argument list'

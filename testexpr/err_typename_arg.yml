@@ -1,0 +1,11 @@
+schema: >
+  type Query { f: Int }
+
+template: >
+  query { __typename(a: "") }
+
+expect-errors:
+  - '1:19: built-in field "__typename" can never have arguments'
+
+expect-errors(schemaless):
+  - '1:19: built-in field "__typename" can never have arguments'

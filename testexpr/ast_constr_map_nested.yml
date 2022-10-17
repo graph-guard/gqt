@@ -1,0 +1,63 @@
+schema: >
+  type Query { f(a: [[Int]]): [[Int]] }
+
+template: >
+  query { f(a: [ ... [ ... > 10 ] ]) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: '[[Int]]'
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: '[[Int]]'
+          constraint:
+            constraintType: map
+            location: "13:1:14"
+            constraint:
+              constraintType: map
+              location: "19:1:20"
+              constraint:
+                constraintType: greaterThan
+                location: "25:1:26"
+                value:
+                  expressionType: int
+                  location: "27:1:28"
+                  value: 10
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: map
+            location: "13:1:14"
+            constraint:
+              constraintType: map
+              location: "19:1:20"
+              constraint:
+                constraintType: greaterThan
+                location: "25:1:26"
+                value:
+                  expressionType: int
+                  location: "27:1:28"
+                  value: 10
