@@ -1,8 +1,8 @@
 schema: >
-  type Query { f(a: String!): String! }
+  type Query { f(a:Boolean):Int }
 
 template: >
-  query { f(a: "text") }
+  query { f(a: 10 <= 3.14) }
 
 expect-ast:
   operationType: Query
@@ -13,20 +13,27 @@ expect-ast:
     - selectionType: field
       name: f
       location: "8:1:9"
-      type: String!
+      type: Int
       argumentList:
         location: "9:1:10"
         arguments:
         - name: a
           location: "10:1:11"
-          type: String!
+          type: Boolean
           constraint:
             constraintType: equals
             location: "13:1:14"
             value:
-              expressionType: string
+              expressionType: lessThanOrEquals
               location: "13:1:14"
-              value: "text"
+              left:
+                expressionType: int
+                location: "13:1:14"
+                value: 10
+              right:
+                expressionType: float
+                location: "19:1:20"
+                value: 3.14
 
 expect-ast(schemaless):
   operationType: Query
@@ -46,6 +53,13 @@ expect-ast(schemaless):
             constraintType: equals
             location: "13:1:14"
             value:
-              expressionType: string
+              expressionType: lessThanOrEquals
               location: "13:1:14"
-              value: "text"
+              left:
+                expressionType: int
+                location: "13:1:14"
+                value: 10
+              right:
+                expressionType: float
+                location: "19:1:20"
+                value: 3.14

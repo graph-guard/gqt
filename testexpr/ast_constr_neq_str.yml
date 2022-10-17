@@ -26,7 +26,6 @@ expect-ast:
             value:
               expressionType: string
               location: "16:1:17"
-              type: String
               value: "text"
 
 expect-ast(schemaless):

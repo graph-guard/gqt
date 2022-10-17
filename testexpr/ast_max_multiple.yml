@@ -56,7 +56,6 @@ expect-ast:
                 value:
                   expressionType: int
                   location: "55:6:13"
-                  type: Int
                   value: 10
 
 expect-ast(schemaless):

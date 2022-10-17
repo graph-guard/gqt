@@ -25,7 +25,6 @@ expect-ast:
             location: "13:1:14"
             value:
               expressionType: "true"
-              type: Boolean
               location: "13:1:14"
 
 expect-ast(schemaless):

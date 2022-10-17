@@ -1121,11 +1121,24 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		case *ExprModulo:
 			push(e.Dividend, nil)
 			push(e.Divisor, nil)
+		case *ExprGreater:
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprGreaterOrEqual:
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprLess:
+			push(e.Left, nil)
+			push(e.Right, nil)
+		case *ExprLessOrEqual:
+			push(e.Left, nil)
+			push(e.Right, nil)
 		case *Int:
 			if exp != nil && exp.Elem == nil {
 				t := p.schema.Types[exp.NamedType]
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
+					t.Name != "Int" &&
 					t.Name != "Float" &&
 					t.Name != "String" &&
 					t.Name != "Boolean" {
@@ -1138,6 +1151,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
 					t.Name != "Int" &&
+					t.Name != "Float" &&
 					t.Name != "String" &&
 					t.Name != "Boolean" {
 					e.TypeDef = t
@@ -1150,7 +1164,8 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					t.Name != "ID" &&
 					t.Name != "Int" &&
 					t.Name != "Float" &&
-					t.Name != "String" {
+					t.Name != "String" &&
+					t.Name != "Boolean" {
 					e.TypeDef = t
 				}
 			}
@@ -1161,7 +1176,8 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					t.Name != "ID" &&
 					t.Name != "Int" &&
 					t.Name != "Float" &&
-					t.Name != "String" {
+					t.Name != "String" &&
+					t.Name != "Boolean" {
 					e.TypeDef = t
 				}
 			}
@@ -1171,6 +1187,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				if t.Kind == ast.Scalar &&
 					t.Name != "Int" &&
 					t.Name != "Float" &&
+					t.Name != "String" &&
 					t.Name != "Boolean" {
 					e.TypeDef = t
 				}
@@ -1680,7 +1697,7 @@ func (p *Parser) validateExpr(
 				left, right = e.Left, e.Right
 			}
 
-			if expect != nil && !p.expectationIsNum(expect) {
+			if expect != nil && !p.expectationIsBool(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH

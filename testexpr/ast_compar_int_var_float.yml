@@ -87,7 +87,6 @@ expect-ast:
             value:
               expressionType: float
               location: "86:4:17"
-              type: Float
               value: 3.14
     - selectionType: field
       name: varNeq
@@ -108,7 +107,6 @@ expect-ast:
             value:
               expressionType: float
               location: "113:5:22"
-              type: Float
               value: 3.14
 
 expect-ast(schemaless):
