@@ -1125,8 +1125,14 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			e.TypeDef = p.enumVal[e.Value]
 		case *Object:
 			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
-				if t.Kind == ast.InputObject {
+
+				if t := p.schema.Types[exp.NamedType]; t != nil &&
+					(t.Kind == ast.InputObject || t.Kind == ast.Scalar &&
+						t.Name != "ID" &&
+						t.Name != "Int" &&
+						t.Name != "Float" &&
+						t.Name != "String" &&
+						t.Name != "Boolean") {
 					e.TypeDef = t
 					for _, f := range e.Fields {
 						var tp *ast.Type
