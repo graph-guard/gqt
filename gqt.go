@@ -1506,7 +1506,7 @@ func (p *Parser) validateExpr(
 				p.errCantApplyConstrRel(e, expect)
 				ok = false
 				break TYPESWITCH
-			case containsNullConstant(val):
+			case contains[*Null](val):
 				p.errExpectedNumGotNull(val.GetLocation())
 				ok = false
 				break TYPESWITCH
@@ -1543,7 +1543,7 @@ func (p *Parser) validateExpr(
 				p.errCantApplyConstrLen(e, expect)
 				ok = false
 				break TYPESWITCH
-			case containsNullConstant(val):
+			case contains[*Null](val):
 				p.errExpectedNumGotNull(val.GetLocation())
 				ok = false
 				break TYPESWITCH
@@ -1570,10 +1570,10 @@ func (p *Parser) validateExpr(
 			case *ExprNotEqual:
 				loc, left, right = e.Location, e.Left, e.Right
 			}
-			if !p.assumeValue(left) {
+			if !p.assumeComparableValue(left) {
 				ok = false
 			}
-			if !p.assumeValue(right) {
+			if !p.assumeComparableValue(right) {
 				ok = false
 			}
 			if !ok {
@@ -1591,7 +1591,7 @@ func (p *Parser) validateExpr(
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
-			case containsNullConstant(e.Expression):
+			case contains[*Null](e.Expression):
 				p.errExpectedBoolGotNull(e.Expression.GetLocation())
 				ok = false
 				break TYPESWITCH
@@ -1669,11 +1669,11 @@ func (p *Parser) validateExpr(
 				break TYPESWITCH
 			}
 
-			if containsNullConstant(left) {
+			if contains[*Null](left) {
 				p.errExpectedNumGotNull(left.GetLocation())
 				ok = false
 			}
-			if containsNullConstant(right) {
+			if contains[*Null](right) {
 				p.errExpectedNumGotNull(right.GetLocation())
 				ok = false
 			}
@@ -1885,6 +1885,13 @@ func (p *Parser) validateObject(
 	}
 
 	return ok
+}
+
+func (p *Parser) errUncompVal(e Expression) {
+	p.errors = append(p.errors, Error{
+		Location: e.GetLocation(),
+		Msg:      "uncomparable value of type " + e.TypeDesignation(),
+	})
 }
 
 func (p *Parser) errConstrSelf(v *Variable) {
@@ -3642,76 +3649,83 @@ func (p *Parser) assumeComparableValues(
 ) (ok bool) {
 	switch {
 	case p.isString(left):
-		if !p.isString(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-		if containsNullConstant(right) {
+		if contains[*Null](right) {
 			p.errCompareWithNull(l, left)
+			return false
+		} else if contains[*Object](right) {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isString(right) {
+			p.errMismatchingTypes(l, left, right)
 			return false
 		}
 	case p.isBoolean(left):
-		if !p.isBoolean(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-		if containsNullConstant(right) {
+		if contains[*Null](right) {
 			p.errCompareWithNull(l, left)
+			return false
+		} else if contains[*Object](right) {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isBoolean(right) {
+			p.errMismatchingTypes(l, left, right)
 			return false
 		}
 	case p.isNumeric(left):
-		if !p.isNumeric(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-		if containsNullConstant(right) {
+		if contains[*Null](right) {
 			p.errCompareWithNull(l, left)
+			return false
+		} else if contains[*Object](right) {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isNumeric(right) {
+			p.errMismatchingTypes(l, left, right)
 			return false
 		}
 	case p.isEnum(left):
-		if !p.isEnum(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-		if containsNullConstant(right) {
+		if contains[*Null](right) {
 			p.errCompareWithNull(l, left)
+			return false
+		} else if contains[*Object](right) {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isEnum(right) {
+			p.errMismatchingTypes(l, left, right)
 			return false
 		}
 	case p.isNull(left):
-		if !p.isNull(right) {
-			p.errMismatchingTypes(l, left, right)
+		if contains[*Object](right) {
+			p.errUncompVal(right)
 			return false
-		}
-		if containsNullConstant(right) {
-			p.errCompareWithNull(l, left)
+		} else if !p.isNull(right) {
+			p.errMismatchingTypes(l, left, right)
 			return false
 		}
 	case p.isObject(left):
-		if !p.isObject(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-		if containsNullConstant(right) {
-			p.errCompareWithNull(l, left)
-			return false
+		ok = false
+		p.errUncompVal(right)
+		if p.isObject(right) {
+			ok = false
+			p.errUncompVal(right)
 		}
 	case p.isArray(left):
-		if !p.isArray(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-		if containsNullConstant(right) {
+		if contains[*Null](right) {
 			p.errCompareWithNull(l, left)
+			return false
+		} else if contains[*Object](right) {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isArray(right) {
+			p.errMismatchingTypes(l, left, right)
 			return false
 		}
 	}
 	return ok
 }
 
-// assumeValue return true if expression e doesn't contain
+// assumeComparableValue return true if expression e doesn't contain
 // any non-ConstrEquals constraints recursively. Otherwise,
 // returns false and pushes errors onto the error stack.
-func (p *Parser) assumeValue(e Expression) (ok bool) {
+func (p *Parser) assumeComparableValue(e Expression) (ok bool) {
 	ok = true
 	switch v := e.(type) {
 	case *ConstrAny,
@@ -3730,21 +3744,18 @@ func (p *Parser) assumeValue(e Expression) (ok bool) {
 		p.newErr(e.GetLocation(), "unexpected constraint in value definition")
 		return false
 	case *ConstrEquals:
-		return p.assumeValue(v.Value)
+		return p.assumeComparableValue(v.Value)
 	case *ExprParentheses:
-		return p.assumeValue(v.Expression)
+		return p.assumeComparableValue(v.Expression)
 	case *Array:
 		for _, i := range v.Items {
-			if !p.assumeValue(i) {
+			if !p.assumeComparableValue(i) {
 				ok = false
 			}
 		}
 	case *Object:
-		for _, f := range v.Fields {
-			if !p.assumeValue(f.Constraint) {
-				ok = false
-			}
-		}
+		p.errUncompVal(e)
+		ok = false
 	}
 	return ok
 }
@@ -4450,36 +4461,37 @@ func typeDesignationRelational(e Expression) string {
 	return "number"
 }
 
-// containsNullConstant returns true if e contains a constraint expecting
-// equality to null.
-func containsNullConstant(e Expression) bool {
+// contains returns true if e recursively contains an instance of T.
+func contains[T any](e Expression) bool {
 	switch e := e.(type) {
+	case T:
+		return true
 	case *ConstrAny:
 		return false
 	case *ConstrEquals:
-		return containsNullConstant(e.Value)
+		return contains[T](e.Value)
+	case *ConstrNotEquals:
+		return contains[T](e.Value)
 	case *ExprParentheses:
-		return containsNullConstant(e.Expression)
+		return contains[T](e.Expression)
 	case *ExprLogicalAnd:
 		for _, i := range e.Expressions {
-			if containsNullConstant(i) {
+			if contains[T](i) {
 				return true
 			}
 		}
 	case *ExprLogicalOr:
 		for _, i := range e.Expressions {
-			if containsNullConstant(i) {
+			if contains[T](i) {
 				return true
 			}
 		}
-	case *Null:
-		return true
 	case *Variable:
 		switch p := e.Declaration.Parent.(type) {
 		case *Argument:
-			return containsNullConstant(p.Constraint)
+			return contains[T](p.Constraint)
 		case *ObjectField:
-			return containsNullConstant(p.Constraint)
+			return contains[T](p.Constraint)
 		}
 	}
 	return false

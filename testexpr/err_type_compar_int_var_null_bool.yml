@@ -15,8 +15,8 @@ template: >
   }
 
 expect-errors:
-  - '2:19: mismatching types Int and Boolean'
-  - '3:20: mismatching types Int and Boolean'
+  - '2:19: mismatching types Int and null'
+  - '3:20: mismatching types Int and null'
 
 expect-errors(schemaless):
   - '2:19: mismatching types Int and null'
