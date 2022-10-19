@@ -1303,6 +1303,11 @@ func (p *Parser) validateSelSet(
 		panic(fmt.Errorf("unsupported type: %T", host))
 	}
 
+	if s.Location.Index != 0 && len(s.Selections) < 1 {
+		p.newErr(s.Location, "empty selection set")
+		return false
+	}
+
 	parent, _ := host.(*SelectionField)
 	if parent != nil &&
 		expect != nil &&
@@ -1439,6 +1444,10 @@ func (p *Parser) validateField(
 				}
 			}
 		}
+	}
+
+	if f.ArgumentList.Location.Index != 0 && len(f.Arguments) < 1 {
+		p.newErr(f.ArgumentList.Location, "empty argument list")
 	}
 
 	// Check constraints
@@ -1830,6 +1839,11 @@ func (p *Parser) validateObject(
 ) (ok bool) {
 	ok = true
 
+	if len(o.Fields) < 1 {
+		p.newErr(o.Location, "empty input object")
+		return false
+	}
+
 	if exp != nil && !p.expectationIsObject(exp) {
 		ok = false
 		// Make sure the object doesn't contain any
@@ -2041,7 +2055,6 @@ const (
 
 func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 	selset := SelectionSet{Location: s.Location}
-	si := s
 	var ok bool
 	if s, ok = s.consume("{"); !ok {
 		p.errUnexpTok(s, "expected selection set")
@@ -2155,11 +2168,6 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 		}
 
 		selset.Selections = append(selset.Selections, sel)
-	}
-
-	if len(selset.Selections) < 1 {
-		p.newErrorNoPrefix(si, "empty selection set")
-		return stop(), SelectionSet{}
 	}
 
 	return s, selset
@@ -2315,11 +2323,6 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 		s = s.consumeIgnored()
 	}
 
-	if len(list.Arguments) < 1 {
-		p.newErrorNoPrefix(si, "empty argument list")
-		return stop(), ArgumentList{}
-	}
-
 	return s, list
 }
 
@@ -2421,7 +2424,6 @@ func (p *Parser) ParseValue(
 	} else if s, ok = s.consume("{"); ok {
 		// Object
 		o := &Object{Location: l}
-		si := s
 		var ok bool
 		fieldNames := map[string]struct{}{}
 
@@ -2528,11 +2530,6 @@ func (p *Parser) ParseValue(
 				break
 			}
 			s = s.consumeIgnored()
-		}
-
-		if len(o.Fields) < 1 {
-			p.newErrorNoPrefix(si, "empty input object")
-			return stop(), nil
 		}
 
 		return s, o

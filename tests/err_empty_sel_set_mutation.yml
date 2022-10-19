@@ -1,0 +1,11 @@
+schema: >
+  type Mutation { m:Int }
+
+template: >
+  mutation {}
+
+expect-errors:
+  - '1:10: empty selection set'
+
+expect-errors(schemaless):
+  - '1:10: empty selection set'

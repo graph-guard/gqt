@@ -1,12 +1,20 @@
 schema: >
-  type Query { f(a: Input): Int }
+  type Query {
+    f1(a:Input):Int
+    f2(a:Input):Int
+  }
   input Input { x: Int }
 
 template: >
-  query {f(a:{})}
+  query {
+    f1(a:{})
+    f2(a:{})
+  }
 
 expect-errors:
-  - '1:13: empty input object'
+  - '2:8: empty input object'
+  - '3:8: empty input object'
 
 expect-errors(schemaless):
-  - '1:13: empty input object'
+  - '2:8: empty input object'
+  - '3:8: empty input object'

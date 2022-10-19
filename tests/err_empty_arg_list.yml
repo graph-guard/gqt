@@ -1,11 +1,19 @@
 schema: >
-  type Query { f(a: Int): Int }
+  type Query {
+    f1(a:Int):Int
+    f2(a:Int):Int
+  }
 
 template: >
-  query { f() }
+  query {
+    f1()
+    f2( )
+  }
 
 expect-errors:
-  - '1:10: empty argument list'
+  - '2:5: empty argument list'
+  - '3:5: empty argument list'
 
 expect-errors(schemaless):
-  - '1:10: empty argument list'
+  - '2:5: empty argument list'
+  - '3:5: empty argument list'

@@ -1,0 +1,11 @@
+schema: >
+  type Subscription { m:Int }
+
+template: >
+  subscription {}
+
+expect-errors:
+  - '1:14: empty selection set'
+
+expect-errors(schemaless):
+  - '1:14: empty selection set'

@@ -1,0 +1,11 @@
+schema: >
+  type Query { f:Int }
+
+template: >
+  query {}
+
+expect-errors:
+  - '1:7: empty selection set'
+
+expect-errors(schemaless):
+  - '1:7: empty selection set'
