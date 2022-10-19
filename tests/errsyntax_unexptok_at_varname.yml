@@ -1,0 +1,8 @@
+template: >
+  query { f(a=:) }
+
+expect-errors:
+  - '1:13: unexpected token, expected variable name'
+
+expect-errors(schemaless):
+  - '1:13: unexpected token, expected variable name'

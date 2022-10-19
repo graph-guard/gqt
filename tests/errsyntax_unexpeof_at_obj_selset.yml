@@ -1,0 +1,7 @@
+template: "query { f(a:{"
+
+expect-errors:
+  - '1:14: unexpected end of file, expected object field'
+
+expect-errors(schemaless):
+  - '1:14: unexpected end of file, expected object field'
