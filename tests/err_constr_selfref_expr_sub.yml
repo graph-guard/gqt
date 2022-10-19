@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int!): Int! }
+
+template: >
+  query { f(a=$a: 4 - $a) }
+
+expect-errors:
+  - '1:21: argument self reference in constraint'
+
+expect-errors(schemaless):
+  - '1:21: argument self reference in constraint'

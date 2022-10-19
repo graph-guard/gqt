@@ -3463,7 +3463,10 @@ func (p *Parser) isNumeric(e Expression) bool {
 		case *ObjectField:
 			return p.isNumeric(v.Constraint)
 		}
-	case *ConstrAny, *Float, *Int, *ExprAddition, *ExprSubtraction,
+	case *ConstrAny, *Float, *Int,
+		*ConstrGreater, *ConstrLess,
+		*ConstrGreaterOrEqual, *ConstrLessOrEqual,
+		*ExprAddition, *ExprSubtraction,
 		*ExprMultiplication, *ExprDivision, *ExprModulo:
 		return true
 	case *ConstrEquals:
@@ -4369,18 +4372,6 @@ func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
 		case *ConstrLess:
 			push(e.Value)
 		case *ConstrLessOrEqual:
-			push(e.Value)
-		case *ConstrLenEquals:
-			push(e.Value)
-		case *ConstrLenNotEquals:
-			push(e.Value)
-		case *ConstrLenGreater:
-			push(e.Value)
-		case *ConstrLenGreaterOrEqual:
-			push(e.Value)
-		case *ConstrLenLess:
-			push(e.Value)
-		case *ConstrLenLessOrEqual:
 			push(e.Value)
 		case *ConstrMap:
 			push(e.Constraint)
