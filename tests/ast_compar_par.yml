@@ -1,0 +1,221 @@
+schema: >
+  type Query {
+    comparisonEq  (a:Boolean):Int
+    comparisonNeq (a:Boolean):Int
+    varEq         (a:Float):Int
+    varNeq        (a:Float):Int
+  }
+
+template: >
+  query {
+    comparisonEq(a: (42) == $veq)
+    comparisonNeq(a: (42) != $vneq)
+    varEq(a=$veq: (3.14))
+    varNeq(a=$vneq: != (3.14))
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: comparisonEq
+      location: "10:2:3"
+      type: Int
+      argumentList:
+        location: "22:2:15"
+        arguments:
+        - name: a
+          location: "23:2:16"
+          type: Boolean
+          constraint:
+            constraintType: equals
+            location: "26:2:19"
+            value:
+              expressionType: equals
+              location: "26:2:19"
+              left:
+                expressionType: parentheses
+                location: "26:2:19"
+                expression:
+                  expressionType: int
+                  location: "27:2:20"
+                  value: 42
+              right:
+                expressionType: variableReference
+                location: "34:2:27"
+                name: veq
+    - selectionType: field
+      name: comparisonNeq
+      location: "42:3:3"
+      type: Int
+      argumentList:
+        location: "55:3:16"
+        arguments:
+        - name: a
+          location: "56:3:17"
+          type: Boolean
+          constraint:
+            constraintType: equals
+            location: "59:3:20"
+            value:
+              expressionType: notEquals
+              location: "59:3:20"
+              left:
+                expressionType: parentheses
+                location: "59:3:20"
+                expression:
+                  expressionType: int
+                  location: "60:3:21"
+                  value: 42
+              right:
+                expressionType: variableReference
+                location: "67:3:28"
+                name: vneq
+    - selectionType: field
+      name: varEq
+      location: "76:4:3"
+      type: Int
+      argumentList:
+        location: "81:4:8"
+        arguments:
+        - name: a
+          location: "82:4:9"
+          variable:
+            location: "84:4:11"
+            name: veq
+          type: Float
+          constraint:
+            constraintType: equals
+            location: "90:4:17"
+            value:
+              expressionType: parentheses
+              location: "90:4:17"
+              expression:
+                expressionType: float
+                location: "91:4:18"
+                value: 3.14
+    - selectionType: field
+      name: varNeq
+      location: "100:5:3"
+      type: Int
+      argumentList:
+        location: "106:5:9"
+        arguments:
+        - name: a
+          location: "107:5:10"
+          variable:
+            location: "109:5:12"
+            name: vneq
+          type: Float
+          constraint:
+            constraintType: notEquals
+            location: "116:5:19"
+            value:
+              expressionType: parentheses
+              location: "119:5:22"
+              expression:
+                expressionType: float
+                location: "120:5:23"
+                value: 3.14
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: comparisonEq
+      location: "10:2:3"
+      argumentList:
+        location: "22:2:15"
+        arguments:
+        - name: a
+          location: "23:2:16"
+          constraint:
+            constraintType: equals
+            location: "26:2:19"
+            value:
+              expressionType: equals
+              location: "26:2:19"
+              left:
+                expressionType: parentheses
+                location: "26:2:19"
+                expression:
+                  expressionType: int
+                  location: "27:2:20"
+                  value: 42
+              right:
+                expressionType: variableReference
+                location: "34:2:27"
+                name: veq
+    - selectionType: field
+      name: comparisonNeq
+      location: "42:3:3"
+      argumentList:
+        location: "55:3:16"
+        arguments:
+        - name: a
+          location: "56:3:17"
+          constraint:
+            constraintType: equals
+            location: "59:3:20"
+            value:
+              expressionType: notEquals
+              location: "59:3:20"
+              left:
+                expressionType: parentheses
+                location: "59:3:20"
+                expression:
+                  expressionType: int
+                  location: "60:3:21"
+                  value: 42
+              right:
+                expressionType: variableReference
+                location: "67:3:28"
+                name: vneq
+    - selectionType: field
+      name: varEq
+      location: "76:4:3"
+      argumentList:
+        location: "81:4:8"
+        arguments:
+        - name: a
+          location: "82:4:9"
+          variable:
+            location: "84:4:11"
+            name: veq
+          constraint:
+            constraintType: equals
+            location: "90:4:17"
+            value:
+              expressionType: parentheses
+              location: "90:4:17"
+              expression:
+                expressionType: float
+                location: "91:4:18"
+                value: 3.14
+    - selectionType: field
+      name: varNeq
+      location: "100:5:3"
+      argumentList:
+        location: "106:5:9"
+        arguments:
+        - name: a
+          location: "107:5:10"
+          variable:
+            location: "109:5:12"
+            name: vneq
+          constraint:
+            constraintType: notEquals
+            location: "116:5:19"
+            value:
+              expressionType: parentheses
+              location: "119:5:22"
+              expression:
+                expressionType: float
+                location: "120:5:23"
+                value: 3.14
