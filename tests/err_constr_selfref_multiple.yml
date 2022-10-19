@@ -8,22 +8,22 @@ schema: >
 template: >
   query {
     f(
-      a=$a:{
-        b=$b:{
-          b:$b,
-          a:$a,
-          c=$c:$c
+      a=$var_a:{
+        b=$var_b:{
+          b:$var_b,
+          a:$var_a,
+          c=$var_c:$var_c
         }
       }
     )
   }
 
 expect-errors:
-  - '5:11: object field self reference in constraint'
-  - '6:11: argument self reference in constraint'
-  - '7:14: object field self reference in constraint'
+  - '5:11: illegal self-reference of object field "b" through variable "var_b" in constraint'
+  - '6:11: illegal self-reference of argument "a" through variable "var_a" in constraint'
+  - '7:18: illegal self-reference of object field "c" through variable "var_c" in constraint'
 
 expect-errors(schemaless):
-  - '5:11: object field self reference in constraint'
-  - '6:11: argument self reference in constraint'
-  - '7:14: object field self reference in constraint'
+  - '5:11: illegal self-reference of object field "b" through variable "var_b" in constraint'
+  - '6:11: illegal self-reference of argument "a" through variable "var_a" in constraint'
+  - '7:18: illegal self-reference of object field "c" through variable "var_c" in constraint'

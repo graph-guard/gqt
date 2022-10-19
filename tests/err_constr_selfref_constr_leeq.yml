@@ -2,10 +2,10 @@ schema: >
   type Query { f(a: Int!): Int! }
 
 template: >
-  query { f(a=$a: <= $a) }
+  query { f(a=$var: <= $var) }
 
 expect-errors:
-  - "1:20: argument self reference in constraint"
+  - '1:22: illegal self-reference of argument "a" through variable "var" in constraint'
 
 expect-errors(schemaless):
-  - "1:20: argument self reference in constraint"
+  - '1:22: illegal self-reference of argument "a" through variable "var" in constraint'

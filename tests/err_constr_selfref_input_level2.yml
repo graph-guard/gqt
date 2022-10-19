@@ -4,10 +4,10 @@ schema: >
   input Bar { bar: Int! }
 
 template: >
-  query { f(a:{foo=$foo:{bar:$foo}}) }
+  query { f(a:{foo=$foovar:{bar:$foovar}}) }
 
 expect-errors:
-  - '1:28: object field self reference in constraint'
+  - '1:31: illegal self-reference of object field "foo" through variable "foovar" in constraint'
 
 expect-errors(schemaless):
-  - '1:28: object field self reference in constraint'
+  - '1:31: illegal self-reference of object field "foo" through variable "foovar" in constraint'

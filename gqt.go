@@ -1897,16 +1897,19 @@ func (p *Parser) errUncompVal(e Expression) {
 }
 
 func (p *Parser) errConstrSelf(v *Variable) {
-	var on string
-	switch v.Declaration.Parent.(type) {
+	var on, name string
+	switch v := v.Declaration.Parent.(type) {
 	case *Argument:
-		on = "argument"
+		on, name = "argument", v.Name
 	case *ObjectField:
-		on = "object field"
+		on, name = "object field", v.Name
 	}
 	p.errors = append(p.errors, Error{
 		Location: v.Location,
-		Msg:      on + " self reference in constraint",
+		Msg: fmt.Sprintf(
+			"illegal self-reference of %s %q through variable %q in constraint",
+			on, name, v.Name,
+		),
 	})
 }
 
