@@ -3604,33 +3604,6 @@ func (p *Parser) isNull(e Expression) bool {
 	return false
 }
 
-func (p *Parser) isObject(e Expression) bool {
-	switch e := e.(type) {
-	case *Variable:
-		if t, _ := e.Declaration.GetInfo(); t != nil {
-			// Check type based on schema
-			tp := p.schema.Types[t.NamedType]
-			return t.Elem == nil && tp.Kind == ast.InputObject
-		}
-		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isObject(v.Constraint)
-		case *ObjectField:
-			return p.isObject(v.Constraint)
-		}
-	case *ConstrAny, *Object:
-		return true
-	case *ConstrEquals:
-		return p.isObject(e.Value)
-	case *ConstrNotEquals:
-		return p.isObject(e.Value)
-	case *ExprParentheses:
-		return p.isObject(e.Expression)
-	}
-	return false
-}
-
 func (p *Parser) isArray(e Expression) bool {
 	switch e := e.(type) {
 	case *Variable:
@@ -3712,13 +3685,6 @@ func (p *Parser) assumeComparableValues(
 		} else if !p.isEnum(right) {
 			p.errMismatchingTypes(l, left, right)
 			return false
-		}
-	case p.isObject(left):
-		ok = false
-		p.errUncompVal(right)
-		if p.isObject(right) {
-			ok = false
-			p.errUncompVal(right)
 		}
 	case p.isArray(left):
 		if contains[*Null](right) {
