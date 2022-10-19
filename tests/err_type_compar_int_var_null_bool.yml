@@ -2,8 +2,8 @@ schema: >
   type Query {
     comparisonEq  (a:Boolean):Int
     comparisonNeq (a:Boolean):Int
-    varEq         (a:Boolean):Int
-    varNeq        (a:Boolean):Int
+    varEq         (a:Int):Int
+    varNeq        (a:Int):Int
   }
 
 template: >

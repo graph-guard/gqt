@@ -1512,16 +1512,15 @@ func (p *Parser) validateExpr(
 				val = e.Value
 			}
 
-			switch {
-			case expect != nil && !p.expectationIsNum(expect):
+			if expect != nil && !p.expectationIsNum(expect) {
 				p.errCantApplyConstrRel(e, expect)
 				ok = false
 				break TYPESWITCH
-			case contains[*Null](val):
+			} else if _, found := find[*Null](val); found {
 				p.errExpectedNumGotNull(val.GetLocation())
 				ok = false
 				break TYPESWITCH
-			case !p.isNumeric(val):
+			} else if !p.isNumeric(val) {
 				p.errExpectedNum(val)
 				ok = false
 				break TYPESWITCH
@@ -1546,19 +1545,18 @@ func (p *Parser) validateExpr(
 				val = e.Value
 			}
 
-			switch {
-			case expect != nil &&
+			if expect != nil &&
 				!p.expectationIsString(expect) &&
-				!p.expectationIsArray(expect):
+				!p.expectationIsArray(expect) {
 				// Only strings and arrays have a length
 				p.errCantApplyConstrLen(e, expect)
 				ok = false
 				break TYPESWITCH
-			case contains[*Null](val):
+			} else if _, found := find[*Null](val); found {
 				p.errExpectedNumGotNull(val.GetLocation())
 				ok = false
 				break TYPESWITCH
-			case !p.isNumeric(val):
+			} else if !p.isNumeric(val) {
 				p.errExpectedNum(val)
 				ok = false
 				break TYPESWITCH
@@ -1597,16 +1595,15 @@ func (p *Parser) validateExpr(
 			push(right, nil)
 			push(left, nil)
 		case *ExprLogicalNegation:
-			switch {
-			case expect != nil && !p.expectationIsBool(expect):
+			if expect != nil && !p.expectationIsBool(expect) {
 				p.errUnexpType(expect, e)
 				ok = false
 				break TYPESWITCH
-			case contains[*Null](e.Expression):
+			} else if _, found := find[*Null](e.Expression); found {
 				p.errExpectedBoolGotNull(e.Expression.GetLocation())
 				ok = false
 				break TYPESWITCH
-			case !p.isBoolean(e.Expression):
+			} else if !p.isBoolean(e.Expression) {
 				p.errExpectedBool(e.Expression)
 				ok = false
 				break TYPESWITCH
@@ -1680,11 +1677,11 @@ func (p *Parser) validateExpr(
 				break TYPESWITCH
 			}
 
-			if contains[*Null](left) {
+			if _, found := find[*Null](left); found {
 				p.errExpectedNumGotNull(left.GetLocation())
 				ok = false
 			}
-			if contains[*Null](right) {
+			if _, found := find[*Null](right); found {
 				p.errExpectedNumGotNull(right.GetLocation())
 				ok = false
 			}
@@ -3637,16 +3634,25 @@ func (p *Parser) isArray(e Expression) bool {
 func (p *Parser) assumeComparableValues(
 	l Location, left, right Expression,
 ) (ok bool) {
+	// Check for ineffectual comparison
+	{
+		varLeft, isLVar := find[*Variable](left)
+		varRight, isRVar := find[*Variable](right)
+		if isLVar && isRVar && varLeft.Name == varRight.Name {
+			p.newErr(l, "ineffectual comparison")
+		}
+	}
+
 	ok = true
 	switch {
 	case p.isAny(left):
 		// Schemaless mode
 		return true
 	case p.isString(left):
-		if contains[*Null](right) {
+		if _, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left)
 			return false
-		} else if contains[*Object](right) {
+		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
 			return false
 		} else if !p.isString(right) {
@@ -3654,10 +3660,10 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isBoolean(left):
-		if contains[*Null](right) {
+		if _, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left)
 			return false
-		} else if contains[*Object](right) {
+		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
 			return false
 		} else if !p.isBoolean(right) {
@@ -3665,10 +3671,10 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isNumeric(left):
-		if contains[*Null](right) {
+		if _, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left)
 			return false
-		} else if contains[*Object](right) {
+		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
 			return false
 		} else if !p.isNumeric(right) {
@@ -3676,10 +3682,10 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isEnum(left):
-		if contains[*Null](right) {
+		if _, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left)
 			return false
-		} else if contains[*Object](right) {
+		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
 			return false
 		} else if !p.isEnum(right) {
@@ -3687,10 +3693,10 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isArray(left):
-		if contains[*Null](right) {
+		if _, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left)
 			return false
-		} else if contains[*Object](right) {
+		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
 			return false
 		} else if !p.isArray(right) {
@@ -3704,7 +3710,7 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isNull(left):
-		if contains[*Object](right) {
+		if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
 			return false
 		} else if !p.isNull(right) {
@@ -4444,40 +4450,41 @@ func typeDesignationRelational(e Expression) string {
 	return "number"
 }
 
-// contains returns true if e recursively contains an instance of T.
-func contains[T any](e Expression) bool {
+// find returns true if e recursively find an instance of T.
+func find[T any](e Expression) (T, bool) {
+	var zero T
 	switch e := e.(type) {
 	case T:
-		return true
+		return e, true
 	case *ConstrAny:
-		return false
+		return zero, false
 	case *ConstrEquals:
-		return contains[T](e.Value)
+		return find[T](e.Value)
 	case *ConstrNotEquals:
-		return contains[T](e.Value)
+		return find[T](e.Value)
 	case *ExprParentheses:
-		return contains[T](e.Expression)
+		return find[T](e.Expression)
 	case *ExprLogicalAnd:
 		for _, i := range e.Expressions {
-			if contains[T](i) {
-				return true
+			if t, ok := find[T](i); ok {
+				return t, true
 			}
 		}
 	case *ExprLogicalOr:
 		for _, i := range e.Expressions {
-			if contains[T](i) {
-				return true
+			if t, ok := find[T](i); ok {
+				return t, true
 			}
 		}
 	case *Variable:
 		switch p := e.Declaration.Parent.(type) {
 		case *Argument:
-			return contains[T](p.Constraint)
+			return find[T](p.Constraint)
 		case *ObjectField:
-			return contains[T](p.Constraint)
+			return find[T](p.Constraint)
 		}
 	}
-	return false
+	return zero, false
 }
 
 // areTypesCompatible returns true if a and b are compatible
