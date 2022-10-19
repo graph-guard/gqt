@@ -15,7 +15,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-//go:embed testexpr
+//go:embed tests
 var testsFS embed.FS
 
 func TestParse(t *testing.T) {
@@ -28,7 +28,7 @@ func TestParse(t *testing.T) {
 		ExpectErrorsSchemaless []string       `yaml:"expect-errors(schemaless)"`
 	}
 
-	d, err := fs.ReadDir(testsFS, "testexpr")
+	d, err := fs.ReadDir(testsFS, "tests")
 	require.NoError(t, err)
 
 	for _, do := range d {
@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 			})
 			continue
 		}
-		f, err := testsFS.ReadFile(filepath.Join("testexpr", fileName))
+		f, err := testsFS.ReadFile(filepath.Join("tests", fileName))
 		require.NoError(t, err, "reading YAML test file")
 		t.Run(fileName[:len(fileName)-len(".yml")], func(t *testing.T) {
 			var ts T
