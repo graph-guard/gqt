@@ -1198,11 +1198,13 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				e.TypeDef = t
 			}
 		case *Array:
+			var expItem *ast.Type
 			if exp != nil && exp.Elem != nil {
-				e.ItemTypeDef = p.schema.Types[exp.Elem.NamedType]
-				for _, i := range e.Items {
-					push(i, exp.Elem)
-				}
+				expItem = exp.Elem
+				e.ItemTypeDef = p.schema.Types[expItem.NamedType]
+			}
+			for _, i := range e.Items {
+				push(i, expItem)
 			}
 		case *Enum:
 			e.TypeDef = p.enumVal[e.Value]
