@@ -1,0 +1,30 @@
+schema: >
+  type Query { f(a:Int):Int }
+
+template: >
+  query { f(a: len 10) }
+
+expect-errors:
+  - "1:14: length constraint 'len' (length equal) only supports arrays and type String, it can't be applied to type Int"
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: lengthEquals
+            location: "13:1:14"
+            value:
+              expressionType: int
+              location: "17:1:18"
+              value: 10

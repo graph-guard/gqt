@@ -4087,16 +4087,17 @@ func (p *Parser) errCantApplyConstrRel(c Expression, expect *ast.Type) {
 	default:
 		panic(fmt.Errorf("unhandled constraint type: %T", c))
 	}
-	p.newErr(c.GetLocation(), "can't apply relational constraint "+
-		designation+" ("+description+") to type "+
-		expect.String())
+	p.newErr(c.GetLocation(), "relational constraint "+
+		designation+" ("+description+") "+
+		"only supports type Float and type Int, "+
+		"it can't be applied to type "+expect.String())
 }
 
 func (p *Parser) errCantApplyConstrLen(c Expression, expect *ast.Type) {
 	var designation, description string
 	switch c.(type) {
 	case *ConstrLenEquals:
-		designation, description = "'len '", "length equal"
+		designation, description = "'len'", "length equal"
 	case *ConstrLenNotEquals:
 		designation, description = "'len !='", "length not equal"
 	case *ConstrLenGreater:
@@ -4110,9 +4111,10 @@ func (p *Parser) errCantApplyConstrLen(c Expression, expect *ast.Type) {
 	default:
 		panic(fmt.Errorf("unhandled constraint type: %T", c))
 	}
-	p.newErr(c.GetLocation(), "can't apply length constraint "+
-		designation+" ("+description+") to type "+
-		expect.String())
+	p.newErr(c.GetLocation(), "length constraint "+
+		designation+" ("+description+") "+
+		"only supports arrays and type String, "+
+		"it can't be applied to type "+expect.String())
 }
 
 func (p *Parser) errMissingArg(
