@@ -1,0 +1,10 @@
+schema: >
+  type Query { f(a:Int):Int }
+
+template: 'query { f(a 1)'
+
+expect-errors:
+  - "1:13: unexpected token, expected colon"
+
+expect-errors(schemaless):
+  - "1:13: unexpected token, expected colon"
