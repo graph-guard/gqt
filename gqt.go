@@ -3664,6 +3664,7 @@ func (p *Parser) isArray(e Expression) bool {
 func (p *Parser) assumeComparableValues(
 	l Location, left, right Expression,
 ) (ok bool) {
+	ok = true
 	switch {
 	case p.isAny(left):
 		// Schemaless mode

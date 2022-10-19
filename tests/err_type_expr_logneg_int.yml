@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a:Boolean):Int }
+
+template: >
+  query { f(a: !0) }
+
+expect-errors:
+  - '1:15: expected type Boolean but received Int'
+  
+expect-errors(schemaless):
+  - '1:15: expected type Boolean but received Int'

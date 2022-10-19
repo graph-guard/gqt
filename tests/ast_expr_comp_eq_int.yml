@@ -1,0 +1,65 @@
+schema: >
+  type Query { f(a:Boolean):Int }
+
+template: >
+  query { f(a: 10 == 15) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Int
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Boolean
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: equals
+              location: "13:1:14"
+              left:
+                expressionType: int
+                location: "13:1:14"
+                value: 10
+              right:
+                expressionType: int
+                location: "19:1:20"
+                value: 15
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: equals
+              location: "13:1:14"
+              left:
+                expressionType: int
+                location: "13:1:14"
+                value: 10
+              right:
+                expressionType: int
+                location: "19:1:20"
+                value: 15
