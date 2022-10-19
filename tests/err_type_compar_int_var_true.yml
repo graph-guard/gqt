@@ -1,0 +1,24 @@
+schema: >
+  type Query {
+    comparisonEq  (a:Boolean):Int
+    comparisonNeq (a:Boolean):Int
+    varEq         (a:Boolean):Int
+    varNeq        (a:Boolean):Int
+  }
+  enum Color { red green blue }
+
+template: >
+  query {
+    comparisonEq(a: 42 == $veq)
+    comparisonNeq(a: 42 != $vneq)
+    varEq(a=$veq: true)
+    varNeq(a=$vneq: != true)
+  }
+
+expect-errors:
+  - '2:19: mismatching types Int and Boolean'
+  - '3:20: mismatching types Int and Boolean'
+
+expect-errors(schemaless):
+  - '2:19: mismatching types Int and Boolean'
+  - '3:20: mismatching types Int and Boolean'

@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a:In):Int }
+  input In { a:Int b:Int }
+
+template: 'query { f(a: {a:1 b:2})'
+
+expect-errors:
+  - "1:19: unexpected token, expected comma or end of object"
+
+expect-errors(schemaless):
+  - "1:19: unexpected token, expected comma or end of object"

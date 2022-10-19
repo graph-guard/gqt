@@ -1,0 +1,35 @@
+schema: >
+  type Query {i: Interface!}
+  interface Interface {name: String!}
+  type Foo {name: String!}
+  type Bar {name: String!}
+
+template: >
+  query { i { ... on Baz { name } } }
+
+expect-errors:
+  - '1:20: type Baz is undefined in schema'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Baz
+          location: "12:1:13"
+          selectionSet:
+            location: "23:1:24"
+            selections:
+            - selectionType: field
+              name: name
+              location: "25:1:26"

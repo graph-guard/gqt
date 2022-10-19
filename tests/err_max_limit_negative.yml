@@ -1,0 +1,16 @@
+schema: >
+  type Query { foo:Int bar:Int }
+
+template: >
+  query {
+    max -1 {
+      foo
+      bar
+    }
+  }
+
+expect-errors:
+  - '2:7: unexpected token, expected selection'
+
+expect-errors(schemaless):
+  - '2:7: unexpected token, expected selection'

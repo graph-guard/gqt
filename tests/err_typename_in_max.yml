@@ -1,0 +1,17 @@
+schema: >
+  type Query { a:Int b:Int }
+
+template: >
+  query {
+    max 2 {
+      a
+      b
+      __typename
+    }
+  }
+
+expect-errors:
+  - '5:5: avoid __typename in max sets'
+
+expect-errors(schemaless):
+  - '5:5: avoid __typename in max sets'

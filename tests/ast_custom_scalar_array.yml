@@ -1,0 +1,104 @@
+schema: >
+  scalar Custom
+  type Query { f(a: Custom):Custom }
+
+template: >
+  query { f(a: [true,"two",{x:42}]) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Custom
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Custom
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: array
+              location: "13:1:14"
+              items:
+              - constraintType: equals
+                location: "14:1:15"
+                value:
+                  expressionType: "true"
+                  location: "14:1:15"
+              - constraintType: equals
+                location: "19:1:20"
+                value:
+                  expressionType: string
+                  location: "19:1:20"
+                  value: two
+              - constraintType: equals
+                location: "25:1:26"
+                value:
+                  expressionType: object
+                  location: "25:1:26"
+                  fields:
+                  - name: x
+                    location: "26:1:27"
+                    constraint:
+                      constraintType: equals
+                      location: "28:1:29"
+                      value:
+                        expressionType: int
+                        location: "28:1:29"
+                        value: 42
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: array
+              location: "13:1:14"
+              items:
+              - constraintType: equals
+                location: "14:1:15"
+                value:
+                  expressionType: "true"
+                  location: "14:1:15"
+              - constraintType: equals
+                location: "19:1:20"
+                value:
+                  expressionType: string
+                  location: "19:1:20"
+                  value: two
+              - constraintType: equals
+                location: "25:1:26"
+                value:
+                  expressionType: object
+                  location: "25:1:26"
+                  fields:
+                  - name: x
+                    location: "26:1:27"
+                    constraint:
+                      constraintType: equals
+                      location: "28:1:29"
+                      value:
+                        expressionType: int
+                        location: "28:1:29"
+                        value: 42

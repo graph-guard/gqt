@@ -1,0 +1,15 @@
+# Makes sure printing the type designation of an unexpected object
+# doesn't cause an endless loop if the object contains a constraint
+# that refers to the object itself.
+
+schema: >
+  type Query { f(a:Int):Int }
+
+template: >
+  query { f(a: { f=$var: $var }) }
+
+expect-errors:
+  - '1:24: illegal self-reference of object field "f" through variable "var" in constraint'
+
+expect-errors(schemaless):
+  - '1:24: illegal self-reference of object field "f" through variable "var" in constraint'

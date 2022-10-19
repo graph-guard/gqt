@@ -1,0 +1,16 @@
+schema: >
+  type Query { foo:Int bar:Int }
+
+template: >
+  query {
+    max 0 {
+      foo
+      bar
+    }
+  }
+
+expect-errors:
+  - '2:7: limit of options must be an unsigned integer greater 0'
+
+expect-errors(schemaless):
+  - '2:7: limit of options must be an unsigned integer greater 0'

@@ -1,0 +1,81 @@
+schema: >
+  type Query { f(a: Int!): Int! }
+
+template: >
+  query { f(a: > 1 && < 10 && != 5) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Int!
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Int!
+          constraint:
+            expressionType: logicalAND
+            location: "13:1:14"
+            expressions:
+            - constraintType: greaterThan
+              location: "13:1:14"
+              value:
+                expressionType: int
+                location: "15:1:16"
+                value: 1
+            - constraintType: lessThan
+              location: "20:1:21"
+              value:
+                expressionType: int
+                location: "22:1:23"
+                value: 10
+            - constraintType: notEquals
+              location: "28:1:29"
+              value:
+                expressionType: int
+                location: "31:1:32"
+                value: 5
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            expressionType: logicalAND
+            location: "13:1:14"
+            expressions:
+            - constraintType: greaterThan
+              location: "13:1:14"
+              value:
+                expressionType: int
+                location: "15:1:16"
+                value: 1
+            - constraintType: lessThan
+              location: "20:1:21"
+              value:
+                expressionType: int
+                location: "22:1:23"
+                value: 10
+            - constraintType: notEquals
+              location: "28:1:29"
+              value:
+                expressionType: int
+                location: "31:1:32"
+                value: 5

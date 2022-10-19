@@ -1,0 +1,19 @@
+schema: >
+  type Query {foo: Foo!}
+  type Foo {bar: String!}
+
+template: >
+  query { foo }
+
+expect-errors:
+  - '1:9: missing selection set for field "foo" of type Foo!'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"

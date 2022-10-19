@@ -1,0 +1,60 @@
+schema: >
+  type Subscription {name: String!}
+
+template: >
+  subscription { ... on Subscription { ... on Subscription { name } } }
+
+expect-ast:
+  operationType: Subscription
+  location: "0:1:1"
+  selectionSet:
+    location: "13:1:14"
+    selections:
+    - selectionType: inlineFragment
+      typeCondition:
+        location: "22:1:23"
+        typeName: Subscription
+        type: Subscription
+      location: "15:1:16"
+      selectionSet:
+        location: "35:1:36"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "44:1:45"
+            typeName: Subscription
+            type: Subscription
+          location: "37:1:38"
+          selectionSet:
+            location: "57:1:58"
+            selections:
+            - selectionType: field
+              name: name
+              location: 59:1:60
+              type: String!
+
+expect-ast(schemaless):
+  operationType: Subscription
+  location: "0:1:1"
+  selectionSet:
+    location: "13:1:14"
+    selections:
+    - selectionType: inlineFragment
+      typeCondition:
+        location: "22:1:23"
+        typeName: Subscription
+      location: "15:1:16"
+      selectionSet:
+        location: "35:1:36"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "44:1:45"
+            typeName: Subscription
+          location: "37:1:38"
+          selectionSet:
+            location: "57:1:58"
+            selections:
+            - selectionType: field
+              name: name
+              location: 59:1:60

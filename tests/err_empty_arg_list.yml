@@ -1,0 +1,19 @@
+schema: >
+  type Query {
+    f1(a:Int):Int
+    f2(a:Int):Int
+  }
+
+template: >
+  query {
+    f1()
+    f2( )
+  }
+
+expect-errors:
+  - '2:5: empty argument list'
+  - '3:5: empty argument list'
+
+expect-errors(schemaless):
+  - '2:5: empty argument list'
+  - '3:5: empty argument list'

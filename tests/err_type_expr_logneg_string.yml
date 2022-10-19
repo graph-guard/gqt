@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a:Boolean):Int }
+
+template: >
+  query { f(a: !"ok") }
+
+expect-errors:
+  - '1:15: expected type Boolean but received String'
+  
+expect-errors(schemaless):
+  - '1:15: expected type Boolean but received String'

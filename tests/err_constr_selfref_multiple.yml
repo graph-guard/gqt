@@ -1,0 +1,29 @@
+schema: >
+    type Query {
+        f(a: A): Int!
+    }
+    input A { b: B! }
+    input B { a: Int! b: Int! c: Int! }
+
+template: >
+  query {
+    f(
+      a=$var_a:{
+        b=$var_b:{
+          b:$var_b,
+          a:$var_a,
+          c=$var_c:$var_c
+        }
+      }
+    )
+  }
+
+expect-errors:
+  - '5:11: illegal self-reference of object field "b" through variable "var_b" in constraint'
+  - '6:11: illegal self-reference of argument "a" through variable "var_a" in constraint'
+  - '7:18: illegal self-reference of object field "c" through variable "var_c" in constraint'
+
+expect-errors(schemaless):
+  - '5:11: illegal self-reference of object field "b" through variable "var_b" in constraint'
+  - '6:11: illegal self-reference of argument "a" through variable "var_a" in constraint'
+  - '7:18: illegal self-reference of object field "c" through variable "var_c" in constraint'

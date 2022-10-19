@@ -1,0 +1,13 @@
+schema: >
+  type Query { f(a: Boolean):Int }
+
+template: >
+  query { f(a: [<1] == [>1]) }
+
+expect-errors:
+  - '1:15: unexpected constraint in value definition'
+  - '1:23: unexpected constraint in value definition'
+
+expect-errors(schemaless):
+  - '1:15: unexpected constraint in value definition'
+  - '1:23: unexpected constraint in value definition'

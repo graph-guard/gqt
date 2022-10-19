@@ -1,0 +1,155 @@
+schema: >
+  type Subscription {
+    event(name: String!): Event
+    notification: String!
+  }
+  type Event {
+    name: String!
+  }
+
+template: |
+  ##### Start of document
+  subscription # Subscription operation
+  # After subscription operation
+  { # Subscription selection set start
+  # After subscription selection set start
+    max # Max keyword
+    # After max keyword
+    1 # Max limit
+    # After max limit
+    { # Max selection set start
+    # After max selection set start
+      notification # Max option
+      # After max option
+      event # Max option
+      # After max option
+      ( # Argument list
+        name # Argument name
+        # After argument name
+        : # Colon
+        # After colon
+        len # Length constraint
+        # After length constraint
+        < # Length constraint lessThan
+        # After length constraint lessThan
+        64 # Length constraint limit
+        # After length constraint limit
+      ) # End of argument list
+      # After end of argument list
+      { # Selection set start
+      # After selection set start
+        name # Field selection
+        ... # Inline fragment spread
+        # After inline fragment spread
+        on # Inline fragment "on" keyword
+        # After "on" keyword
+        Event # Type condition
+        # After type condition
+        { __typename }
+      } # End of selection set
+      # After end of selection set
+    } # End of selection set
+    # After end of selection set
+  } # End of selection set
+  # End of document
+
+expect-ast:
+  operationType: Subscription
+  location: "24:2:1"
+  selectionSet:
+    location: "93:4:1"
+    selections:
+    - selectionType: max
+      location: "173:6:3"
+      limit: 1
+      options:
+        location: "251:10:3"
+        selections:
+        - selectionType: field
+          name: notification
+          location: "317:12:5"
+          type: String!
+        - selectionType: field
+          name: event
+          location: "370:14:5"
+          type: Event
+          argumentList:
+            location: "416:16:5"
+            arguments:
+            - name: name
+              location: "440:17:7"
+              type: String!
+              constraint:
+                constraintType: lengthLessThan
+                location: "531:21:7"
+                value:
+                  expressionType: int
+                  location: "671:25:7"
+                  value: 64
+          selectionSet:
+            location: "804:29:5"
+            selections:
+            - selectionType: field
+              name: name
+              location: "866:31:7"
+              type: String!
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "1034:36:7"
+                typeName: Event
+                type: Event
+              location: "895:32:7"
+              selectionSet:
+                location: "1092:38:7"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "1094:38:9"
+
+expect-ast(schemaless):
+  operationType: Subscription
+  location: "24:2:1"
+  selectionSet:
+    location: "93:4:1"
+    selections:
+    - selectionType: max
+      location: "173:6:3"
+      limit: 1
+      options:
+        location: "251:10:3"
+        selections:
+        - selectionType: field
+          name: notification
+          location: "317:12:5"
+        - selectionType: field
+          name: event
+          location: "370:14:5"
+          argumentList:
+            location: "416:16:5"
+            arguments:
+            - name: name
+              location: "440:17:7"
+              constraint:
+                constraintType: lengthLessThan
+                location: "531:21:7"
+                value:
+                  expressionType: int
+                  location: "671:25:7"
+                  value: 64
+          selectionSet:
+            location: "804:29:5"
+            selections:
+            - selectionType: field
+              name: name
+              location: "866:31:7"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "1034:36:7"
+                typeName: Event
+              location: "895:32:7"
+              selectionSet:
+                location: "1092:38:7"
+                selections:
+                - selectionType: field
+                  name: __typename
+                  location: "1094:38:9"

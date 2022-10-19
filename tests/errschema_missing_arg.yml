@@ -1,0 +1,26 @@
+schema: >
+  type Query {foo(a: Int! b: Int): Int!}
+
+template: >
+  query { foo(b: *) }
+
+expect-errors:
+  - '1:12: argument "a" of type Int! is required but missing'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      argumentList:
+        location: "11:1:12"
+        arguments:
+        - name: b
+          location: "12:1:13"
+          constraint:
+            constraintType: any
+            location: "15:1:16"

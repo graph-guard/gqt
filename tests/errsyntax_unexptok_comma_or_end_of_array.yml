@@ -1,0 +1,10 @@
+schema: >
+  type Query { f(a:[Int]):Int }
+
+template: 'query { f(a: [1 2])'
+
+expect-errors:
+  - "1:17: unexpected token, expected comma or end of array"
+
+expect-errors(schemaless):
+  - "1:17: unexpected token, expected comma or end of array"

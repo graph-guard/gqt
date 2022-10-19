@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a:Boolean):Int v(x:Int):Int }
+
+template: >
+  query { f(a: $x == $x) v(x=$x:*) }
+
+expect-errors:
+  - "1:14: ineffectual comparison"
+
+expect-errors(schemaless):
+  - "1:14: ineffectual comparison"

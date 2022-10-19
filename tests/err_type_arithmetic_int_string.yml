@@ -1,0 +1,51 @@
+schema: >
+  type Query {
+    f_add_r(a: Int):Int
+    f_add_l(a: Int):Int
+    f_sub_r(a: Int):Int
+    f_sub_l(a: Int):Int
+    f_mul_r(a: Int):Int
+    f_mul_l(a: Int):Int
+    f_div_r(a: Int):Int
+    f_div_l(a: Int):Int
+    f_mod_r(a: Int):Int
+    f_mod_l(a: Int):Int
+  }
+
+template: >
+  query {
+    f_add_r(a: 1 + "text")
+    f_add_l(a: "text" + 1)
+    f_sub_r(a: 1 - "text")
+    f_sub_l(a: "text" - 1)
+    f_mul_r(a: 1 * "text")
+    f_mul_l(a: "text" * 1)
+    f_div_r(a: 1 / "text")
+    f_div_l(a: "text" / 1)
+    f_mod_r(a: 1 % "text")
+    f_mod_l(a: "text" % 1)
+  }
+
+expect-errors:
+  - '2:18: expected number but received String'
+  - '3:14: expected number but received String'
+  - '4:18: expected number but received String'
+  - '5:14: expected number but received String'
+  - '6:18: expected number but received String'
+  - '7:14: expected number but received String'
+  - '8:18: expected number but received String'
+  - '9:14: expected number but received String'
+  - '10:18: expected number but received String'
+  - '11:14: expected number but received String'
+
+expect-errors(schemaless):
+  - '2:18: expected number but received String'
+  - '3:14: expected number but received String'
+  - '4:18: expected number but received String'
+  - '5:14: expected number but received String'
+  - '6:18: expected number but received String'
+  - '7:14: expected number but received String'
+  - '8:18: expected number but received String'
+  - '9:14: expected number but received String'
+  - '10:18: expected number but received String'
+  - '11:14: expected number but received String'

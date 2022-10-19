@@ -1,0 +1,153 @@
+schema: >
+  type Query { f(a: Float!): Float! }
+
+template: >
+  query { f(a: > ( 1 + 4 - 2 % 5 ) * 2 / 10.4) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Float!
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        # Argument "a"
+        - name: a
+          location: "10:1:11"
+          type: Float!
+          constraint:
+            # > ...
+            constraintType: greaterThan
+            location: "13:1:14"
+            value:
+              # ... / 10.4
+              expressionType: division
+              location: "15:1:16"
+              dividend:
+                # ... * 2
+                expressionType: multiplication
+                location: "15:1:16"
+                multiplicant:
+                  # ( ... )
+                  expressionType: parentheses
+                  location: "15:1:16"
+                  expression:
+                    # ... - ...
+                    expressionType: subtraction
+                    location: "17:1:18"
+                    minuend:
+                      # 1 + 4
+                      expressionType: addition
+                      location: "17:1:18"
+                      addendLeft:
+                        expressionType: int
+                        location: "17:1:18"
+                        value: 1
+                      addendRight:
+                        expressionType: int
+                        location: "21:1:22"
+                        value: 4
+                      float: false
+                    subtrahend:
+                      # 2 % 5
+                      expressionType: modulo
+                      location: "25:1:26"
+                      dividend:
+                        expressionType: int
+                        location: "25:1:26"
+                        value: 2
+                      divisor:
+                        expressionType: int
+                        location: "29:1:30"
+                        value: 5
+                      float: false
+                    float: false
+                multiplicator:
+                  expressionType: int
+                  location: "35:1:36"
+                  value: 2
+                float: false
+              divisor:
+                expressionType: float
+                location: "39:1:40"
+                value: 10.4
+              float: true
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        # Argument "a"
+        - name: a
+          location: "10:1:11"
+          constraint:
+            # > ...
+            constraintType: greaterThan
+            location: "13:1:14"
+            value:
+              # ... / 10.4
+              expressionType: division
+              location: "15:1:16"
+              dividend:
+                # ... * 2
+                expressionType: multiplication
+                location: "15:1:16"
+                multiplicant:
+                  # ( ... )
+                  expressionType: parentheses
+                  location: "15:1:16"
+                  expression:
+                    # ... - ...
+                    expressionType: subtraction
+                    location: "17:1:18"
+                    minuend:
+                      # 1 + 4
+                      expressionType: addition
+                      location: "17:1:18"
+                      addendLeft:
+                        expressionType: int
+                        location: "17:1:18"
+                        value: 1
+                      addendRight:
+                        expressionType: int
+                        location: "21:1:22"
+                        value: 4
+                      float: false
+                    subtrahend:
+                      # 2 % 5
+                      expressionType: modulo
+                      location: "25:1:26"
+                      dividend:
+                        expressionType: int
+                        location: "25:1:26"
+                        value: 2
+                      divisor:
+                        expressionType: int
+                        location: "29:1:30"
+                        value: 5
+                      float: false
+                    float: false
+                multiplicator:
+                  expressionType: int
+                  location: "35:1:36"
+                  value: 2
+                float: false
+              divisor:
+                expressionType: float
+                location: "39:1:40"
+                value: 10.4
+              float: true

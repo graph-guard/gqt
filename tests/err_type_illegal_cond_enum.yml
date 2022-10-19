@@ -1,0 +1,12 @@
+schema: >
+  type Query {name: String!}
+  enum Enum { foo bar }
+
+template: >
+  query { ... on Enum { name } }
+
+expect-errors:
+  - "1:16: fragment can't condition on enum type Enum"
+
+expect-errors(schemaless):
+  - "1:16: type Query can never be of type Enum"

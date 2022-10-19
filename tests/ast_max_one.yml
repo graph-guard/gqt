@@ -1,0 +1,62 @@
+schema: >
+  type Query {
+    max: Float
+    foo: Int
+    bar: String
+    bazz: Boolean
+  }
+
+template: >
+  query {
+    max max 1 {
+      foo
+      bar
+    }
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: max
+      location: "10:2:3"
+      type: Float
+    - selectionType: max
+      location: "14:2:7"
+      limit: 1
+      options:
+        location: "20:2:13"
+        selections:
+        - selectionType: field
+          name: foo
+          location: "26:3:5"
+          type: Int
+        - selectionType: field
+          name: bar
+          location: "34:4:5"
+          type: String
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: max
+      location: "10:2:3"
+    - selectionType: max
+      location: "14:2:7"
+      limit: 1
+      options:
+        location: "20:2:13"
+        selections:
+        - selectionType: field
+          name: foo
+          location: "26:3:5"
+        - selectionType: field
+          name: bar
+          location: "34:4:5"

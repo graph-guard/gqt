@@ -1,0 +1,19 @@
+schema: >
+  type Mutation     { m:Int }
+  type Subscription { m:Int }
+
+template: >
+  query { m }
+
+expect-errors:
+  - '1:1: type Query is undefined'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: m
+      location: "8:1:9"

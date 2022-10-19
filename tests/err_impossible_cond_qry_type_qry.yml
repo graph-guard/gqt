@@ -1,0 +1,18 @@
+schema: >
+  type Query    { f:Foo }
+  type Foo      { bar:String }
+
+template: >
+  query {
+    ... on Query {
+      ... on Foo {
+        ... on Query { __typename }
+      }
+    }
+  }
+
+expect-errors:
+  - '3:12: type Query can never be of type Foo'
+
+expect-errors(schemaless):
+  - '3:12: type Query can never be of type Foo'

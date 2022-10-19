@@ -1,0 +1,12 @@
+schema: >
+  type Query { f(a: Input!): Int! }
+  input Input { f: Int! }
+
+template: >
+  query { f(a:{f=$fvar:$fvar}) }
+
+expect-errors:
+  - '1:22: illegal self-reference of object field "f" through variable "fvar" in constraint'
+
+expect-errors(schemaless):
+  - '1:22: illegal self-reference of object field "f" through variable "fvar" in constraint'

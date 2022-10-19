@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int, b: Int): Int }
+
+template: >
+  query { f(a:*, b:*, a:*) }
+
+expect-errors:
+  - '1:21: redeclared argument'
+
+expect-errors(schemaless):
+  - '1:21: redeclared argument'

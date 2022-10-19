@@ -1,0 +1,17 @@
+schema: >
+  type Query { foo:Int bar:Int }
+
+template: >
+  query {
+    bar
+    max 1 {
+      foo
+      bar
+    }
+  }
+
+expect-errors:
+  - '5:5: redeclared field "bar"'
+
+expect-errors(schemaless):
+  - '5:5: redeclared field "bar"'

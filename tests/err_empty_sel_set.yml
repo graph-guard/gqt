@@ -1,0 +1,27 @@
+schema: >
+  type Query {
+    a:A!
+    b:B!
+  }
+  type A {
+    a_a: Int
+    a_b: Int
+  }
+  type B {
+    b_a: Int
+    b_b: Int
+  }
+
+template: >
+  query {
+    a {}
+    b {}
+  }
+
+expect-errors:
+  - '2:5: empty selection set'
+  - '3:5: empty selection set'
+
+expect-errors(schemaless):
+  - '2:5: empty selection set'
+  - '3:5: empty selection set'

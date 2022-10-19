@@ -1,0 +1,36 @@
+schema: >
+  type Query {u: FooOrBar!}
+  union FooOrBar = Foo | Bar
+  type Foo {name: String!}
+  type Bar {name: String!}
+  type Baz {name: String!}
+
+template: >
+  query { u { ... on Baz { name } } }
+
+expect-errors:
+  - '1:20: type FooOrBar can never be of type Baz'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Baz
+          location: "12:1:13"
+          selectionSet:
+            location: "23:1:24"
+            selections:
+            - selectionType: field
+              name: name
+              location: "25:1:26"

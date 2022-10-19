@@ -3,66 +3,151 @@ package gqt_test
 import (
 	"bytes"
 	"embed"
+	"fmt"
+	"io/fs"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/graph-guard/gqt"
-	"github.com/graph-guard/gqt/internal/test"
-
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"
 )
 
-//go:embed test/error
-var errorFS embed.FS
-
-//go:embed test/ast
-var astFS embed.FS
-
-func TestParseErr(t *testing.T) {
-	test.ExecDirMD(
-		t, errorFS, "test/error", "ERR: ",
-		func(t *testing.T, input, expectation string) {
-			d, vars, err := gqt.Parse([]byte(input))
-			require.Equal(
-				t, expectation, err.Error(),
-				"input: %q", input,
-			)
-			require.Zero(t, d)
-			require.Nil(t, vars)
-		},
-	)
-}
+//go:embed tests
+var testsFS embed.FS
 
 func TestParse(t *testing.T) {
-	test.ExecDirMD(
-		t, astFS, "test/ast", "ERR: ",
-		func(t *testing.T, input, expectation string) {
-			var discard map[string]any
-			require.NoError(
-				t, yaml.Unmarshal([]byte(expectation), &discard),
-				"invalid expectation YAML",
-			)
+	type T struct {
+		Schema                 string         `yaml:"schema"`
+		Template               string         `yaml:"template"`
+		ExpectAST              map[string]any `yaml:"expect-ast"`
+		ExpectASTSchemaless    map[string]any `yaml:"expect-ast(schemaless)"`
+		ExpectErrors           []string       `yaml:"expect-errors"`
+		ExpectErrorsSchemaless []string       `yaml:"expect-errors(schemaless)"`
+	}
 
-			o, vars, err := gqt.Parse([]byte(input))
-			require.False(t, err.IsErr(), "unexpected error: %v", err)
-			require.NotNil(t, vars)
+	d, err := fs.ReadDir(testsFS, "tests")
+	require.NoError(t, err)
 
+	for _, do := range d {
+		fileName := do.Name()
+		if do.IsDir() {
+			t.Run(fileName, func(t *testing.T) {
+				t.Skipf("ignoring directory %q", fileName)
+			})
+			continue
+		}
+		if !strings.HasSuffix(fileName, ".yml") {
+			t.Run(fileName, func(t *testing.T) {
+				t.Skipf("ignoring file %q", fileName)
+			})
+			continue
+		}
+		f, err := testsFS.ReadFile(filepath.Join("tests", fileName))
+		require.NoError(t, err, "reading YAML test file")
+		t.Run(fileName[:len(fileName)-len(".yml")], func(t *testing.T) {
+			var ts T
 			{
-				var b bytes.Buffer
-				_, err := gqt.WriteYAML(&b, o)
-				require.NoError(t, err)
-				require.Equal(t, expectation, b.String())
+				d := yaml.NewDecoder(bytes.NewReader(f))
+				d.KnownFields(true)
+				if err := d.Decode(&ts); err != nil {
+					t.Fatal("parsing YAML test definition", err)
+				}
 			}
-		},
-	)
+			if ts.ExpectAST != nil && ts.ExpectErrors != nil {
+				t.Fatal("expecting both AST and errors in schema-aware mode")
+			} else if ts.ExpectASTSchemaless != nil &&
+				ts.ExpectErrorsSchemaless != nil {
+				t.Fatal("expecting both AST and errors in schema-less mode")
+			}
+			t.Run("schema", func(t *testing.T) {
+				p, err := gqt.NewParser([]gqt.Source{
+					{Name: "schema.graphqls", Content: ts.Schema},
+				})
+				require.NoError(t, err, "unexpected error while parsing schema")
+				opr, vars, errs := p.Parse([]byte(ts.Template))
+				compareErrors(t, ts.ExpectErrors, errs)
+				if len(ts.ExpectErrors) > 0 {
+					// Expect failure
+					require.Zero(t, vars)
+					require.Zero(t, opr)
+				} else {
+					// Expect success
+					var j bytes.Buffer
+					d := yaml.NewEncoder(&j)
+					d.SetIndent(2)
+					err := d.Encode(opr)
+					require.NoError(t, err)
+					var decoded map[string]any
+					require.NoError(t, yaml.Unmarshal(j.Bytes(), &decoded))
+					if !assert.ObjectsAreEqual(ts.ExpectAST, decoded) {
+						fmt.Println("actual:")
+						fmt.Println(j.String())
+					}
+					require.Equal(t, ts.ExpectAST, decoded)
+				}
+			})
+			t.Run("schemaless", func(t *testing.T) {
+				opr, vars, errs := gqt.Parse([]byte(ts.Template))
+				compareErrors(t, ts.ExpectErrorsSchemaless, errs)
+				if len(ts.ExpectErrorsSchemaless) > 0 {
+					// Expect failure
+					require.Zero(t, vars)
+					require.Zero(t, opr)
+				} else {
+					// Expect success
+					var j bytes.Buffer
+					d := yaml.NewEncoder(&j)
+					d.SetIndent(2)
+					err := d.Encode(opr)
+					require.NoError(t, err)
+					var decoded map[string]any
+					require.NoError(t, yaml.Unmarshal(j.Bytes(), &decoded))
+					if !assert.ObjectsAreEqual(ts.ExpectASTSchemaless, decoded) {
+						fmt.Println("actual(schemaless):")
+						fmt.Println(j.String())
+					}
+					require.Equal(t, ts.ExpectASTSchemaless, decoded)
+				}
+			})
+		})
+	}
+}
+
+func compareErrors(t *testing.T, expected []string, actual []gqt.Error) {
+	if len(expected) < 1 {
+		for _, act := range actual {
+			t.Errorf("unexpected error: %v", act)
+		}
+		return
+	}
+	for i, e := range expected {
+		if i >= len(actual) {
+			t.Errorf("missing error: %v", e)
+			continue
+		}
+		assert.Equal(t, e, actual[i].Error(), "at index %d", i)
+	}
+	if d := len(actual) - len(expected); d > 0 {
+		for _, act := range actual[d:] {
+			t.Errorf("unexpected error: %v", act)
+		}
+	}
 }
 
 func TestParseEmpty(t *testing.T) {
-	input := `query{x}`
-	opr, vars, err := gqt.Parse([]byte(input))
-	require.False(t, err.IsErr(), "unexpected error: %v", err)
-	require.NotNil(t, opr)
-	require.Len(t, vars, 0)
+	opr, vars, errs := gqt.Parse([]byte(""))
+	require.Equal(t, []gqt.Error{
+		{
+			Location: gqt.Location{Index: 0, Line: 1, Column: 1},
+			Msg: "unexpected end of file, expected " +
+				"query, mutation, or subscription operation definition",
+		},
+	}, errs)
+	require.Nil(t, opr)
+	require.Zero(t, vars)
 }
 
 func TestParseVariables(t *testing.T) {
@@ -71,8 +156,8 @@ func TestParseVariables(t *testing.T) {
 			f2(b=$b:*, x=$unused: $c+$b, d: {o1=$x:*})
 		}
 	}`
-	opr, vars, err := gqt.Parse([]byte(input))
-	require.False(t, err.IsErr(), "unexpected error: %v", err)
+	opr, vars, errs := gqt.Parse([]byte(input))
+	require.Len(t, errs, 0, "unexpected errors: %v", errs)
 	require.NotNil(t, opr)
 
 	require.Len(t, vars, 4)

@@ -1,0 +1,24 @@
+schema: >
+  type Query {
+    comparisonEq  (a:Boolean):Int
+    comparisonNeq (a:Boolean):Int
+    varEq         (a:In):Int
+    varNeq        (a:In):Int
+  }
+  input In { f:Int }
+
+template: >
+  query {
+    comparisonEq(a: 42 == $veq)
+    comparisonNeq(a: 42 != $vneq)
+    varEq(a=$veq: {f:42})
+    varNeq(a=$vneq: != {f:42})
+  }
+
+expect-errors:
+  - '2:25: uncomparable value of type In'
+  - '3:26: uncomparable value of type In'
+
+expect-errors(schemaless):
+  - '2:25: uncomparable value of type {f:Int}'
+  - '3:26: uncomparable value of type {f:Int}'

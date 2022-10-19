@@ -1,0 +1,60 @@
+schema: >
+  type Mutation {name: String!}
+
+template: >
+  mutation { ... on Mutation { ... on Mutation { name } } }
+
+expect-ast:
+  operationType: Mutation
+  location: "0:1:1"
+  selectionSet:
+    location: "9:1:10"
+    selections:
+    - selectionType: inlineFragment
+      typeCondition:
+        location: "18:1:19"
+        typeName: Mutation
+        type: Mutation
+      location: "11:1:12"
+      selectionSet:
+        location: "27:1:28"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "36:1:37"
+            typeName: Mutation
+            type: Mutation
+          location: "29:1:30"
+          selectionSet:
+            location: "45:1:46"
+            selections:
+            - selectionType: field
+              name: name
+              location: "47:1:48"
+              type: String!
+
+expect-ast(schemaless):
+  operationType: Mutation
+  location: "0:1:1"
+  selectionSet:
+    location: "9:1:10"
+    selections:
+    - selectionType: inlineFragment
+      typeCondition:
+        location: "18:1:19"
+        typeName: Mutation
+      location: "11:1:12"
+      selectionSet:
+        location: "27:1:28"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "36:1:37"
+            typeName: Mutation
+          location: "29:1:30"
+          selectionSet:
+            location: "45:1:46"
+            selections:
+            - selectionType: field
+              name: name
+              location: "47:1:48"

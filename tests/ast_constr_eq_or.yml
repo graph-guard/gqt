@@ -1,0 +1,81 @@
+schema: >
+  type Query { f(a: Int!): Int! }
+
+template: >
+  query { f(a: 1 || 2 || 3) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Int!
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Int!
+          constraint:
+            expressionType: logicalOR
+            location: "13:1:14"
+            expressions:
+            - constraintType: equals
+              location: "13:1:14"
+              value:
+                expressionType: int
+                location: "13:1:14"
+                value: 1
+            - constraintType: equals
+              location: "18:1:19"
+              value:
+                expressionType: int
+                location: "18:1:19"
+                value: 2
+            - constraintType: equals
+              location: "23:1:24"
+              value:
+                expressionType: int
+                location: "23:1:24"
+                value: 3
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            expressionType: logicalOR
+            location: "13:1:14"
+            expressions:
+            - constraintType: equals
+              location: "13:1:14"
+              value:
+                expressionType: int
+                location: "13:1:14"
+                value: 1
+            - constraintType: equals
+              location: "18:1:19"
+              value:
+                expressionType: int
+                location: "18:1:19"
+                value: 2
+            - constraintType: equals
+              location: "23:1:24"
+              value:
+                expressionType: int
+                location: "23:1:24"
+                value: 3

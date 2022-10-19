@@ -1,0 +1,12 @@
+schema: >
+  type Query {name: String!}
+  type Foo {name: String!}
+
+template: >
+  query { ... on Foo { name } }
+
+expect-errors:
+  - '1:16: type Query can never be of type Foo'
+
+expect-errors(schemaless):
+  - '1:16: type Query can never be of type Foo'

@@ -1,0 +1,108 @@
+schema: >
+  type Query {i: Iface}
+  union FooOrBar = Foo | Bar
+  type Foo implements Iface {x:Int}
+  type Bar implements Iface {x:Int}
+  interface Iface {x:Int}
+
+template: >
+  query {
+    i {
+      ... on FooOrBar {
+        ... on Bar { x }
+        ... on Foo { x }
+      }
+    }
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "10:2:3"
+      type: Iface
+      selectionSet:
+        location: "12:2:5"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "25:3:12"
+            typeName: FooOrBar
+            type: FooOrBar
+          location: "18:3:5"
+          selectionSet:
+            location: "34:3:21"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "49:4:14"
+                typeName: Bar
+                type: Bar
+              location: "42:4:7"
+              selectionSet:
+                location: "53:4:18"
+                selections:
+                - selectionType: field
+                  name: x
+                  location: "55:4:20"
+                  type: Int
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "72:5:14"
+                typeName: Foo
+                type: Foo
+              location: "65:5:7"
+              selectionSet:
+                location: "76:5:18"
+                selections:
+                - selectionType: field
+                  name: x
+                  location: "78:5:20"
+                  type: Int
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: i
+      location: "10:2:3"
+      selectionSet:
+        location: "12:2:5"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "25:3:12"
+            typeName: FooOrBar
+          location: "18:3:5"
+          selectionSet:
+            location: "34:3:21"
+            selections:
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "49:4:14"
+                typeName: Bar
+              location: "42:4:7"
+              selectionSet:
+                location: "53:4:18"
+                selections:
+                - selectionType: field
+                  name: x
+                  location: "55:4:20"
+            - selectionType: inlineFragment
+              typeCondition:
+                location: "72:5:14"
+                typeName: Foo
+              location: "65:5:7"
+              selectionSet:
+                location: "76:5:18"
+                selections:
+                - selectionType: field
+                  name: x
+                  location: "78:5:20"

@@ -1,0 +1,27 @@
+schema: >
+  type Query {
+    foo:Int
+    bar:Int
+    fizz:Int
+    buzz:Int
+    muzz:Int
+    tuzz:Int
+  }
+
+template: >
+  query {
+    max 1 {
+      foo
+      bar
+      max 1 {
+        bazz
+        fuzz
+      }
+    }
+  }
+
+expect-errors:
+  - '5:5: nested max set'
+
+expect-errors(schemaless):
+  - '5:5: nested max set'

@@ -1,0 +1,81 @@
+schema: >
+  type Query {
+    a(a: Int): Boolean
+    b(b1: Int!, b2: [String]!): Boolean!
+  }
+
+template: >
+  query { a(a:*) b(b1:*,b2:*) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: a
+      location: "8:1:9"
+      type: Boolean
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Int
+          constraint:
+            constraintType: any
+            location: "12:1:13"
+    - selectionType: field
+      name: b
+      location: "15:1:16"
+      type: Boolean!
+      argumentList:
+        location: "16:1:17"
+        arguments:
+        - name: b1
+          location: "17:1:18"
+          type: Int!
+          constraint:
+            constraintType: any
+            location: "20:1:21"
+        - name: b2
+          location: "22:1:23"
+          type: '[String]!'
+          constraint:
+            constraintType: any
+            location: "25:1:26"
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: a
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: any
+            location: "12:1:13"
+    - selectionType: field
+      name: b
+      location: "15:1:16"
+      argumentList:
+        location: "16:1:17"
+        arguments:
+        - name: b1
+          location: "17:1:18"
+          constraint:
+            constraintType: any
+            location: "20:1:21"
+        - name: b2
+          location: "22:1:23"
+          constraint:
+            constraintType: any
+            location: "25:1:26"

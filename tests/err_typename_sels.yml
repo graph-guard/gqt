@@ -1,0 +1,11 @@
+schema:
+  type Query { f:Int }
+
+template: >
+  query { __typename{__typename} }
+
+expect-errors:
+  - '1:19: built-in field "__typename" can never have subselections'
+
+expect-errors(schemaless):
+  - '1:19: built-in field "__typename" can never have subselections'

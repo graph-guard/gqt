@@ -1,0 +1,7 @@
+template: "query { f(a:{f="
+
+expect-errors:
+  - '1:16: unexpected end of file, expected variable name'
+
+expect-errors(schemaless):
+  - '1:16: unexpected end of file, expected variable name'

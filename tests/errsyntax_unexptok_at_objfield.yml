@@ -1,0 +1,7 @@
+template: 'query { f(a:{1}) }'
+
+expect-errors:
+  - "1:14: unexpected token, expected object field name"
+
+expect-errors(schemaless):
+  - "1:14: unexpected token, expected object field name"

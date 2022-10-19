@@ -1,0 +1,49 @@
+schema: >
+  type Query { f(a: Boolean!): Boolean! }
+
+template: >
+  query { f(a: true) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Boolean!
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Boolean!
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: "true"
+              location: "13:1:14"
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: "true"
+              location: "13:1:14"

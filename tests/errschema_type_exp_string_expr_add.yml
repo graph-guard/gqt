@@ -1,0 +1,38 @@
+schema: >
+  type Query { f(a:String):Int }
+
+template: >
+  query { f(a: 1+2) }
+
+expect-errors:
+  - '1:14: expected type String but received Int'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: addition
+              location: "13:1:14"
+              float: false
+              addendLeft:
+                expressionType: int
+                location: "13:1:14"
+                value: 1
+              addendRight:
+                expressionType: int
+                location: "15:1:16"
+                value: 2

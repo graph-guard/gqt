@@ -1,0 +1,25 @@
+schema: >
+  type Query {foo: Foo!}
+  type Foo {bar: String!}
+
+template: >
+  query { foo { baz } }
+
+expect-errors:
+  - '1:15: field "baz" is undefined in type Foo'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      selectionSet:
+        location: "12:1:13"
+        selections:
+        - selectionType: field
+          name: baz
+          location: "14:1:15"

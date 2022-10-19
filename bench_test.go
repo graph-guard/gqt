@@ -37,11 +37,11 @@ func Benchmark(b *testing.B) {
 	  }
 	}
 	`)
-	var err gqt.Error
+	var errs []gqt.Error
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		if _, _, err = gqt.Parse(src); err.IsErr() {
-			b.Fatal(err)
+		if _, _, errs = gqt.Parse(src); len(errs) > 0 {
+			b.Fatal(errs)
 		}
 	}
 }

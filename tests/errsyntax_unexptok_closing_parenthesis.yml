@@ -1,0 +1,10 @@
+schema: >
+  type Query { f(a:Int, b:Int):Int }
+
+template: 'query { f(a: (0 , b:*)'
+
+expect-errors:
+  - "1:17: unexpected token, missing closing parenthesis"
+
+expect-errors(schemaless):
+  - "1:17: unexpected token, missing closing parenthesis"

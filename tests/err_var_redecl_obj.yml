@@ -1,0 +1,38 @@
+schema: >
+  type Query {
+    a(a: Int): Int
+    b: B
+    c(i: In): Int
+    d(a: Int): Int
+  }
+  type B {
+    bb(a: In): Int
+  }
+
+  input In {
+    f1: Int
+    f2: Int
+  }
+
+template: >
+  query {
+    a(a=$a:*)
+    b {
+      bb(a: {
+        f1=$f1:$a,
+        f2=$a:$f1,
+      })
+    }
+    c(i: {f1=$a:0})
+    d(a=$f1:*)
+  }
+
+expect-errors:
+  - '6:10: redeclared variable "a"'
+  - '9:12: redeclared variable "a"'
+  - '10:7: redeclared variable "f1"'
+
+expect-errors(schemaless):
+  - '6:10: redeclared variable "a"'
+  - '9:12: redeclared variable "a"'
+  - '10:7: redeclared variable "f1"'

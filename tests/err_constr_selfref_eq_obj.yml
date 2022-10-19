@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int!): Int }
+
+template: >
+  query { f(a=$var: {foo: 42, bar: $var}) }
+
+expect-errors:
+  - '1:34: illegal self-reference of argument "a" through variable "var" in constraint'
+
+expect-errors(schemaless):
+  - '1:34: illegal self-reference of argument "a" through variable "var" in constraint'

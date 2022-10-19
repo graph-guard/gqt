@@ -1,0 +1,53 @@
+schema: >
+  type Query {f(color: Color!, fruit: Fruit): Color!}
+  enum Color {
+    red
+    green
+    blue
+    bananayellow
+  }
+  enum Fruit {
+    banana
+    orange
+  }
+
+template: >
+  query { f(
+    color: banana,
+    fruit: bananayellow,
+  ) }
+
+expect-errors:
+  - '2:10: expected type Color! but received Fruit'
+  - '3:10: expected type Fruit but received Color'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: color
+          location: "13:2:3"
+          constraint:
+            constraintType: equals
+            location: "20:2:10"
+            value:
+              expressionType: enum
+              location: "20:2:10"
+              value: banana
+        - name: fruit
+          location: "30:3:3"
+          constraint:
+            constraintType: equals
+            location: "37:3:10"
+            value:
+              expressionType: enum
+              location: "37:3:10"
+              value: bananayellow

@@ -1,0 +1,23 @@
+schema: >
+  type Query {
+    comparisonEq  (a:Boolean):Int
+    comparisonNeq (a:Boolean):Int
+    varEq         (a:[Float!]):Int
+    varNeq        (a:[Float!]):Int
+  }
+
+template: >
+  query {
+    comparisonEq(a: 42 == $veq)
+    comparisonNeq(a: 42 != $vneq)
+    varEq(a=$veq: [])
+    varNeq(a=$vneq: != [])
+  }
+
+expect-errors:
+  - '2:19: mismatching types Int and [Float!]'
+  - '3:20: mismatching types Int and [Float!]'
+
+expect-errors(schemaless):
+  - '2:19: mismatching types Int and array'
+  - '3:20: mismatching types Int and array'

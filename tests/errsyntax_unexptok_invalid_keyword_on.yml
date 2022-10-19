@@ -1,0 +1,10 @@
+schema: >
+  type Query { f:Int }
+
+template: 'query { ... one T { } }'
+
+expect-errors:
+  - "1:13: unexpected token, expected keyword 'on'"
+
+expect-errors(schemaless):
+  - "1:13: unexpected token, expected keyword 'on'"

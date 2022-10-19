@@ -1,0 +1,10 @@
+schema: >
+  type Query { f:Int }
+
+template: 'query { .. x'
+
+expect-errors:
+  - '1:9: unexpected token, expected selection'
+
+expect-errors(schemaless):
+  - '1:9: unexpected token, expected selection'

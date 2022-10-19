@@ -1,0 +1,11 @@
+schema: >
+  type Query { foo:Int }
+
+template: >
+  query foo
+
+expect-errors:
+  - '1:7: unexpected token, expected selection set'
+
+expect-errors(schemaless):
+  - '1:7: unexpected token, expected selection set'

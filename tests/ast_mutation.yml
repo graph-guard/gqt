@@ -1,0 +1,66 @@
+schema: >
+  type Mutation {
+    newUser(name: String!): User!
+  }
+  type User {
+    name: String!
+  }
+
+template: >
+  mutation {
+    newUser(name: *) {
+      name
+    }
+  }
+
+expect-ast:
+  operationType: Mutation
+  location: "0:1:1"
+  selectionSet:
+    location: "9:1:10"
+    selections:
+    - selectionType: field
+      name: newUser
+      location: "13:2:3"
+      type: User!
+      argumentList:
+        location: "20:2:10"
+        arguments:
+        - name: name
+          location: "21:2:11"
+          type: String!
+          constraint:
+            constraintType: any
+            location: "27:2:17"
+      selectionSet:
+        location: "30:2:20"
+        selections:
+        - selectionType: field
+          name: name
+          location: "36:3:5"
+          type: String!
+
+
+expect-ast(schemaless):
+  operationType: Mutation
+  location: "0:1:1"
+  selectionSet:
+    location: "9:1:10"
+    selections:
+    - selectionType: field
+      name: newUser
+      location: "13:2:3"
+      argumentList:
+        location: "20:2:10"
+        arguments:
+        - name: name
+          location: "21:2:11"
+          constraint:
+            constraintType: any
+            location: "27:2:17"
+      selectionSet:
+        location: "30:2:20"
+        selections:
+        - selectionType: field
+          name: name
+          location: "36:3:5"

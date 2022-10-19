@@ -1,0 +1,19 @@
+schema: >
+  type Query {
+    comparison(a: Boolean):Int
+    var(a:Int):Int
+  }
+  enum Color { red green blue }
+  input In { f:Int }
+
+template: >
+  query {
+    comparison(a: "string" == $v)
+    var(a=$v: <= 10)
+  }
+
+expect-errors:
+  - '2:17: mismatching types String and Int'
+
+expect-errors(schemaless):
+  - '2:17: mismatching types String and number'

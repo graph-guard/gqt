@@ -1,0 +1,197 @@
+schema: >
+  type Query {
+    comparisonEq  (a:Boolean):Int
+    comparisonNeq (a:Boolean):Int
+    varEq         (a:Float):Int
+    varNeq        (a:Float):Int
+  }
+
+template: >
+  query {
+    comparisonEq(a: 42 == $veq)
+    comparisonNeq(a: 42 != $vneq)
+    varEq(a=$veq: 3.14)
+    varNeq(a=$vneq: != 3.14)
+  }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: comparisonEq
+      location: "10:2:3"
+      type: Int
+      argumentList:
+        location: "22:2:15"
+        arguments:
+        - name: a
+          location: "23:2:16"
+          type: Boolean
+          constraint:
+            constraintType: equals
+            location: "26:2:19"
+            value:
+              expressionType: equals
+              location: "26:2:19"
+              left:
+                expressionType: int
+                location: "26:2:19"
+                value: 42
+              right:
+                expressionType: variableReference
+                location: "32:2:25"
+                name: veq
+    - selectionType: field
+      name: comparisonNeq
+      location: "40:3:3"
+      type: Int
+      argumentList:
+        location: "53:3:16"
+        arguments:
+        - name: a
+          location: "54:3:17"
+          type: Boolean
+          constraint:
+            constraintType: equals
+            location: "57:3:20"
+            value:
+              expressionType: notEquals
+              location: "57:3:20"
+              left:
+                expressionType: int
+                location: "57:3:20"
+                value: 42
+              right:
+                expressionType: variableReference
+                location: "63:3:26"
+                name: vneq
+    - selectionType: field
+      name: varEq
+      location: "72:4:3"
+      type: Int
+      argumentList:
+        location: "77:4:8"
+        arguments:
+        - name: a
+          location: "78:4:9"
+          variable:
+            location: "80:4:11"
+            name: veq
+          type: Float
+          constraint:
+            constraintType: equals
+            location: "86:4:17"
+            value:
+              expressionType: float
+              location: "86:4:17"
+              value: 3.14
+    - selectionType: field
+      name: varNeq
+      location: "94:5:3"
+      type: Int
+      argumentList:
+        location: "100:5:9"
+        arguments:
+        - name: a
+          location: "101:5:10"
+          variable:
+            location: "103:5:12"
+            name: vneq
+          type: Float
+          constraint:
+            constraintType: notEquals
+            location: "110:5:19"
+            value:
+              expressionType: float
+              location: "113:5:22"
+              value: 3.14
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: comparisonEq
+      location: "10:2:3"
+      argumentList:
+        location: "22:2:15"
+        arguments:
+        - name: a
+          location: "23:2:16"
+          constraint:
+            constraintType: equals
+            location: "26:2:19"
+            value:
+              expressionType: equals
+              location: "26:2:19"
+              left:
+                expressionType: int
+                location: "26:2:19"
+                value: 42
+              right:
+                expressionType: variableReference
+                location: "32:2:25"
+                name: veq
+    - selectionType: field
+      name: comparisonNeq
+      location: "40:3:3"
+      argumentList:
+        location: "53:3:16"
+        arguments:
+        - name: a
+          location: "54:3:17"
+          constraint:
+            constraintType: equals
+            location: "57:3:20"
+            value:
+              expressionType: notEquals
+              location: "57:3:20"
+              left:
+                expressionType: int
+                location: "57:3:20"
+                value: 42
+              right:
+                expressionType: variableReference
+                location: "63:3:26"
+                name: vneq
+    - selectionType: field
+      name: varEq
+      location: "72:4:3"
+      argumentList:
+        location: "77:4:8"
+        arguments:
+        - name: a
+          location: "78:4:9"
+          variable:
+            location: "80:4:11"
+            name: veq
+          constraint:
+            constraintType: equals
+            location: "86:4:17"
+            value:
+              expressionType: float
+              location: "86:4:17"
+              value: 3.14
+    - selectionType: field
+      name: varNeq
+      location: "94:5:3"
+      argumentList:
+        location: "100:5:9"
+        arguments:
+        - name: a
+          location: "101:5:10"
+          variable:
+            location: "103:5:12"
+            name: vneq
+          constraint:
+            constraintType: notEquals
+            location: "110:5:19"
+            value:
+              expressionType: float
+              location: "113:5:22"
+              value: 3.14

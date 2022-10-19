@@ -1,0 +1,51 @@
+schema: >
+  type Query {
+    f_add_r(a: Float):Int
+    f_add_l(a: Float):Int
+    f_sub_r(a: Float):Int
+    f_sub_l(a: Float):Int
+    f_mul_r(a: Float):Int
+    f_mul_l(a: Float):Int
+    f_div_r(a: Float):Int
+    f_div_l(a: Float):Int
+    f_mod_r(a: Float):Int
+    f_mod_l(a: Float):Int
+  }
+
+template: >
+  query {
+    f_add_r(a: 3.14 + [1])
+    f_add_l(a: [1] + 3.14)
+    f_sub_r(a: 3.14 - [1])
+    f_sub_l(a: [1] - 3.14)
+    f_mul_r(a: 3.14 * [1])
+    f_mul_l(a: [1] * 3.14)
+    f_div_r(a: 3.14 / [1])
+    f_div_l(a: [1] / 3.14)
+    f_mod_r(a: 3.14 % [1])
+    f_mod_l(a: [1] % 3.14)
+  }
+
+expect-errors:
+  - '2:21: expected number but received [Int]'
+  - '3:14: expected number but received [Int]'
+  - '4:21: expected number but received [Int]'
+  - '5:14: expected number but received [Int]'
+  - '6:21: expected number but received [Int]'
+  - '7:14: expected number but received [Int]'
+  - '8:21: expected number but received [Int]'
+  - '9:14: expected number but received [Int]'
+  - '10:21: expected number but received [Int]'
+  - '11:14: expected number but received [Int]'
+
+expect-errors(schemaless):
+  - '2:21: expected number but received [Int]'
+  - '3:14: expected number but received [Int]'
+  - '4:21: expected number but received [Int]'
+  - '5:14: expected number but received [Int]'
+  - '6:21: expected number but received [Int]'
+  - '7:14: expected number but received [Int]'
+  - '8:21: expected number but received [Int]'
+  - '9:14: expected number but received [Int]'
+  - '10:21: expected number but received [Int]'
+  - '11:14: expected number but received [Int]'

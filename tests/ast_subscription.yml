@@ -1,0 +1,66 @@
+schema: >
+  type Subscription {
+    event(name: String!): Event
+  }
+  type Event {
+    name: String!
+  }
+
+template: >
+  subscription {
+    event(name: *) {
+      name
+    }
+  }
+
+expect-ast:
+  operationType: Subscription
+  location: "0:1:1"
+  selectionSet:
+    location: "13:1:14"
+    selections:
+    - selectionType: field
+      name: event
+      location: "17:2:3"
+      type: Event
+      argumentList:
+        location: "22:2:8"
+        arguments:
+        - name: name
+          location: "23:2:9"
+          type: String!
+          constraint:
+            constraintType: any
+            location: "29:2:15"
+      selectionSet:
+        location: "32:2:18"
+        selections:
+        - selectionType: field
+          name: name
+          location: "38:3:5"
+          type: String!
+
+
+expect-ast(schemaless):
+  operationType: Subscription
+  location: "0:1:1"
+  selectionSet:
+    location: "13:1:14"
+    selections:
+    - selectionType: field
+      name: event
+      location: "17:2:3"
+      argumentList:
+        location: "22:2:8"
+        arguments:
+        - name: name
+          location: "23:2:9"
+          constraint:
+            constraintType: any
+            location: "29:2:15"
+      selectionSet:
+        location: "32:2:18"
+        selections:
+        - selectionType: field
+          name: name
+          location: "38:3:5"

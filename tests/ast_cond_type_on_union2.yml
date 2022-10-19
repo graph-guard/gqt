@@ -1,0 +1,59 @@
+schema: >
+  type Query {u: FooOrBar!}
+  union FooOrBar = Foo | Bar
+  type Foo {name: String!}
+  type Bar {name: String!}
+
+template: >
+  query { u { ... on Bar { name } } }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      type: FooOrBar!
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Bar
+            type: Bar
+          location: "12:1:13"
+          selectionSet:
+            location: "23:1:24"
+            selections:
+            - selectionType: field
+              name: name
+              location: "25:1:26"
+              type: String!
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Bar
+          location: "12:1:13"
+          selectionSet:
+            location: "23:1:24"
+            selections:
+            - selectionType: field
+              name: name
+              location: "25:1:26"

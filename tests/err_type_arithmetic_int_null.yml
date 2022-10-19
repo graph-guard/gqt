@@ -1,0 +1,51 @@
+schema: >
+  type Query {
+    f_add_r(a: Int):Int
+    f_add_l(a: Int):Int
+    f_sub_r(a: Int):Int
+    f_sub_l(a: Int):Int
+    f_mul_r(a: Int):Int
+    f_mul_l(a: Int):Int
+    f_div_r(a: Int):Int
+    f_div_l(a: Int):Int
+    f_mod_r(a: Int):Int
+    f_mod_l(a: Int):Int
+  }
+
+template: >
+  query {
+    f_add_r(a: 1 + null)
+    f_add_l(a: null + 1)
+    f_sub_r(a: 1 - null)
+    f_sub_l(a: null - 1)
+    f_mul_r(a: 1 * null)
+    f_mul_l(a: null * 1)
+    f_div_r(a: 1 / null)
+    f_div_l(a: null / 1)
+    f_mod_r(a: 1 % null)
+    f_mod_l(a: null % 1)
+  }
+
+expect-errors:
+  - '2:18: expected number but received null'
+  - '3:14: expected number but received null'
+  - '4:18: expected number but received null'
+  - '5:14: expected number but received null'
+  - '6:18: expected number but received null'
+  - '7:14: expected number but received null'
+  - '8:18: expected number but received null'
+  - '9:14: expected number but received null'
+  - '10:18: expected number but received null'
+  - '11:14: expected number but received null'
+
+expect-errors(schemaless):
+  - '2:18: expected number but received null'
+  - '3:14: expected number but received null'
+  - '4:18: expected number but received null'
+  - '5:14: expected number but received null'
+  - '6:18: expected number but received null'
+  - '7:14: expected number but received null'
+  - '8:18: expected number but received null'
+  - '9:14: expected number but received null'
+  - '10:18: expected number but received null'
+  - '11:14: expected number but received null'

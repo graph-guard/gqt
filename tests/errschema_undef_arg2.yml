@@ -1,0 +1,33 @@
+schema: >
+  type Query {foo: Foo!}
+  type Foo {f(a: Int): Int!}
+
+template: >
+  query { foo { f(b: *) }}
+
+expect-errors:
+  - '1:17: argument "b" is undefined on field "f" in type Foo'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: foo
+      location: "8:1:9"
+      selectionSet:
+        location: "12:1:13"
+        selections:
+        - selectionType: field
+          name: f
+          location: "14:1:15"
+          argumentList:
+            location: "15:1:16"
+            arguments:
+            - name: b
+              location: "16:1:17"
+              constraint:
+                constraintType: any
+                location: "19:1:20"
