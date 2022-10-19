@@ -1,0 +1,97 @@
+schema: >
+  type Query { f(a: Boolean!): Int! }
+
+template: >
+  query { f(a: 5 >= 1 || 2 <= 10) }
+
+expect-ast:
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      type: Int!
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          type: Boolean!
+          constraint:
+            expressionType: logicalOR
+            location: "13:1:14"
+            expressions:
+            - constraintType: equals
+              location: "13:1:14"
+              value:
+                expressionType: greaterThanOrEquals
+                location: "13:1:14"
+                left:
+                  expressionType: int
+                  location: "13:1:14"
+                  value: 5
+                right:
+                  expressionType: int
+                  location: "18:1:19"
+                  value: 1
+            - constraintType: equals
+              location: "23:1:24"
+              value:
+                expressionType: lessThanOrEquals
+                location: "23:1:24"
+                left:
+                  expressionType: int
+                  location: "23:1:24"
+                  value: 2
+                right:
+                  expressionType: int
+                  location: "28:1:29"
+                  value: 10
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            expressionType: logicalOR
+            location: "13:1:14"
+            expressions:
+            - constraintType: equals
+              location: "13:1:14"
+              value:
+                expressionType: greaterThanOrEquals
+                location: "13:1:14"
+                left:
+                  expressionType: int
+                  location: "13:1:14"
+                  value: 5
+                right:
+                  expressionType: int
+                  location: "18:1:19"
+                  value: 1
+            - constraintType: equals
+              location: "23:1:24"
+              value:
+                expressionType: lessThanOrEquals
+                location: "23:1:24"
+                left:
+                  expressionType: int
+                  location: "23:1:24"
+                  value: 2
+                right:
+                  expressionType: int
+                  location: "28:1:29"
+                  value: 10

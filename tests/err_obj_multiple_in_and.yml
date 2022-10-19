@@ -1,0 +1,12 @@
+schema: >
+  type Query { f(a: In!): Int }
+  input In { f: Int }
+
+template: >
+  query { f(a: {f: > 32} && {f: < 64}) }
+
+expect-errors:
+  - '1:27: use single object with multiple field constraints instead of multiple object variants in an AND statement'
+
+expect-errors(schemaless):
+  - '1:27: use single object with multiple field constraints instead of multiple object variants in an AND statement'
