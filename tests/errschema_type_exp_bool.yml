@@ -1,0 +1,35 @@
+schema: >
+  type Query { f(a: Boolean): Boolean }
+
+template: >
+  query { f(a: [true]) }
+
+expect-errors:
+  - '1:14: expected type Boolean but received [Boolean]'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "8:1:9"
+      argumentList:
+        location: "9:1:10"
+        arguments:
+        - name: a
+          location: "10:1:11"
+          constraint:
+            constraintType: equals
+            location: "13:1:14"
+            value:
+              expressionType: array
+              location: "13:1:14"
+              items:
+              - constraintType: equals
+                location: "14:1:15"
+                value:
+                  expressionType: "true"
+                  location: "14:1:15"
