@@ -2037,13 +2037,6 @@ func (p *Parser) newErr(l Location, msg string) {
 	})
 }
 
-func (p *Parser) newErrorNoPrefix(s source, msg string) {
-	p.errors = append(p.errors, Error{
-		Location: s.Location,
-		Msg:      msg,
-	})
-}
-
 type expect int8
 
 const (
@@ -3250,14 +3243,6 @@ type source struct {
 func (s source) stop() bool { return s.s == nil }
 
 func stop() source { return source{} }
-
-func (s source) String() string {
-	c := s.s[s.Index:]
-	if len(c) > 10 {
-		c = c[:10]
-	}
-	return fmt.Sprintf("%d:%d: %q", s.Line, s.Column, c)
-}
 
 func (s source) isEOF() bool {
 	return s.Index >= len(s.s)
