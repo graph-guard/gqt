@@ -11,7 +11,7 @@ func Benchmark(b *testing.B) {
 	query {
 	  # any id
 	  user(id: *) {
-		# allow a maximum of 1000 nodes to be fecthed in one request
+		# allow a maximum of 1000 nodes to be fetched in one request
 		# with a maxium depth of 4
 		orders(after: *, limit = $limitOrders: < 1000) {
 		  id
