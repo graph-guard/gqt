@@ -3445,8 +3445,8 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 	return s, nil, false
 }
 
-func (p *Parser) isNumeric(expr Expression) bool {
-	switch e := expr.(type) {
+func (p *Parser) isNumeric(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
@@ -3474,8 +3474,8 @@ func (p *Parser) isNumeric(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isBoolean(expr Expression) bool {
-	switch e := expr.(type) {
+func (p *Parser) isBoolean(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
@@ -3503,12 +3503,40 @@ func (p *Parser) isBoolean(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isString(expr Expression) bool {
-	switch e := expr.(type) {
+// isAny returns true if e is an any-constraint, otherwise returns false.
+// Always returns false for variables in schemaless mode.
+func (p *Parser) isAny(e Expression) bool {
+	switch e := e.(type) {
+	case *Variable:
+		if t, _ := e.Declaration.GetInfo(); t != nil {
+			return false
+		}
+		// Check type based on constraint expression
+		switch v := e.Declaration.Parent.(type) {
+		case *Argument:
+			return p.isAny(v.Constraint)
+		case *ObjectField:
+			return p.isAny(v.Constraint)
+		}
+	case *ConstrAny:
+		return true
+	case *ConstrEquals:
+		return p.isAny(e.Value)
+	case *ConstrNotEquals:
+		return p.isAny(e.Value)
+	case *ExprParentheses:
+		return p.isAny(e.Expression)
+	}
+	return false
+}
+
+func (p *Parser) isString(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
-			return t.Elem == nil && t.NamedType == "String"
+			return t.Elem == nil &&
+				(t.NamedType == "String" || t.NamedType == "ID")
 		}
 		// Check type based on constraint expression
 		switch v := e.Declaration.Parent.(type) {
@@ -3533,8 +3561,8 @@ func (p *Parser) isString(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isEnum(expr Expression) bool {
-	switch e := expr.(type) {
+func (p *Parser) isEnum(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
@@ -3560,8 +3588,8 @@ func (p *Parser) isEnum(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isNull(expr Expression) bool {
-	switch e := expr.(type) {
+func (p *Parser) isNull(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
@@ -3586,8 +3614,8 @@ func (p *Parser) isNull(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isObject(expr Expression) bool {
-	switch e := expr.(type) {
+func (p *Parser) isObject(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
@@ -3613,8 +3641,8 @@ func (p *Parser) isObject(expr Expression) bool {
 	return false
 }
 
-func (p *Parser) isArray(expr Expression) bool {
-	switch e := expr.(type) {
+func (p *Parser) isArray(e Expression) bool {
+	switch e := e.(type) {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
@@ -3644,10 +3672,12 @@ func (p *Parser) isArray(expr Expression) bool {
 }
 
 func (p *Parser) assumeComparableValues(
-	l Location,
-	left, right Expression,
+	l Location, left, right Expression,
 ) (ok bool) {
 	switch {
+	case p.isAny(left):
+		// Schemaless mode
+		return true
 	case p.isString(left):
 		if contains[*Null](right) {
 			p.errCompareWithNull(l, left)
@@ -3692,14 +3722,6 @@ func (p *Parser) assumeComparableValues(
 			p.errMismatchingTypes(l, left, right)
 			return false
 		}
-	case p.isNull(left):
-		if contains[*Object](right) {
-			p.errUncompVal(right)
-			return false
-		} else if !p.isNull(right) {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
 	case p.isObject(left):
 		ok = false
 		p.errUncompVal(right)
@@ -3715,6 +3737,20 @@ func (p *Parser) assumeComparableValues(
 			p.errUncompVal(right)
 			return false
 		} else if !p.isArray(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+		ld, rd := left.TypeDesignation(), right.TypeDesignation()
+		if ld != rd && !(ld == "array" || rd == "array" ||
+			ld == "*" || rd == "*") {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
+	case p.isNull(left):
+		if contains[*Object](right) {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isNull(right) {
 			p.errMismatchingTypes(l, left, right)
 			return false
 		}

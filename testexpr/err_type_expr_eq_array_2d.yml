@@ -1,0 +1,375 @@
+# Tests the expression "==" between constant false and
+# values of incompatible types.
+
+schema: >
+  scalar CustomAny
+
+  type Query {
+    checkconstant_true        (a:Boolean): Int
+    checkconstant_false       (a:Boolean): Int
+    checkconstant_null        (a:Boolean): Int
+    checkconstant_int         (a:Boolean): Int
+    checkconstant_float       (a:Boolean): Int
+    checkconstant_string      (a:Boolean): Int
+    checkconstant_enum        (a:Boolean): Int
+    checkconstant_array       (a:Boolean): Int
+    checkconstant_array_empty (a:Boolean): Int
+    checkconstant_object      (a:Boolean): Int
+    checkconstant_array_2d    (a:Boolean): Int
+
+    ref1_arg_true        (a:Boolean): Int
+    ref1_arg_false       (a:Boolean): Int
+    ref1_arg_null        (a:Boolean): Int
+    ref1_arg_int         (a:Boolean): Int
+    ref1_arg_float       (a:Boolean): Int
+    ref1_arg_string      (a:Boolean): Int
+    ref1_arg_id          (a:Boolean): Int
+    ref1_arg_enum        (a:Boolean): Int
+    ref1_arg_array       (a:Boolean): Int
+    ref1_arg_array_empty (a:Boolean): Int
+    ref1_arg_array_2d    (a:Boolean): Int
+    ref1_arg_object      (a:Boolean): Int
+    ref1_arg_scal_string (a:Boolean): Int
+
+    ref1_obj_true        (a:Boolean): Int
+    ref1_obj_false       (a:Boolean): Int
+    ref1_obj_null        (a:Boolean): Int
+    ref1_obj_int         (a:Boolean): Int
+    ref1_obj_float       (a:Boolean): Int
+    ref1_obj_string      (a:Boolean): Int
+    ref1_obj_id          (a:Boolean): Int
+    ref1_obj_enum        (a:Boolean): Int
+    ref1_obj_array       (a:Boolean): Int
+    ref1_obj_array_empty (a:Boolean): Int
+    ref1_obj_array_2d    (a:Boolean): Int
+    ref1_obj_object      (a:Boolean): Int
+    ref1_obj_scal_string (a:Boolean): Int
+
+    ref2_arg_true        (a:Boolean): Int
+    ref2_arg_false       (a:Boolean): Int
+    ref2_arg_null        (a:Boolean): Int
+    ref2_arg_int         (a:Boolean): Int
+    ref2_arg_float       (a:Boolean): Int
+    ref2_arg_string      (a:Boolean): Int
+    ref2_arg_id          (a:Boolean): Int
+    ref2_arg_enum        (a:Boolean): Int
+    ref2_arg_array       (a:Boolean): Int
+    ref2_arg_array_empty (a:Boolean): Int
+    ref2_arg_array_2d    (a:Boolean): Int
+    ref2_arg_object      (a:Boolean): Int
+    ref2_arg_scal_string (a:Boolean): Int
+
+    ref2_obj_true        (a:Boolean): Int
+    ref2_obj_false       (a:Boolean): Int
+    ref2_obj_null        (a:Boolean): Int
+    ref2_obj_int         (a:Boolean): Int
+    ref2_obj_float       (a:Boolean): Int
+    ref2_obj_string      (a:Boolean): Int
+    ref2_obj_id          (a:Boolean): Int
+    ref2_obj_enum        (a:Boolean): Int
+    ref2_obj_array       (a:Boolean): Int
+    ref2_obj_array_empty (a:Boolean): Int
+    ref2_obj_array_2d    (a:Boolean): Int
+    ref2_obj_object      (a:Boolean): Int
+    ref2_obj_scal_string (a:Boolean): Int
+
+    variable_arg_true        (a:Boolean):    Int
+    variable_arg_false       (a:Boolean):    Int
+    variable_arg_null        (a:Boolean):    Int
+    variable_arg_int         (a:Int):        Int
+    variable_arg_float       (a:Float):      Int
+    variable_arg_string      (a:String):     Int
+    variable_arg_id          (a:ID):         Int
+    variable_arg_enum        (a:Color):      Int
+    variable_arg_array       (a:[Int]):      Int
+    variable_arg_array_empty (a:[Int]):      Int
+    variable_arg_array_2d    (a:[[String]]): Int
+    variable_arg_object      (a:In):         Int
+    variable_arg_scal_string (a:CustomAny):  Int
+
+    variable_obj_true        (a:Boolean):    Int
+    variable_obj_false       (a:Boolean):    Int
+    variable_obj_null        (a:Boolean):    Int
+    variable_obj_int         (a:Int):        Int
+    variable_obj_float       (a:Float):      Int
+    variable_obj_string      (a:String):     Int
+    variable_obj_id          (a:ID):         Int
+    variable_obj_enum        (a:Color):      Int
+    variable_obj_array       (a:[Int]):      Int
+    variable_obj_array_empty (a:[Int]):      Int
+    variable_obj_array_2d    (a:[[String]]): Int
+    variable_obj_object      (a:In):         Int
+    variable_obj_scal_string (a:CustomAny):  Int
+
+    constant_true        (a:Boolean):    Int
+    constant_false       (a:Boolean):    Int
+    constant_null        (a:Boolean):    Int
+    constant_int         (a:Int):        Int
+    constant_float       (a:Float):      Int
+    constant_string      (a:String):     Int
+    constant_id          (a:ID):         Int
+    constant_enum        (a:Color):      Int
+    constant_array       (a:[Int]):      Int
+    constant_array_empty (a:[Int]):      Int
+    constant_array_2d    (a:[[String]]): Int
+    constant_object      (a:In):         Int
+    constant_scal_string (a:CustomAny):  Int
+
+    object(a: Object!): Int
+  }
+  enum Color { red green blue }
+  input In { f: Int }
+  input Object { 
+    f_true:              Boolean,
+    f_false:             Boolean,
+    f_null:              Boolean,
+    f_int:               Int,
+    f_float:             Float,
+    f_string:            String,
+    f_id:                ID,
+    f_enum:              Color,
+    f_array:             [Int],
+    f_array_empty:       [Int],
+    f_array_2d:          [[String]],
+    f_object:            In,
+    f_scal_string:       CustomAny,
+  }
+
+template: >
+  query {
+    checkconstant_true        (a: [["s"]] == true)
+    checkconstant_false       (a: [["s"]] == false)
+    checkconstant_null        (a: [["s"]] == null)
+    checkconstant_int         (a: [["s"]] == 42)
+    checkconstant_float       (a: [["s"]] == 3.14)
+    checkconstant_string      (a: [["s"]] == "string")
+    checkconstant_enum        (a: [["s"]] == red)
+    checkconstant_array       (a: [["s"]] == [1])
+    checkconstant_array_empty (a: [["s"]] == [])
+    checkconstant_array_2d    (a: [["s"]] == [["2d"]])
+    checkconstant_object      (a: [["s"]] == {f:42})
+    ref1_arg_true             (a: [["s"]] == $arg_true)
+    ref1_arg_false            (a: [["s"]] == $arg_false)
+    ref1_arg_null             (a: [["s"]] == $arg_null)
+    ref1_arg_int              (a: [["s"]] == $arg_int)
+    ref1_arg_float            (a: [["s"]] == $arg_float)
+    ref1_arg_string           (a: [["s"]] == $arg_string)
+    ref1_arg_id               (a: [["s"]] == $arg_id)
+    ref1_arg_enum             (a: [["s"]] == $arg_enum)
+    ref1_arg_array            (a: [["s"]] == $arg_array)
+    ref1_arg_array_empty      (a: [["s"]] == $arg_array_empty)
+    ref1_arg_array_2d         (a: [["s"]] == $arg_array_2d)
+    ref1_arg_object           (a: [["s"]] == $arg_object)
+    ref1_arg_scal_string      (a: [["s"]] == $arg_scal_string)
+    ref1_obj_true             (a: [["s"]] == $obj_true)
+    ref1_obj_false            (a: [["s"]] == $obj_false)
+    ref1_obj_null             (a: [["s"]] == $obj_null)
+    ref1_obj_int              (a: [["s"]] == $obj_int)
+    ref1_obj_float            (a: [["s"]] == $obj_float)
+    ref1_obj_string           (a: [["s"]] == $obj_string)
+    ref1_obj_id               (a: [["s"]] == $obj_id)
+    ref1_obj_enum             (a: [["s"]] == $obj_enum)
+    ref1_obj_array            (a: [["s"]] == $obj_array)
+    ref1_obj_array_empty      (a: [["s"]] == $obj_array_empty)
+    ref1_obj_array_2d         (a: [["s"]] == $obj_array_2d)
+    ref1_obj_object           (a: [["s"]] == $obj_object)
+    ref1_obj_scal_string      (a: [["s"]] == $obj_scal_string)
+    ref2_arg_true             (a: [["s"]] == $var_arg_true)
+    ref2_arg_false            (a: [["s"]] == $var_arg_false)
+    ref2_arg_null             (a: [["s"]] == $var_arg_null)
+    ref2_arg_int              (a: [["s"]] == $var_arg_int)
+    ref2_arg_float            (a: [["s"]] == $var_arg_float)
+    ref2_arg_string           (a: [["s"]] == $var_arg_string)
+    ref2_arg_id               (a: [["s"]] == $var_arg_id)
+    ref2_arg_enum             (a: [["s"]] == $var_arg_enum)
+    ref2_arg_array            (a: [["s"]] == $var_arg_array)
+    ref2_arg_array_empty      (a: [["s"]] == $var_arg_array_empty)
+    ref2_arg_array_2d         (a: [["s"]] == $var_arg_array_2d)
+    ref2_arg_object           (a: [["s"]] == $var_arg_object)
+    ref2_arg_scal_string      (a: [["s"]] == $var_arg_scal_string)
+    ref2_obj_true             (a: [["s"]] == $var_obj_true)
+    ref2_obj_false            (a: [["s"]] == $var_obj_false)
+    ref2_obj_null             (a: [["s"]] == $var_obj_null)
+    ref2_obj_int              (a: [["s"]] == $var_obj_int)
+    ref2_obj_float            (a: [["s"]] == $var_obj_float)
+    ref2_obj_string           (a: [["s"]] == $var_obj_string)
+    ref2_obj_id               (a: [["s"]] == $var_obj_id)
+    ref2_obj_enum             (a: [["s"]] == $var_obj_enum)
+    ref2_obj_array            (a: [["s"]] == $var_obj_array)
+    ref2_obj_array_empty      (a: [["s"]] == $var_obj_array_empty)
+    ref2_obj_array_2d         (a: [["s"]] == $var_obj_array_2d)
+    ref2_obj_object           (a: [["s"]] == $var_obj_object)
+    ref2_obj_scal_string      (a: [["s"]] == $var_obj_scal_string)
+
+    variable_arg_true        (a=$var_arg_true:        $arg_true)
+    variable_arg_false       (a=$var_arg_false:       $arg_false)
+    variable_arg_null        (a=$var_arg_null:        $arg_null)
+    variable_arg_int         (a=$var_arg_int:         $arg_int)
+    variable_arg_float       (a=$var_arg_float:       $arg_float)
+    variable_arg_string      (a=$var_arg_string:      $arg_string)
+    variable_arg_id          (a=$var_arg_id:          $arg_id)
+    variable_arg_enum        (a=$var_arg_enum:        $arg_enum)
+    variable_arg_array       (a=$var_arg_array:       $arg_array)
+    variable_arg_array_empty (a=$var_arg_array_empty: $arg_array_empty)
+    variable_arg_array_2d    (a=$var_arg_array_2d:    $arg_array_2d)
+    variable_arg_object      (a=$var_arg_object:      $arg_object)
+    variable_arg_scal_string (a=$var_arg_scal_string: $arg_scal_string)
+
+    variable_obj_true        (a=$var_obj_true:        $obj_true)
+    variable_obj_false       (a=$var_obj_false:       $obj_false)
+    variable_obj_null        (a=$var_obj_null:        $obj_null)
+    variable_obj_int         (a=$var_obj_int:         $obj_int)
+    variable_obj_float       (a=$var_obj_float:       $obj_float)
+    variable_obj_string      (a=$var_obj_string:      $obj_string)
+    variable_obj_id          (a=$var_obj_id:          $obj_id)
+    variable_obj_enum        (a=$var_obj_enum:        $obj_enum)
+    variable_obj_array       (a=$var_obj_array:       $obj_array)
+    variable_obj_array_empty (a=$var_obj_array_empty: $obj_array_empty)
+    variable_obj_array_2d    (a=$var_obj_array_2d:    $obj_array_2d)
+    variable_obj_object      (a=$var_obj_object:      $obj_object)
+    variable_obj_scal_string (a=$var_obj_scal_string: $obj_scal_string)
+
+    constant_true        (a=$arg_true:        true)
+    constant_false       (a=$arg_false:       false)
+    constant_null        (a=$arg_null:        null)
+    constant_int         (a=$arg_int:         42)
+    constant_float       (a=$arg_float:       3.14)
+    constant_string      (a=$arg_string:      "string")
+    constant_id          (a=$arg_id:          "id")
+    constant_enum        (a=$arg_enum:        red)
+    constant_array       (a=$arg_array:       [1])
+    constant_array_empty (a=$arg_array_empty: [])
+    constant_array_2d    (a=$arg_array_2d:    [["2d"]])
+    constant_object      (a=$arg_object:      {f:42})
+    constant_scal_string (a=$arg_scal_string: "custom scalar string")
+
+    object(a: { 
+      f_true =        $obj_true:        true,
+      f_false =       $obj_false:       false,
+      f_null =        $obj_null:        null,
+      f_int =         $obj_int:         42,
+      f_float =       $obj_float:       3.14,
+      f_string =      $obj_string:      "string",
+      f_id =          $obj_id:          "id",
+      f_enum =        $obj_enum:        red,
+      f_array =       $obj_array:       [1],
+      f_array_empty = $obj_array_empty: [],
+      f_array_2d =    $obj_array_2d:    [["2d"]],
+      f_object =      $obj_object:      {f:42},
+      f_scal_string = $obj_scal_string: "custom scalar string",
+    })
+  }
+
+expect-errors:
+  - '2:33: mismatching types [[String]] and Boolean'
+  - '3:33: mismatching types [[String]] and Boolean'
+  - '4:33: mismatching types [[String]] and null'
+  - '5:33: mismatching types [[String]] and Int'
+  - '6:33: mismatching types [[String]] and Float'
+  - '7:33: mismatching types [[String]] and String'
+  - '8:33: mismatching types [[String]] and Color'
+  - '9:33: mismatching types [[String]] and [Int]'
+  - '12:44: uncomparable value of type {f:Int}'
+  - '13:33: mismatching types [[String]] and Boolean'
+  - '14:33: mismatching types [[String]] and Boolean'
+  - '15:33: mismatching types [[String]] and null'
+  - '16:33: mismatching types [[String]] and Int'
+  - '17:33: mismatching types [[String]] and Float'
+  - '18:33: mismatching types [[String]] and String'
+  - '19:33: mismatching types [[String]] and ID'
+  - '20:33: mismatching types [[String]] and Color'
+  - '21:33: mismatching types [[String]] and [Int]'
+  - '22:33: mismatching types [[String]] and [Int]'
+  - '24:44: uncomparable value of type In'
+  - '25:33: mismatching types [[String]] and CustomAny'
+  - '26:33: mismatching types [[String]] and Boolean'
+  - '27:33: mismatching types [[String]] and Boolean'
+  - '28:33: mismatching types [[String]] and null'
+  - '29:33: mismatching types [[String]] and Int'
+  - '30:33: mismatching types [[String]] and Float'
+  - '31:33: mismatching types [[String]] and String'
+  - '32:33: mismatching types [[String]] and ID'
+  - '33:33: mismatching types [[String]] and Color'
+  - '34:33: mismatching types [[String]] and [Int]'
+  - '35:33: mismatching types [[String]] and [Int]'
+  - '37:44: uncomparable value of type In'
+  - '38:33: mismatching types [[String]] and CustomAny'
+  - '39:33: mismatching types [[String]] and Boolean'
+  - '40:33: mismatching types [[String]] and Boolean'
+  - '41:33: mismatching types [[String]] and null'
+  - '42:33: mismatching types [[String]] and Int'
+  - '43:33: mismatching types [[String]] and Float'
+  - '44:33: mismatching types [[String]] and String'
+  - '45:33: mismatching types [[String]] and ID'
+  - '46:33: mismatching types [[String]] and Color'
+  - '47:33: mismatching types [[String]] and [Int]'
+  - '48:33: mismatching types [[String]] and [Int]'
+  - '50:44: uncomparable value of type In'
+  - '51:33: mismatching types [[String]] and CustomAny'
+  - '52:33: mismatching types [[String]] and Boolean'
+  - '53:33: mismatching types [[String]] and Boolean'
+  - '54:33: mismatching types [[String]] and null'
+  - '55:33: mismatching types [[String]] and Int'
+  - '56:33: mismatching types [[String]] and Float'
+  - '57:33: mismatching types [[String]] and String'
+  - '58:33: mismatching types [[String]] and ID'
+  - '59:33: mismatching types [[String]] and Color'
+  - '60:33: mismatching types [[String]] and [Int]'
+  - '61:33: mismatching types [[String]] and [Int]'
+  - '63:44: uncomparable value of type In'
+  - '64:33: mismatching types [[String]] and CustomAny'
+
+expect-errors(schemaless):
+  - '2:33: mismatching types [[String]] and Boolean'
+  - '3:33: mismatching types [[String]] and Boolean'
+  - '4:33: mismatching types [[String]] and null'
+  - '5:33: mismatching types [[String]] and Int'
+  - '6:33: mismatching types [[String]] and Float'
+  - '7:33: mismatching types [[String]] and String'
+  - '8:33: mismatching types [[String]] and enum'
+  - '9:33: mismatching types [[String]] and [Int]'
+  - '12:44: uncomparable value of type {f:Int}'
+  - '13:33: mismatching types [[String]] and Boolean'
+  - '14:33: mismatching types [[String]] and Boolean'
+  - '15:33: mismatching types [[String]] and null'
+  - '16:33: mismatching types [[String]] and Int'
+  - '17:33: mismatching types [[String]] and Float'
+  - '18:33: mismatching types [[String]] and String'
+  - '19:33: mismatching types [[String]] and String'
+  - '20:33: mismatching types [[String]] and enum'
+  - '21:33: mismatching types [[String]] and [Int]'
+  - '24:44: uncomparable value of type {f:Int}'
+  - '25:33: mismatching types [[String]] and String'
+  - '26:33: mismatching types [[String]] and Boolean'
+  - '27:33: mismatching types [[String]] and Boolean'
+  - '28:33: mismatching types [[String]] and null'
+  - '29:33: mismatching types [[String]] and Int'
+  - '30:33: mismatching types [[String]] and Float'
+  - '31:33: mismatching types [[String]] and String'
+  - '32:33: mismatching types [[String]] and String'
+  - '33:33: mismatching types [[String]] and enum'
+  - '34:33: mismatching types [[String]] and [Int]'
+  - '37:44: uncomparable value of type {f:Int}'
+  - '38:33: mismatching types [[String]] and String'
+  - '39:33: mismatching types [[String]] and Boolean'
+  - '40:33: mismatching types [[String]] and Boolean'
+  - '41:33: mismatching types [[String]] and null'
+  - '42:33: mismatching types [[String]] and Int'
+  - '43:33: mismatching types [[String]] and Float'
+  - '44:33: mismatching types [[String]] and String'
+  - '45:33: mismatching types [[String]] and String'
+  - '46:33: mismatching types [[String]] and enum'
+  - '47:33: mismatching types [[String]] and [Int]'
+  - '50:44: uncomparable value of type {f:Int}'
+  - '51:33: mismatching types [[String]] and String'
+  - '52:33: mismatching types [[String]] and Boolean'
+  - '53:33: mismatching types [[String]] and Boolean'
+  - '54:33: mismatching types [[String]] and null'
+  - '55:33: mismatching types [[String]] and Int'
+  - '56:33: mismatching types [[String]] and Float'
+  - '57:33: mismatching types [[String]] and String'
+  - '58:33: mismatching types [[String]] and String'
+  - '59:33: mismatching types [[String]] and enum'
+  - '60:33: mismatching types [[String]] and [Int]'
+  - '63:44: uncomparable value of type {f:Int}'
+  - '64:33: mismatching types [[String]] and String'

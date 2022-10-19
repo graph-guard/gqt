@@ -37,7 +37,6 @@ expect-ast:
               location: "22:1:23"
               name: a
 
-
 expect-ast(schemaless):
   operationType: Query
   location: "0:1:1"
