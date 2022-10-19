@@ -4025,8 +4025,8 @@ func (p *Parser) validateCond(frag *SelectionInlineFrag) (ok bool) {
 				case "Query", "Mutation", "Subscription":
 					p.errCanNeverBeOfType(
 						frag.TypeCondition.Location,
-						frag.TypeCondition.TypeName,
 						par.TypeCondition.TypeName,
+						frag.TypeCondition.TypeName,
 					)
 					return false
 				default:
