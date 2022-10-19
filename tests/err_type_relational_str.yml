@@ -1,0 +1,65 @@
+schema: >
+  type Query {
+    f_add_r(a: Boolean):Int
+    f_add_l(a: Boolean):Int
+    f_sub_r(a: Boolean):Int
+    f_sub_l(a: Boolean):Int
+    f_mul_r(a: Boolean):Int
+    f_mul_l(a: Boolean):Int
+    f_div_r(a: Boolean):Int
+    f_div_l(a: Boolean):Int
+    f_mod_r(a: Boolean):Int
+    f_mod_l(a: Boolean):Int
+
+    v(a: String):Int
+  }
+
+template: >
+  query {
+    f_add_r(a: "left" > $a)
+    f_add_l(a: $a > "right")
+    f_sub_r(a: "left" < $a)
+    f_sub_l(a: $a < "right")
+    f_mul_r(a: "left" >= $a)
+    f_mul_l(a: $a >= "right")
+    f_div_r(a: "left" <= $a)
+    f_div_l(a: $a <= "right")
+
+    v(a=$a: "some string")
+  }
+
+expect-errors:
+  - '2:14: expected number but received String'
+  - '2:23: expected number but received String'
+  - '3:14: expected number but received String'
+  - '3:19: expected number but received String'
+  - '4:14: expected number but received String'
+  - '4:23: expected number but received String'
+  - '5:14: expected number but received String'
+  - '5:19: expected number but received String'
+  - '6:14: expected number but received String'
+  - '6:24: expected number but received String'
+  - '7:14: expected number but received String'
+  - '7:20: expected number but received String'
+  - '8:14: expected number but received String'
+  - '8:24: expected number but received String'
+  - '9:14: expected number but received String'
+  - '9:20: expected number but received String'
+
+expect-errors(schemaless):
+  - '2:14: expected number but received String'
+  - '2:23: expected number but received String'
+  - '3:14: expected number but received String'
+  - '3:19: expected number but received String'
+  - '4:14: expected number but received String'
+  - '4:23: expected number but received String'
+  - '5:14: expected number but received String'
+  - '5:19: expected number but received String'
+  - '6:14: expected number but received String'
+  - '6:24: expected number but received String'
+  - '7:14: expected number but received String'
+  - '7:20: expected number but received String'
+  - '8:14: expected number but received String'
+  - '8:24: expected number but received String'
+  - '9:14: expected number but received String'
+  - '9:20: expected number but received String'
