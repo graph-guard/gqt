@@ -1,0 +1,36 @@
+schema: >
+  type Query {u: Interface!}
+  interface Interface {name: String!}
+  type Foo implements Interface {name: String!}
+  type Bar implements Interface {name: String!}
+  type Baz {name: String!}
+
+template: >
+  query { u { ... on Baz { name } } }
+
+expect-errors:
+  - '1:20: type Interface can never be of type Baz'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: u
+      location: "8:1:9"
+      selectionSet:
+        location: "10:1:11"
+        selections:
+        - selectionType: inlineFragment
+          typeCondition:
+            location: "19:1:20"
+            typeName: Baz
+          location: "12:1:13"
+          selectionSet:
+            location: "23:1:24"
+            selections:
+            - selectionType: field
+              name: name
+              location: "25:1:26"
