@@ -9,12 +9,13 @@ template: >
       {
         x: [null],
         y: [3.14,null]
-      }
+      },
+      *,
     ])
   }
 
 expect-errors:
-  - '2:8: expected type Int but received array{Int,String,{x:array,y:[Float]}}'
+  - '2:8: expected type Int but received array{Int,String,{x:array,y:[Float]},*}'
 
 expect-ast(schemaless):
   operationType: Query
@@ -89,3 +90,5 @@ expect-ast(schemaless):
                           value:
                             expressionType: "null"
                             location: "73:7:16"
+              - constraintType: any
+                location: "90:9:5"
