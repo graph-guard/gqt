@@ -1,0 +1,11 @@
+schema: >
+  type Query    { q:Int }
+  type Mutation { m:Int }
+
+template: 'query { q } mutation { m }'
+
+expect-errors:
+  - '1:13: unexpected token, expected end of file'
+
+expect-errors(schemaless):
+  - '1:13: unexpected token, expected end of file'

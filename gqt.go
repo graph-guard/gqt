@@ -948,6 +948,12 @@ func (p *Parser) Parse(src []byte) (
 	if s, o.SelectionSet = p.ParseSelectionSet(s); s.stop() {
 		return nil, nil, p.errors
 	}
+
+	s = s.consumeIgnored()
+	if !s.isEOF() {
+		p.errUnexpTok(s, "expected end of file")
+	}
+
 	for _, sel := range o.Selections {
 		setParent(sel, o)
 	}
