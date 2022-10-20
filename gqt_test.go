@@ -137,19 +137,6 @@ func compareErrors(t *testing.T, expected []string, actual []gqt.Error) {
 	}
 }
 
-func TestParseEmpty(t *testing.T) {
-	opr, vars, errs := gqt.Parse([]byte(""))
-	require.Equal(t, []gqt.Error{
-		{
-			Location: gqt.Location{Index: 0, Line: 1, Column: 1},
-			Msg: "unexpected end of file, expected " +
-				"query, mutation, or subscription operation definition",
-		},
-	}, errs)
-	require.Nil(t, opr)
-	require.Zero(t, vars)
-}
-
 func TestParseVariables(t *testing.T) {
 	input := `query {
 		f1(a: $b+$x, c=$c: $b) {
@@ -211,4 +198,39 @@ func TestParseVariables(t *testing.T) {
 		t, gqt.Location{Index: 19, Line: 2, Column: 12},
 		vars["x"].References[0].(*gqt.Variable).Location,
 	)
+}
+
+func TestParseNoSchema(t *testing.T) {
+	p, err := gqt.NewParser([]gqt.Source{})
+	require.NoError(t, err)
+	require.NotNil(t, p)
+}
+
+func TestParseErrEmpty(t *testing.T) {
+	opr, vars, errs := gqt.Parse([]byte(""))
+	require.Equal(t, []gqt.Error{
+		{
+			Location: gqt.Location{Index: 0, Line: 1, Column: 1},
+			Msg: "unexpected end of file, expected " +
+				"query, mutation, or subscription operation definition",
+		},
+	}, errs)
+	require.Nil(t, opr)
+	require.Zero(t, vars)
+}
+
+func TestParseErrSchema(t *testing.T) {
+	p, err := gqt.NewParser([]gqt.Source{
+		{
+			Name:    "schema.graphqls",
+			Content: "type Query {}",
+		},
+	})
+	require.Error(t, err)
+	require.Equal(t,
+		"schema.graphqls:1: "+
+			"expected at least one definition, found }",
+		err.Error(),
+	)
+	require.Nil(t, p)
 }
