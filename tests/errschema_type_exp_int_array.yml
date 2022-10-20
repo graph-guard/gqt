@@ -1,0 +1,91 @@
+schema: >
+  type Query { f(a: Int): Boolean }
+
+template: >
+  query {
+    f(a: [
+      1,
+      "foo",
+      {
+        x: [null],
+        y: [3.14,null]
+      }
+    ])
+  }
+
+expect-errors:
+  - '2:8: expected type Int but received array{Int,String,{x:array,y:[Float]}}'
+
+expect-ast(schemaless):
+  operationType: Query
+  location: "0:1:1"
+  selectionSet:
+    location: "6:1:7"
+    selections:
+    - selectionType: field
+      name: f
+      location: "10:2:3"
+      argumentList:
+        location: "11:2:4"
+        arguments:
+        - name: a
+          location: "12:2:5"
+          constraint:
+            constraintType: equals
+            location: "15:2:8"
+            value:
+              expressionType: array
+              location: "15:2:8"
+              items:
+              - constraintType: equals
+                location: "21:3:5"
+                value:
+                  expressionType: int
+                  location: "21:3:5"
+                  value: 1
+              - constraintType: equals
+                location: "28:4:5"
+                value:
+                  expressionType: string
+                  location: "28:4:5"
+                  value: foo
+              - constraintType: equals
+                location: "39:5:5"
+                value:
+                  expressionType: object
+                  location: "39:5:5"
+                  fields:
+                  - name: x
+                    location: "47:6:7"
+                    constraint:
+                      constraintType: equals
+                      location: "50:6:10"
+                      value:
+                        expressionType: array
+                        location: "50:6:10"
+                        items:
+                        - constraintType: equals
+                          location: "51:6:11"
+                          value:
+                            expressionType: "null"
+                            location: "51:6:11"
+                  - name: "y"
+                    location: "64:7:7"
+                    constraint:
+                      constraintType: equals
+                      location: "67:7:10"
+                      value:
+                        expressionType: array
+                        location: "67:7:10"
+                        items:
+                        - constraintType: equals
+                          location: "68:7:11"
+                          value:
+                            expressionType: float
+                            location: "68:7:11"
+                            value: 3.14
+                        - constraintType: equals
+                          location: "73:7:16"
+                          value:
+                            expressionType: "null"
+                            location: "73:7:16"
