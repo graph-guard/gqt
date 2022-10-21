@@ -1,11 +1,18 @@
 schema: >
-  type Query {foo(a: Int! b: Int): Int!}
+  type Query {
+    foo(
+      a: Int!
+      b: Int,
+      c:Boolean!,
+    ): Int!
+  }
 
 template: >
   query { foo(b: *) }
 
 expect-errors:
   - '1:12: argument "a" of type Int! is required but missing'
+  - '1:12: argument "c" of type Boolean! is required but missing'
 
 expect-ast(schemaless):
   location: 0:1:1-19:1:20

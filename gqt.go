@@ -1440,6 +1440,7 @@ func (p *Parser) validateField(
 			// Check undefined arguments
 			if ad := expect.Arguments.ForName(a.Name.Name); ad == nil {
 				p.errUndefArg(a, f, host.Name)
+				ok = false
 			}
 			args[a.Name.Name] = a
 		}
@@ -1453,7 +1454,7 @@ func (p *Parser) validateField(
 						l = f.LocRange
 					}
 					p.errMissingArg(l, a)
-					return false
+					ok = false
 				}
 			}
 		}
@@ -1461,6 +1462,7 @@ func (p *Parser) validateField(
 
 	if f.ArgumentList.Location.Index != 0 && len(f.Arguments) < 1 {
 		p.newErr(f.ArgumentList.LocRange, "empty argument list")
+		ok = false
 	}
 
 	// Check constraints
@@ -1470,14 +1472,19 @@ func (p *Parser) validateField(
 			exp = a.Def.Type
 		}
 
-		p.validateExpr([]Expression{a}, a.Constraint, exp)
+		if !p.validateExpr([]Expression{a}, a.Constraint, exp) {
+			ok = false
+		}
 	}
 
 	var def *ast.Definition
 	if p.schema != nil {
 		def = p.schema.Types[expect.Type.NamedType]
 	}
-	return p.validateSelSet(f, def)
+	if !p.validateSelSet(f, def) {
+		ok = false
+	}
+	return ok
 }
 
 func (p *Parser) validateExpr(

@@ -3,37 +3,55 @@ schema: >
   type Foo {f(a: Int): Int!}
 
 template: >
-  query { foo { f(b: *) }}
+  query { foo { f(b: unknownVal, c: unknownVal) }}
 
 expect-errors:
   - '1:17: argument "b" is undefined on field "f" in type Foo'
+  - '1:20: undefined enum value "unknownVal"'
+  - '1:32: argument "c" is undefined on field "f" in type Foo'
+  - '1:35: undefined enum value "unknownVal"'
 
 expect-ast(schemaless):
-  location: 0:1:1-24:1:25
+  location: 0:1:1-48:1:49
   operationType: Query
   selectionSet:
-    location: 6:1:7-24:1:25
+    location: 6:1:7-48:1:49
     selections:
-    - location: 8:1:9-23:1:24
+    - location: 8:1:9-47:1:48
       selectionType: field
       name:
         location: 8:1:9-11:1:12
         name: foo
       selectionSet:
-        location: 12:1:13-23:1:24
+        location: 12:1:13-47:1:48
         selections:
-        - location: 14:1:15-21:1:22
+        - location: 14:1:15-45:1:46
           selectionType: field
           name:
             location: 14:1:15-15:1:16
             name: f
           argumentList:
-            location: 15:1:16-21:1:22
+            location: 15:1:16-45:1:46
             arguments:
-            - location: 16:1:17-20:1:21
+            - location: 16:1:17-29:1:30
               name:
                 location: 16:1:17-17:1:18
                 name: b
               constraint:
-                location: 19:1:20-20:1:21
-                constraintType: any
+                location: 19:1:20-29:1:30
+                constraintType: equals
+                value:
+                  location: 19:1:20-29:1:30
+                  expressionType: enum
+                  value: unknownVal
+            - location: 31:1:32-44:1:45
+              name:
+                location: 31:1:32-32:1:33
+                name: c
+              constraint:
+                location: 34:1:35-44:1:45
+                constraintType: equals
+                value:
+                  location: 34:1:35-44:1:45
+                  expressionType: enum
+                  value: unknownVal

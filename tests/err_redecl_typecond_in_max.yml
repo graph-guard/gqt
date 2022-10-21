@@ -1,0 +1,24 @@
+schema: >
+  type Query { u:FooOrBar! }
+  union FooOrBar = Foo | Bar
+  type Foo { x:Int }
+  type Bar { x:Int }
+
+template: >
+  query {
+    u {
+      max 2 {
+        ... on Foo { x }
+        ... on Foo { x }
+        ... on Foo { x }
+      }
+    }
+  }
+
+expect-errors:
+  - '5:14: redeclared condition for type Foo'
+  - '6:14: redeclared condition for type Foo'
+
+expect-errors(schemaless):
+  - '5:14: redeclared condition for type Foo'
+  - '6:14: redeclared condition for type Foo'

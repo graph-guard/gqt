@@ -1,0 +1,21 @@
+schema: >
+  type Query { f:Foo! }
+  type Foo { x(a:Int):Int y(a:Int):Int }
+
+template: >
+  query {
+    f {
+      max 1 {
+        x()
+        y()
+      }
+    }
+  }
+
+expect-errors:
+  - '4:8: empty argument list'
+  - '5:8: empty argument list'
+
+expect-errors(schemaless):
+  - '4:8: empty argument list'
+  - '5:8: empty argument list'
