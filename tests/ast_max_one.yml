@@ -15,48 +15,60 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-43:6:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-43:6:2
     selections:
-    - selectionType: field
-      name: max
-      location: "10:2:3"
+    - location: 10:2:3-13:2:6
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: max
       type: Float
-    - selectionType: max
-      location: "14:2:7"
+    - location: 14:2:7-41:5:4
+      selectionType: max
       limit: 1
       options:
-        location: "20:2:13"
+        location: 20:2:13-41:5:4
         selections:
-        - selectionType: field
-          name: foo
-          location: "26:3:5"
+        - location: 26:3:5-29:3:8
+          selectionType: field
+          name:
+            location: 26:3:5-29:3:8
+            name: foo
           type: Int
-        - selectionType: field
-          name: bar
-          location: "34:4:5"
+        - location: 34:4:5-37:4:8
+          selectionType: field
+          name:
+            location: 34:4:5-37:4:8
+            name: bar
           type: String
 
 expect-ast(schemaless):
+  location: 0:1:1-43:6:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-43:6:2
     selections:
-    - selectionType: field
-      name: max
-      location: "10:2:3"
-    - selectionType: max
-      location: "14:2:7"
+    - location: 10:2:3-13:2:6
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: max
+    - location: 14:2:7-41:5:4
+      selectionType: max
       limit: 1
       options:
-        location: "20:2:13"
+        location: 20:2:13-41:5:4
         selections:
-        - selectionType: field
-          name: foo
-          location: "26:3:5"
-        - selectionType: field
-          name: bar
-          location: "34:4:5"
+        - location: 26:3:5-29:3:8
+          selectionType: field
+          name:
+            location: 26:3:5-29:3:8
+            name: foo
+        - location: 34:4:5-37:4:8
+          selectionType: field
+          name:
+            location: 34:4:5-37:4:8
+            name: bar

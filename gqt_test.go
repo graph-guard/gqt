@@ -165,10 +165,10 @@ func TestParseVariables(t *testing.T) {
 	require.IsType(t, &gqt.Argument{}, vars["unused"].Parent)
 	require.IsType(t, &gqt.ObjectField{}, vars["x"].Parent)
 
-	require.Equal(t, "b", vars["b"].Parent.(*gqt.Argument).Name)
-	require.Equal(t, "c", vars["c"].Parent.(*gqt.Argument).Name)
-	require.Equal(t, "x", vars["unused"].Parent.(*gqt.Argument).Name)
-	require.Equal(t, "o1", vars["x"].Parent.(*gqt.ObjectField).Name)
+	require.Equal(t, "b", vars["b"].Parent.(*gqt.Argument).Name.Name)
+	require.Equal(t, "c", vars["c"].Parent.(*gqt.Argument).Name.Name)
+	require.Equal(t, "x", vars["unused"].Parent.(*gqt.Argument).Name.Name)
+	require.Equal(t, "o1", vars["x"].Parent.(*gqt.ObjectField).Name.Name)
 
 	// Check references
 	require.Len(t, vars["b"].References, 3)
@@ -210,7 +210,11 @@ func TestParseErrEmpty(t *testing.T) {
 	opr, vars, errs := gqt.Parse([]byte(""))
 	require.Equal(t, []gqt.Error{
 		{
-			Location: gqt.Location{Index: 0, Line: 1, Column: 1},
+			LocRange: gqt.LocRange{
+				Location: gqt.Location{
+					Index: 0, Line: 1, Column: 1,
+				},
+			},
 			Msg: "unexpected end of file, expected " +
 				"query, mutation, or subscription operation definition",
 		},

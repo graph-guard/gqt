@@ -8,31 +8,37 @@ expect-errors:
   - '1:14: expected type Int but received [Int]'
 
 expect-ast(schemaless):
+  location: 0:1:1-26:1:27
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-26:1:27
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-25:1:26
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-25:1:26
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-15:1:16
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
+            location: 13:1:14-15:1:16
             constraintType: equals
-            location: "13:1:14"
             value:
+              location: 13:1:14-15:1:16
               expressionType: variableReference
-              location: "13:1:14"
               name: b
-        - name: b
-          location: "17:1:18"
+        - location: 17:1:18-24:1:25
+          name:
+            location: 17:1:18-18:1:19
+            name: b
           variable:
-            location: "19:1:20"
+            location: 19:1:20-21:1:22
             name: b
           constraint:
+            location: 23:1:24-24:1:25
             constraintType: any
-            location: "23:1:24"

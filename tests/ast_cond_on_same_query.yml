@@ -5,56 +5,60 @@ template: >
   query { ... on Query { ... on Query { name } } }
 
 expect-ast:
+  location: 0:1:1-48:1:49
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-48:1:49
     selections:
-    - selectionType: inlineFragment
+    - location: 8:1:9-46:1:47
+      selectionType: inlineFragment
       typeCondition:
-        location: "15:1:16"
+        location: 15:1:16-20:1:21
         typeName: Query
         type: Query
-      location: "8:1:9"
       selectionSet:
-        location: "21:1:22"
+        location: 21:1:22-46:1:47
         selections:
-        - selectionType: inlineFragment
+        - location: 23:1:24-44:1:45
+          selectionType: inlineFragment
           typeCondition:
-            location: "30:1:31"
+            location: 30:1:31-35:1:36
             typeName: Query
             type: Query
-          location: "23:1:24"
           selectionSet:
-            location: "36:1:37"
+            location: 36:1:37-44:1:45
             selections:
-            - selectionType: field
-              name: name
-              location: "38:1:39"
+            - location: 38:1:39-42:1:43
+              selectionType: field
+              name:
+                location: 38:1:39-42:1:43
+                name: name
               type: String!
 
 expect-ast(schemaless):
+  location: 0:1:1-48:1:49
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-48:1:49
     selections:
-    - selectionType: inlineFragment
+    - location: 8:1:9-46:1:47
+      selectionType: inlineFragment
       typeCondition:
-        location: "15:1:16"
+        location: 15:1:16-20:1:21
         typeName: Query
-      location: "8:1:9"
       selectionSet:
-        location: "21:1:22"
+        location: 21:1:22-46:1:47
         selections:
-        - selectionType: inlineFragment
+        - location: 23:1:24-44:1:45
+          selectionType: inlineFragment
           typeCondition:
-            location: "30:1:31"
+            location: 30:1:31-35:1:36
             typeName: Query
-          location: "23:1:24"
           selectionSet:
-            location: "36:1:37"
+            location: 36:1:37-44:1:45
             selections:
-            - selectionType: field
-              name: name
-              location: "38:1:39"
+            - location: 38:1:39-42:1:43
+              selectionType: field
+              name:
+                location: 38:1:39-42:1:43
+                name: name

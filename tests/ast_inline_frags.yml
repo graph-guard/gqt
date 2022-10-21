@@ -14,94 +14,119 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-108:7:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-108:7:2
     selections:
-    - selectionType: field
-      name: f
-      location: "10:2:3"
+    - location: 10:2:3-106:6:4
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: f
       type: U!
       selectionSet:
-        location: "12:2:5"
+        location: 12:2:5-106:6:4
         selections:
-        - selectionType: field
-          name: __typename
-          location: "20:3:7"
-        - selectionType: inlineFragment
+        - location: 20:3:7-30:3:17
+          selectionType: field
+          name:
+            location: 20:3:7-30:3:17
+            name: __typename
+        - location: 37:4:7-66:4:36
+          selectionType: inlineFragment
           typeCondition:
-            location: "44:4:14"
+            location: 44:4:14-47:4:17
             typeName: Foo
             type: Foo
-          location: "37:4:7"
           selectionSet:
-            location: "48:4:18"
+            location: 48:4:18-66:4:36
             selections:
-            - selectionType: field
-              name: foo
-              location: "50:4:20"
+            - location: 50:4:20-53:4:23
+              selectionType: field
+              name:
+                location: 50:4:20-53:4:23
+                name: foo
               type: String!
-            - selectionType: field
-              name: __typename
-              location: "54:4:24"
-        - selectionType: inlineFragment
+            - location: 54:4:24-64:4:34
+              selectionType: field
+              name:
+                location: 54:4:24-64:4:34
+                name: __typename
+        - location: 73:5:7-102:5:36
+          selectionType: inlineFragment
           typeCondition:
-            location: "80:5:14"
+            location: 80:5:14-83:5:17
             typeName: Bar
             type: Bar
-          location: "73:5:7"
           selectionSet:
-            location: "84:5:18"
+            location: 84:5:18-102:5:36
             selections:
-            - selectionType: field
-              name: bar
-              location: "86:5:20"
+            - location: 86:5:20-89:5:23
+              selectionType: field
+              name:
+                location: 86:5:20-89:5:23
+                name: bar
               type: String!
-            - selectionType: field
-              name: __typename
-              location: "90:5:24"
+            - location: 90:5:24-100:5:34
+              selectionType: field
+              name:
+                location: 90:5:24-100:5:34
+                name: __typename
+
 
 expect-ast(schemaless):
+  location: 0:1:1-108:7:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-108:7:2
     selections:
-    - selectionType: field
-      name: f
-      location: "10:2:3"
+    - location: 10:2:3-106:6:4
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: f
       selectionSet:
-        location: "12:2:5"
+        location: 12:2:5-106:6:4
         selections:
-        - selectionType: field
-          name: __typename
-          location: "20:3:7"
-        - selectionType: inlineFragment
+        - location: 20:3:7-30:3:17
+          selectionType: field
+          name:
+            location: 20:3:7-30:3:17
+            name: __typename
+        - location: 37:4:7-66:4:36
+          selectionType: inlineFragment
           typeCondition:
-            location: "44:4:14"
+            location: 44:4:14-47:4:17
             typeName: Foo
-          location: "37:4:7"
           selectionSet:
-            location: "48:4:18"
+            location: 48:4:18-66:4:36
             selections:
-            - selectionType: field
-              name: foo
-              location: "50:4:20"
-            - selectionType: field
-              name: __typename
-              location: "54:4:24"
-        - selectionType: inlineFragment
+            - location: 50:4:20-53:4:23
+              selectionType: field
+              name:
+                location: 50:4:20-53:4:23
+                name: foo
+            - location: 54:4:24-64:4:34
+              selectionType: field
+              name:
+                location: 54:4:24-64:4:34
+                name: __typename
+        - location: 73:5:7-102:5:36
+          selectionType: inlineFragment
           typeCondition:
-            location: "80:5:14"
+            location: 80:5:14-83:5:17
             typeName: Bar
-          location: "73:5:7"
           selectionSet:
-            location: "84:5:18"
+            location: 84:5:18-102:5:36
             selections:
-            - selectionType: field
-              name: bar
-              location: "86:5:20"
-            - selectionType: field
-              name: __typename
-              location: "90:5:24"
+            - location: 86:5:20-89:5:23
+              selectionType: field
+              name:
+                location: 86:5:20-89:5:23
+                name: bar
+            - location: 90:5:24-100:5:34
+              selectionType: field
+              name:
+                location: 90:5:24-100:5:34
+                name: __typename

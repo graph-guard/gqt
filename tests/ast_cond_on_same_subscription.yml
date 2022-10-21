@@ -5,56 +5,60 @@ template: >
   subscription { ... on Subscription { ... on Subscription { name } } }
 
 expect-ast:
+  location: 0:1:1-69:1:70
   operationType: Subscription
-  location: "0:1:1"
   selectionSet:
-    location: "13:1:14"
+    location: 13:1:14-69:1:70
     selections:
-    - selectionType: inlineFragment
+    - location: 15:1:16-67:1:68
+      selectionType: inlineFragment
       typeCondition:
-        location: "22:1:23"
+        location: 22:1:23-34:1:35
         typeName: Subscription
         type: Subscription
-      location: "15:1:16"
       selectionSet:
-        location: "35:1:36"
+        location: 35:1:36-67:1:68
         selections:
-        - selectionType: inlineFragment
+        - location: 37:1:38-65:1:66
+          selectionType: inlineFragment
           typeCondition:
-            location: "44:1:45"
+            location: 44:1:45-56:1:57
             typeName: Subscription
             type: Subscription
-          location: "37:1:38"
           selectionSet:
-            location: "57:1:58"
+            location: 57:1:58-65:1:66
             selections:
-            - selectionType: field
-              name: name
-              location: 59:1:60
+            - location: 59:1:60-63:1:64
+              selectionType: field
+              name:
+                location: 59:1:60-63:1:64
+                name: name
               type: String!
 
 expect-ast(schemaless):
+  location: 0:1:1-69:1:70
   operationType: Subscription
-  location: "0:1:1"
   selectionSet:
-    location: "13:1:14"
+    location: 13:1:14-69:1:70
     selections:
-    - selectionType: inlineFragment
+    - location: 15:1:16-67:1:68
+      selectionType: inlineFragment
       typeCondition:
-        location: "22:1:23"
+        location: 22:1:23-34:1:35
         typeName: Subscription
-      location: "15:1:16"
       selectionSet:
-        location: "35:1:36"
+        location: 35:1:36-67:1:68
         selections:
-        - selectionType: inlineFragment
+        - location: 37:1:38-65:1:66
+          selectionType: inlineFragment
           typeCondition:
-            location: "44:1:45"
+            location: 44:1:45-56:1:57
             typeName: Subscription
-          location: "37:1:38"
           selectionSet:
-            location: "57:1:58"
+            location: 57:1:58-65:1:66
             selections:
-            - selectionType: field
-              name: name
-              location: 59:1:60
+            - location: 59:1:60-63:1:64
+              selectionType: field
+              name:
+                location: 59:1:60-63:1:64
+                name: name

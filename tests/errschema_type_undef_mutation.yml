@@ -9,11 +9,13 @@ expect-errors:
   - '1:1: type Mutation is undefined'
 
 expect-ast(schemaless):
+  location: 0:1:1-14:1:15
   operationType: Mutation
-  location: "0:1:1"
   selectionSet:
-    location: "9:1:10"
+    location: 9:1:10-14:1:15
     selections:
-    - selectionType: field
-      name: f
-      location: "11:1:12"
+    - location: 11:1:12-12:1:13
+      selectionType: field
+      name:
+        location: 11:1:12-12:1:13
+        name: f

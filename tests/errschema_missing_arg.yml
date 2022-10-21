@@ -8,19 +8,23 @@ expect-errors:
   - '1:12: argument "a" of type Int! is required but missing'
 
 expect-ast(schemaless):
+  location: 0:1:1-19:1:20
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-19:1:20
     selections:
-    - selectionType: field
-      name: foo
-      location: "8:1:9"
+    - location: 8:1:9-17:1:18
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
       argumentList:
-        location: "11:1:12"
+        location: 11:1:12-17:1:18
         arguments:
-        - name: b
-          location: "12:1:13"
+        - location: 12:1:13-16:1:17
+          name:
+            location: 12:1:13-13:1:14
+            name: b
           constraint:
+            location: 15:1:16-16:1:17
             constraintType: any
-            location: "15:1:16"

@@ -5,77 +5,85 @@ template: >
   query { f(a: 1 || 2 || 3) }
 
 expect-ast:
+  location: 0:1:1-27:1:28
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-27:1:28
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-25:1:26
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       type: Int!
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-25:1:26
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-24:1:25
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           type: Int!
           constraint:
+            location: 13:1:14-24:1:25
             expressionType: logicalOR
-            location: "13:1:14"
             expressions:
-            - constraintType: equals
-              location: "13:1:14"
+            - location: 13:1:14-14:1:15
+              constraintType: equals
               value:
+                location: 13:1:14-14:1:15
                 expressionType: int
-                location: "13:1:14"
                 value: 1
-            - constraintType: equals
-              location: "18:1:19"
+            - location: 18:1:19-19:1:20
+              constraintType: equals
               value:
+                location: 18:1:19-19:1:20
                 expressionType: int
-                location: "18:1:19"
                 value: 2
-            - constraintType: equals
-              location: "23:1:24"
+            - location: 23:1:24-24:1:25
+              constraintType: equals
               value:
+                location: 23:1:24-24:1:25
                 expressionType: int
-                location: "23:1:24"
                 value: 3
 
 expect-ast(schemaless):
+  location: 0:1:1-27:1:28
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-27:1:28
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-25:1:26
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-25:1:26
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-24:1:25
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
+            location: 13:1:14-24:1:25
             expressionType: logicalOR
-            location: "13:1:14"
             expressions:
-            - constraintType: equals
-              location: "13:1:14"
+            - location: 13:1:14-14:1:15
+              constraintType: equals
               value:
+                location: 13:1:14-14:1:15
                 expressionType: int
-                location: "13:1:14"
                 value: 1
-            - constraintType: equals
-              location: "18:1:19"
+            - location: 18:1:19-19:1:20
+              constraintType: equals
               value:
+                location: 18:1:19-19:1:20
                 expressionType: int
-                location: "18:1:19"
                 value: 2
-            - constraintType: equals
-              location: "23:1:24"
+            - location: 23:1:24-24:1:25
+              constraintType: equals
               value:
+                location: 23:1:24-24:1:25
                 expressionType: int
-                location: "23:1:24"
                 value: 3

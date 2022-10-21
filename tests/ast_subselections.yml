@@ -18,49 +18,65 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-44:7:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-44:7:2
     selections:
-    - selectionType: field
-      name: foo
-      location: "10:2:3"
+    - location: 10:2:3-35:5:4
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: foo
       type: Foo!
       selectionSet:
-        location: "14:2:7"
+        location: 14:2:7-35:5:4
         selections:
-        - selectionType: field
-          name: bar
-          location: "20:3:5"
+        - location: 20:3:5-23:3:8
+          selectionType: field
+          name:
+            location: 20:3:5-23:3:8
+            name: bar
           type: Int!
-        - selectionType: field
-          name: baz
-          location: "28:4:5"
+        - location: 28:4:5-31:4:8
+          selectionType: field
+          name:
+            location: 28:4:5-31:4:8
+            name: baz
           type: Int!
-    - selectionType: field
-      name: fazz
-      location: "38:6:3"
+    - location: 38:6:3-42:6:7
+      selectionType: field
+      name:
+        location: 38:6:3-42:6:7
+        name: fazz
       type: Int!
 
 expect-ast(schemaless):
+  location: 0:1:1-44:7:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-44:7:2
     selections:
-    - selectionType: field
-      name: foo
-      location: "10:2:3"
+    - location: 10:2:3-35:5:4
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: foo
       selectionSet:
-        location: "14:2:7"
+        location: 14:2:7-35:5:4
         selections:
-        - selectionType: field
-          name: bar
-          location: "20:3:5"
-        - selectionType: field
-          name: baz
-          location: "28:4:5"
-    - selectionType: field
-      name: fazz
-      location: "38:6:3"
+        - location: 20:3:5-23:3:8
+          selectionType: field
+          name:
+            location: 20:3:5-23:3:8
+            name: bar
+        - location: 28:4:5-31:4:8
+          selectionType: field
+          name:
+            location: 28:4:5-31:4:8
+            name: baz
+    - location: 38:6:3-42:6:7
+      selectionType: field
+      name:
+        location: 38:6:3-42:6:7
+        name: fazz

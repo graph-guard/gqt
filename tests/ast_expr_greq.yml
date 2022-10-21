@@ -5,61 +5,69 @@ template: >
   query { f(a: 10 >= 3.14) }
 
 expect-ast:
+  location: 0:1:1-26:1:27
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-26:1:27
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-24:1:25
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       type: Int
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-24:1:25
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-23:1:24
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           type: Boolean
           constraint:
+            location: 13:1:14-23:1:24
             constraintType: equals
-            location: "13:1:14"
             value:
+              location: 13:1:14-23:1:24
               expressionType: greaterThanOrEquals
-              location: "13:1:14"
               left:
+                location: 13:1:14-15:1:16
                 expressionType: int
-                location: "13:1:14"
                 value: 10
               right:
+                location: 19:1:20-23:1:24
                 expressionType: float
-                location: "19:1:20"
                 value: 3.14
 
 expect-ast(schemaless):
+  location: 0:1:1-26:1:27
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-26:1:27
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-24:1:25
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-24:1:25
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-23:1:24
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
+            location: 13:1:14-23:1:24
             constraintType: equals
-            location: "13:1:14"
             value:
+              location: 13:1:14-23:1:24
               expressionType: greaterThanOrEquals
-              location: "13:1:14"
               left:
+                location: 13:1:14-15:1:16
                 expressionType: int
-                location: "13:1:14"
                 value: 10
               right:
+                location: 19:1:20-23:1:24
                 expressionType: float
-                location: "19:1:20"
                 value: 3.14

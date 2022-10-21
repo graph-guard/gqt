@@ -451,8 +451,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"0.1234x",
 		&Float{
-			Location: startLoc(),
-			Value:    0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value: 0.1234,
 		},
 		nil,
 		Location{6, 1, 7},
@@ -461,8 +464,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"0",
 		&Int{
-			Location: startLoc(),
-			Value:    0,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{1, 1, 2},
+			},
+			Value: 0,
 		},
 		nil,
 		Location{1, 1, 2},
@@ -471,8 +477,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"10.0",
 		&Float{
-			Location: startLoc(),
-			Value:    10.0,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{4, 1, 5},
+			},
+			Value: 10.0,
 		},
 		nil,
 		Location{4, 1, 5},
@@ -481,8 +490,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-1",
 		&Int{
-			Location: startLoc(),
-			Value:    -1,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{2, 1, 3},
+			},
+			Value: -1,
 		},
 		nil,
 		Location{2, 1, 3},
@@ -491,8 +503,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"0.1234",
 		&Float{
-			Location: startLoc(),
-			Value:    0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value: 0.1234,
 		},
 		nil,
 		Location{6, 1, 7},
@@ -501,8 +516,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -511,8 +529,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"6E+5",
 		&Float{
-			Location: startLoc(),
-			Value:    6e+5,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{4, 1, 5},
+			},
+			Value: 6e+5,
 		},
 		nil,
 		Location{4, 1, 5},
@@ -523,8 +544,11 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		[]Error{
 			{
-				Location: Location{2, 1, 3},
-				Msg:      "exponent has no digits",
+				LocRange: LocRange{
+					Location:    startLoc(),
+					LocationEnd: LocationEnd{2, 1, 3},
+				},
+				Msg: "exponent has no digits",
 			},
 		},
 		Location{},
@@ -535,8 +559,11 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		[]Error{
 			{
-				Location: Location{2, 1, 3},
-				Msg:      "exponent has no digits",
+				LocRange: LocRange{
+					Location:    startLoc(),
+					LocationEnd: LocationEnd{2, 1, 3},
+				},
+				Msg: "exponent has no digits",
 			},
 		},
 		Location{},
@@ -547,8 +574,11 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		[]Error{
 			{
-				Location: Location{2, 1, 3},
-				Msg:      "exponent has no digits",
+				LocRange: LocRange{
+					Location:    startLoc(),
+					LocationEnd: LocationEnd{2, 1, 3},
+				},
+				Msg: "exponent has no digits",
 			},
 		},
 		startLoc(),
@@ -559,8 +589,11 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		[]Error{
 			{
-				Location: Location{3, 1, 4},
-				Msg:      "exponent has no digits",
+				LocRange: LocRange{
+					Location:    startLoc(),
+					LocationEnd: LocationEnd{3, 1, 4},
+				},
+				Msg: "exponent has no digits",
 			},
 		},
 		startLoc(),
@@ -571,8 +604,11 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		[]Error{
 			{
-				Location: Location{3, 1, 4},
-				Msg:      "exponent has no digits",
+				LocRange: LocRange{
+					Location:    startLoc(),
+					LocationEnd: LocationEnd{3, 1, 4},
+				},
+				Msg: "exponent has no digits",
 			},
 		},
 		startLoc(),
@@ -583,8 +619,11 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		[]Error{
 			{
-				Location: Location{3, 1, 4},
-				Msg:      "exponent has no digits",
+				LocRange: LocRange{
+					Location:    startLoc(),
+					LocationEnd: LocationEnd{3, 1, 4},
+				},
+				Msg: "exponent has no digits",
 			},
 		},
 		startLoc(),
@@ -593,8 +632,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234}x",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -603,8 +645,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234)x",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -613,8 +658,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234]x",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -623,8 +671,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234||",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -633,8 +684,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234&&",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -643,8 +697,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234#x",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -653,8 +710,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234,x",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -663,8 +723,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234 x",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -673,8 +736,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234\tx",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -683,8 +749,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234\nx",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -693,8 +762,11 @@ func TestParseNumber(t *testing.T) {
 		startLoc(),
 		"-0.1234\rx",
 		&Float{
-			Location: startLoc(),
-			Value:    -0.1234,
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{7, 1, 8},
+			},
+			Value: -0.1234,
 		},
 		nil,
 		Location{7, 1, 8},
@@ -703,8 +775,11 @@ func TestParseNumber(t *testing.T) {
 		Location{2, 1, 3},
 		"  2-321 ",
 		&Int{
-			Location: Location{2, 1, 3},
-			Value:    2,
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: 2,
 		},
 		nil,
 		Location{3, 1, 4},
@@ -713,8 +788,11 @@ func TestParseNumber(t *testing.T) {
 		Location{2, 1, 3},
 		"  2+321 ",
 		&Int{
-			Location: Location{2, 1, 3},
-			Value:    2,
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: 2,
 		},
 		nil,
 		Location{3, 1, 4},
@@ -723,8 +801,11 @@ func TestParseNumber(t *testing.T) {
 		Location{2, 1, 3},
 		"  2*321",
 		&Int{
-			Location: Location{2, 1, 3},
-			Value:    2,
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: 2,
 		},
 		nil,
 		Location{3, 1, 4},
@@ -733,8 +814,11 @@ func TestParseNumber(t *testing.T) {
 		Location{2, 1, 3},
 		"  2/321",
 		&Int{
-			Location: Location{2, 1, 3},
-			Value:    2,
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: 2,
 		},
 		nil,
 		Location{3, 1, 4},
@@ -743,8 +827,11 @@ func TestParseNumber(t *testing.T) {
 		Location{2, 1, 3},
 		"  2%321",
 		&Int{
-			Location: Location{2, 1, 3},
-			Value:    2,
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: 2,
 		},
 		nil,
 		Location{3, 1, 4},

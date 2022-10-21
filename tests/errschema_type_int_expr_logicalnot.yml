@@ -8,25 +8,29 @@ expect-errors:
   - '1:16: expected type Int! but received Boolean'
 
 expect-ast(schemaless):
+  location: 0:1:1-24:1:25
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-24:1:25
     selections:
-    - selectionType: field
-      name: foo
-      location: "8:1:9"
+    - location: 8:1:9-22:1:23
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
       argumentList:
-        location: "11:1:12"
+        location: 11:1:12-22:1:23
         arguments:
-        - name: a
-          location: "12:1:13"
+        - location: 12:1:13-21:1:22
+          name:
+            location: 12:1:13-13:1:14
+            name: a
           constraint:
+            location: 15:1:16-21:1:22
             constraintType: equals
-            location: "15:1:16"
             value:
+              location: 15:1:16-21:1:22
               expressionType: logicalNegation
-              location: "15:1:16"
               expression:
+                location: 16:1:17-21:1:22
                 expressionType: "false"
-                location: "16:1:17"

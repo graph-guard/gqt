@@ -9,11 +9,13 @@ expect-errors:
   - '1:1: type Subscription is undefined'
 
 expect-ast(schemaless):
+  location: 0:1:1-18:1:19
   operationType: Subscription
-  location: "0:1:1"
   selectionSet:
-    location: "13:1:14"
+    location: 13:1:14-18:1:19
     selections:
-    - selectionType: field
-      name: f
-      location: "15:1:16"
+    - location: 15:1:16-16:1:17
+      selectionType: field
+      name:
+        location: 15:1:16-16:1:17
+        name: f

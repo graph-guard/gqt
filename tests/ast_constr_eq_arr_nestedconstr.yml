@@ -9,72 +9,80 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-29:3:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-29:3:2
     selections:
-    - selectionType: field
-      name: f
-      location: "10:2:3"
+    - location: 10:2:3-27:2:20
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: f
       type: Int
       argumentList:
-        location: "11:2:4"
+        location: 11:2:4-27:2:20
         arguments:
-        - name: a
-          location: "12:2:5"
+        - location: 12:2:5-26:2:19
+          name:
+            location: 12:2:5-13:2:6
+            name: a
           type: '[Int!]'
           constraint:
+            location: 15:2:8-26:2:19
             constraintType: equals
-            location: "15:2:8"
             value:
+              location: 15:2:8-26:2:19
               expressionType: array
-              location: "15:2:8"
-              itemType: 'Int'
+              itemType: Int
               items:
-              - constraintType: greaterThan
-                location: "16:2:9"
+              - location: 16:2:9-19:2:12
+                constraintType: greaterThan
                 value:
+                  location: 18:2:11-19:2:12
                   expressionType: int
-                  location: "18:2:11"
                   value: 5
-              - constraintType: lessThan
-                location: "21:2:14"
+              - location: 21:2:14-25:2:18
+                constraintType: lessThan
                 value:
+                  location: 23:2:16-25:2:18
                   expressionType: int
-                  location: "23:2:16"
                   value: 10
 
 expect-ast(schemaless):
+  location: 0:1:1-29:3:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-29:3:2
     selections:
-    - selectionType: field
-      name: f
-      location: "10:2:3"
+    - location: 10:2:3-27:2:20
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: f
       argumentList:
-        location: "11:2:4"
+        location: 11:2:4-27:2:20
         arguments:
-        - name: a
-          location: "12:2:5"
+        - location: 12:2:5-26:2:19
+          name:
+            location: 12:2:5-13:2:6
+            name: a
           constraint:
+            location: 15:2:8-26:2:19
             constraintType: equals
-            location: "15:2:8"
             value:
+              location: 15:2:8-26:2:19
               expressionType: array
-              location: "15:2:8"
               items:
-              - constraintType: greaterThan
-                location: "16:2:9"
+              - location: 16:2:9-19:2:12
+                constraintType: greaterThan
                 value:
+                  location: 18:2:11-19:2:12
                   expressionType: int
-                  location: "18:2:11"
                   value: 5
-              - constraintType: lessThan
-                location: "21:2:14"
+              - location: 21:2:14-25:2:18
+                constraintType: lessThan
                 value:
+                  location: 23:2:16-25:2:18
                   expressionType: int
-                  location: "23:2:16"
                   value: 10

@@ -54,102 +54,122 @@ template: |
   # End of document
 
 expect-ast:
+  location: 24:2:1-1228:43:2
   operationType: Subscription
-  location: "24:2:1"
   selectionSet:
-    location: "93:4:1"
+    location: 93:4:1-1228:43:2
     selections:
-    - selectionType: max
-      location: "173:6:3"
+    - location: 173:6:3-1172:41:4
+      selectionType: max
       limit: 1
       options:
-        location: "251:10:3"
+        location: 251:10:3-1172:41:4
         selections:
-        - selectionType: field
-          name: notification
-          location: "317:12:5"
+        - location: 317:12:5-329:12:17
+          selectionType: field
+          name:
+            location: 317:12:5-329:12:17
+            name: notification
           type: String!
-        - selectionType: field
-          name: event
-          location: "370:14:5"
+        - location: 370:14:5-1112:39:6
+          selectionType: field
+          name:
+            location: 370:14:5-375:14:10
+            name: event
           type: Event
           argumentList:
-            location: "416:16:5"
+            location: 416:16:5-743:27:6
             arguments:
-            - name: name
-              location: "440:17:7"
+            - location: 440:17:7-673:25:9
+              name:
+                location: 440:17:7-444:17:11
+                name: name
               type: String!
               constraint:
+                location: 531:21:7-673:25:9
                 constraintType: lengthLessThan
-                location: "531:21:7"
                 value:
+                  location: 671:25:7-673:25:9
                   expressionType: int
-                  location: "671:25:7"
                   value: 64
           selectionSet:
-            location: "804:29:5"
+            location: 804:29:5-1112:39:6
             selections:
-            - selectionType: field
-              name: name
-              location: "866:31:7"
+            - location: 866:31:7-870:31:11
+              selectionType: field
+              name:
+                location: 866:31:7-870:31:11
+                name: name
               type: String!
-            - selectionType: inlineFragment
+            - location: 895:32:7-1106:38:21
+              selectionType: inlineFragment
               typeCondition:
-                location: "1034:36:7"
+                location: 1034:36:7-1039:36:12
                 typeName: Event
                 type: Event
-              location: "895:32:7"
               selectionSet:
-                location: "1092:38:7"
+                location: 1092:38:7-1106:38:21
                 selections:
-                - selectionType: field
-                  name: __typename
-                  location: "1094:38:9"
+                - location: 1094:38:9-1104:38:19
+                  selectionType: field
+                  name:
+                    location: 1094:38:9-1104:38:19
+                    name: __typename
 
 expect-ast(schemaless):
+  location: 24:2:1-1228:43:2
   operationType: Subscription
-  location: "24:2:1"
   selectionSet:
-    location: "93:4:1"
+    location: 93:4:1-1228:43:2
     selections:
-    - selectionType: max
-      location: "173:6:3"
+    - location: 173:6:3-1172:41:4
+      selectionType: max
       limit: 1
       options:
-        location: "251:10:3"
+        location: 251:10:3-1172:41:4
         selections:
-        - selectionType: field
-          name: notification
-          location: "317:12:5"
-        - selectionType: field
-          name: event
-          location: "370:14:5"
+        - location: 317:12:5-329:12:17
+          selectionType: field
+          name:
+            location: 317:12:5-329:12:17
+            name: notification
+        - location: 370:14:5-1112:39:6
+          selectionType: field
+          name:
+            location: 370:14:5-375:14:10
+            name: event
           argumentList:
-            location: "416:16:5"
+            location: 416:16:5-743:27:6
             arguments:
-            - name: name
-              location: "440:17:7"
+            - location: 440:17:7-673:25:9
+              name:
+                location: 440:17:7-444:17:11
+                name: name
               constraint:
+                location: 531:21:7-673:25:9
                 constraintType: lengthLessThan
-                location: "531:21:7"
                 value:
+                  location: 671:25:7-673:25:9
                   expressionType: int
-                  location: "671:25:7"
                   value: 64
           selectionSet:
-            location: "804:29:5"
+            location: 804:29:5-1112:39:6
             selections:
-            - selectionType: field
-              name: name
-              location: "866:31:7"
-            - selectionType: inlineFragment
+            - location: 866:31:7-870:31:11
+              selectionType: field
+              name:
+                location: 866:31:7-870:31:11
+                name: name
+            - location: 895:32:7-1106:38:21
+              selectionType: inlineFragment
               typeCondition:
-                location: "1034:36:7"
+                location: 1034:36:7-1039:36:12
                 typeName: Event
-              location: "895:32:7"
               selectionSet:
-                location: "1092:38:7"
+                location: 1092:38:7-1106:38:21
                 selections:
-                - selectionType: field
-                  name: __typename
-                  location: "1094:38:9"
+                - location: 1094:38:9-1104:38:19
+                  selectionType: field
+                  name:
+                    location: 1094:38:9-1104:38:19
+                    name: __typename

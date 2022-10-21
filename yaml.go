@@ -14,8 +14,16 @@ func WriteYAML(w io.Writer, o *Operation) error {
 	return d.Encode(o)
 }
 
-func (s Location) MarshalYAML() (any, error) {
-	return fmt.Sprintf("%d:%d:%d", s.Index, s.Line, s.Column), nil
+func (s LocRange) MarshalYAML() (any, error) {
+	if s.ColumnEnd == 0 {
+		// Not a range
+		return fmt.Sprintf("%d:%d:%d", s.Index, s.Line, s.Column), nil
+	}
+	return fmt.Sprintf(
+		"%d:%d:%d-%d:%d:%d",
+		s.Index, s.Line, s.Column,
+		s.IndexEnd, s.LineEnd, s.ColumnEnd,
+	), nil
 }
 
 func (c TypeCondition) MarshalYAML() (any, error) {
@@ -24,11 +32,11 @@ func (c TypeCondition) MarshalYAML() (any, error) {
 		t = c.TypeDef.Name
 	}
 	return struct {
-		Location Location `yaml:"location"`
+		Location LocRange `yaml:"location"`
 		TypeName string   `yaml:"typeName"`
 		Type     string   `yaml:"type,omitempty"`
 	}{
-		Location: c.Location,
+		Location: c.LocRange,
 		TypeName: c.TypeName,
 		Type:     t,
 	}, nil
@@ -36,224 +44,224 @@ func (c TypeCondition) MarshalYAML() (any, error) {
 
 func (l ArgumentList) MarshalYAML() (any, error) {
 	return struct {
-		Location  Location    `yaml:"location"`
+		Location  LocRange    `yaml:"location"`
 		Arguments []*Argument `yaml:"arguments,omitempty"`
 	}{
-		Location:  l.Location,
+		Location:  l.LocRange,
 		Arguments: l.Arguments,
 	}, nil
 }
 
 func (s SelectionSet) MarshalYAML() (any, error) {
 	return struct {
-		Location   Location    `yaml:"location"`
+		Location   LocRange    `yaml:"location"`
 		Selections []Selection `yaml:"selections,omitempty"`
 	}{
-		Location:   s.Location,
+		Location:   s.LocRange,
 		Selections: s.Selections,
 	}, nil
 }
 
 func (o *Operation) MarshalYAML() (any, error) {
 	return struct {
+		Location      LocRange     `yaml:"location"`
 		OperationType string       `yaml:"operationType"`
-		Location      Location     `yaml:"location"`
 		SelectionSet  SelectionSet `yaml:"selectionSet,omitempty"`
 	}{
+		Location:      o.LocRange,
 		OperationType: o.Type.String(),
-		Location:      o.Location,
 		SelectionSet:  o.SelectionSet,
 	}, nil
 }
 
 func (c *ConstrAny) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ConstraintType string   `yaml:"constraintType"`
-		Location       Location `yaml:"location"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "any",
-		Location:       c.Location,
 	}, nil
 }
 
 func (c *ConstrEquals) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "equals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrNotEquals) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "notEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLess) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lessThan",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLessOrEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lessThanOrEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrGreater) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "greaterThan",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrGreaterOrEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "greaterThanOrEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLenEquals) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lengthEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLenNotEquals) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lengthNotEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLenLess) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lengthLessThan",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLenLessOrEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lengthLessThanOrEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLenGreater) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lengthGreaterThan",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrLenGreaterOrEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Value          Expression `yaml:"value"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "lengthGreaterThanOrEquals",
-		Location:       c.Location,
 		Value:          c.Value,
 	}, nil
 }
 
 func (c *ConstrMap) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ConstraintType string     `yaml:"constraintType"`
-		Location       Location   `yaml:"location"`
 		Constraint     Expression `yaml:"constraint"`
 	}{
+		Location:       c.LocRange,
 		ConstraintType: "map",
-		Location:       c.Location,
 		Constraint:     c.Constraint,
 	}, nil
 }
 
 func (e *ExprParentheses) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Expression     Expression `yaml:"expression"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "parentheses",
-		Location:       e.Location,
 		Expression:     e.Expression,
 	}, nil
 }
 
 func (e *ExprModulo) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Float          bool       `yaml:"float"`
 		Dividend       Expression `yaml:"dividend"`
 		Divisor        Expression `yaml:"divisor"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "modulo",
-		Location:       e.Location,
 		Float:          e.Float,
 		Dividend:       e.Dividend,
 		Divisor:        e.Divisor,
@@ -262,14 +270,14 @@ func (e *ExprModulo) MarshalYAML() (any, error) {
 
 func (e *ExprDivision) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Float          bool       `yaml:"float"`
 		Dividend       Expression `yaml:"dividend"`
 		Divisor        Expression `yaml:"divisor"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "division",
-		Location:       e.Location,
 		Float:          e.Float,
 		Dividend:       e.Dividend,
 		Divisor:        e.Divisor,
@@ -278,14 +286,14 @@ func (e *ExprDivision) MarshalYAML() (any, error) {
 
 func (e *ExprMultiplication) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Float          bool       `yaml:"float"`
 		Multiplicant   Expression `yaml:"multiplicant"`
 		Multiplicator  Expression `yaml:"multiplicator"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "multiplication",
-		Location:       e.Location,
 		Float:          e.Float,
 		Multiplicant:   e.Multiplicant,
 		Multiplicator:  e.Multiplicator,
@@ -294,14 +302,14 @@ func (e *ExprMultiplication) MarshalYAML() (any, error) {
 
 func (e *ExprAddition) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Float          bool       `yaml:"float"`
 		AddendLeft     Expression `yaml:"addendLeft"`
 		AddendRight    Expression `yaml:"addendRight"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "addition",
-		Location:       e.Location,
 		Float:          e.Float,
 		AddendLeft:     e.AddendLeft,
 		AddendRight:    e.AddendRight,
@@ -310,14 +318,14 @@ func (e *ExprAddition) MarshalYAML() (any, error) {
 
 func (e *ExprSubtraction) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Float          bool       `yaml:"float"`
 		Minuend        Expression `yaml:"minuend"`
 		Subtrahend     Expression `yaml:"subtrahend"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "subtraction",
-		Location:       e.Location,
 		Float:          e.Float,
 		Minuend:        e.Minuend,
 		Subtrahend:     e.Subtrahend,
@@ -326,25 +334,25 @@ func (e *ExprSubtraction) MarshalYAML() (any, error) {
 
 func (e *ExprLogicalNegation) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Expression     Expression `yaml:"expression"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "logicalNegation",
-		Location:       e.Location,
 		Expression:     e.Expression,
 	}, nil
 }
 
 func (e *ExprEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Left           Expression `yaml:"left"`
 		Right          Expression `yaml:"right"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "equals",
-		Location:       e.Location,
 		Left:           e.Left,
 		Right:          e.Right,
 	}, nil
@@ -352,13 +360,13 @@ func (e *ExprEqual) MarshalYAML() (any, error) {
 
 func (e *ExprNotEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Left           Expression `yaml:"left"`
 		Right          Expression `yaml:"right"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "notEquals",
-		Location:       e.Location,
 		Left:           e.Left,
 		Right:          e.Right,
 	}, nil
@@ -366,13 +374,13 @@ func (e *ExprNotEqual) MarshalYAML() (any, error) {
 
 func (e *ExprLess) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Left           Expression `yaml:"left"`
 		Right          Expression `yaml:"right"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "lessThan",
-		Location:       e.Location,
 		Left:           e.Left,
 		Right:          e.Right,
 	}, nil
@@ -380,13 +388,13 @@ func (e *ExprLess) MarshalYAML() (any, error) {
 
 func (e *ExprLessOrEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Left           Expression `yaml:"left"`
 		Right          Expression `yaml:"right"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "lessThanOrEquals",
-		Location:       e.Location,
 		Left:           e.Left,
 		Right:          e.Right,
 	}, nil
@@ -394,13 +402,13 @@ func (e *ExprLessOrEqual) MarshalYAML() (any, error) {
 
 func (e *ExprGreater) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Left           Expression `yaml:"left"`
 		Right          Expression `yaml:"right"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "greaterThan",
-		Location:       e.Location,
 		Left:           e.Left,
 		Right:          e.Right,
 	}, nil
@@ -408,13 +416,13 @@ func (e *ExprGreater) MarshalYAML() (any, error) {
 
 func (e *ExprGreaterOrEqual) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange   `yaml:"location"`
 		ExpressionType string     `yaml:"expressionType"`
-		Location       Location   `yaml:"location"`
 		Left           Expression `yaml:"left"`
 		Right          Expression `yaml:"right"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "greaterThanOrEquals",
-		Location:       e.Location,
 		Left:           e.Left,
 		Right:          e.Right,
 	}, nil
@@ -422,24 +430,24 @@ func (e *ExprGreaterOrEqual) MarshalYAML() (any, error) {
 
 func (e *ExprLogicalAnd) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange     `yaml:"location"`
 		ExpressionType string       `yaml:"expressionType"`
-		Location       Location     `yaml:"location"`
 		Expressions    []Expression `yaml:"expressions"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "logicalAND",
-		Location:       e.Location,
 		Expressions:    e.Expressions,
 	}, nil
 }
 
 func (e *ExprLogicalOr) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange     `yaml:"location"`
 		ExpressionType string       `yaml:"expressionType"`
-		Location       Location     `yaml:"location"`
 		Expressions    []Expression `yaml:"expressions"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "logicalOR",
-		Location:       e.Location,
 		Expressions:    e.Expressions,
 	}, nil
 }
@@ -450,12 +458,12 @@ func (e *True) MarshalYAML() (any, error) {
 		t = e.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Type           string   `yaml:"type,omitempty"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "true",
-		Location:       e.Location,
 		Type:           t,
 	}, nil
 }
@@ -466,12 +474,12 @@ func (e *False) MarshalYAML() (any, error) {
 		t = e.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Type           string   `yaml:"type,omitempty"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "false",
-		Location:       e.Location,
 		Type:           t,
 	}, nil
 }
@@ -482,13 +490,13 @@ func (i *Int) MarshalYAML() (any, error) {
 		t = i.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Type           string   `yaml:"type,omitempty"`
 		Value          int64    `yaml:"value"`
 	}{
+		Location:       i.LocRange,
 		ExpressionType: "int",
-		Location:       i.Location,
 		Type:           t,
 		Value:          i.Value,
 	}, nil
@@ -500,13 +508,13 @@ func (f *Float) MarshalYAML() (any, error) {
 		t = f.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Type           string   `yaml:"type,omitempty"`
 		Value          float64  `yaml:"value"`
 	}{
+		Location:       f.LocRange,
 		ExpressionType: "float",
-		Location:       f.Location,
 		Type:           t,
 		Value:          f.Value,
 	}, nil
@@ -518,13 +526,13 @@ func (s *String) MarshalYAML() (any, error) {
 		t = s.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Type           string   `yaml:"type,omitempty"`
 		Value          string   `yaml:"value"`
 	}{
+		Location:       s.LocRange,
 		ExpressionType: "string",
-		Location:       s.Location,
 		Type:           t,
 		Value:          s.Value,
 	}, nil
@@ -536,12 +544,12 @@ func (n *Null) MarshalYAML() (any, error) {
 		t = n.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Type           string   `yaml:"type,omitempty"`
 	}{
+		Location:       n.LocRange,
 		ExpressionType: "null",
-		Location:       n.Location,
 		Type:           t,
 	}, nil
 }
@@ -552,13 +560,13 @@ func (e *Enum) MarshalYAML() (any, error) {
 		t = e.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Value          string   `yaml:"value"`
 		Type           string   `yaml:"type,omitempty"`
 	}{
+		Location:       e.LocRange,
 		ExpressionType: "enum",
-		Location:       e.Location,
 		Value:          e.Value,
 		Type:           t,
 	}, nil
@@ -570,13 +578,13 @@ func (a *Array) MarshalYAML() (any, error) {
 		t = a.ItemTypeDef.Name
 	}
 	return struct {
+		Location       LocRange     `yaml:"location"`
 		ExpressionType string       `yaml:"expressionType"`
-		Location       Location     `yaml:"location"`
 		ItemType       string       `yaml:"itemType,omitempty"`
 		Items          []Expression `yaml:"items"`
 	}{
+		Location:       a.LocRange,
 		ExpressionType: "array",
-		Location:       a.Location,
 		ItemType:       t,
 		Items:          a.Items,
 	}, nil
@@ -588,13 +596,13 @@ func (o *Object) MarshalYAML() (any, error) {
 		t = o.TypeDef.Name
 	}
 	return struct {
+		Location       LocRange       `yaml:"location"`
 		ExpressionType string         `yaml:"expressionType"`
-		Location       Location       `yaml:"location"`
 		Type           string         `yaml:"type,omitempty"`
 		Fields         []*ObjectField `yaml:"fields"`
 	}{
+		Location:       o.LocRange,
 		ExpressionType: "object",
-		Location:       o.Location,
 		Type:           t,
 		Fields:         o.Fields,
 	}, nil
@@ -602,26 +610,26 @@ func (o *Object) MarshalYAML() (any, error) {
 
 func (r *Variable) MarshalYAML() (any, error) {
 	return struct {
+		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Location       Location `yaml:"location"`
 		Name           string   `yaml:"name"`
 	}{
+		Location:       r.LocRange,
 		ExpressionType: "variableReference",
-		Location:       r.Location,
-		Name:           r.Name,
+		Name:           r.Name.Name,
 	}, nil
 }
 
 func (s *SelectionInlineFrag) MarshalYAML() (any, error) {
 	return struct {
+		Location      LocRange      `yaml:"location"`
 		SelectionType string        `yaml:"selectionType"`
 		TypeCondition TypeCondition `yaml:"typeCondition"`
-		Location      Location      `yaml:"location"`
 		SelectionsSet SelectionSet  `yaml:"selectionSet,omitempty"`
 	}{
+		Location:      s.LocRange,
 		SelectionType: "inlineFragment",
 		TypeCondition: s.TypeCondition,
-		Location:      s.Location,
 		SelectionsSet: s.SelectionSet,
 	}, nil
 }
@@ -632,28 +640,38 @@ func (f *ObjectField) MarshalYAML() (any, error) {
 		t = f.Def.Type.String()
 	}
 	type Var struct {
-		Location Location `yaml:"location"`
+		Location LocRange `yaml:"location"`
 		Name     string   `yaml:"name"`
 	}
 	var v *Var
 	if f.AssociatedVariable != nil {
 		v = &Var{
-			Location: f.AssociatedVariable.Location,
+			Location: f.AssociatedVariable.LocRange,
 			Name:     f.AssociatedVariable.Name,
 		}
 	}
 	return struct {
-		Name       string     `yaml:"name"`
-		Location   Location   `yaml:"location"`
+		Location   LocRange   `yaml:"location"`
+		Name       Name       `yaml:"name"`
 		Variable   *Var       `yaml:"variable,omitempty"`
 		Type       string     `yaml:"type,omitempty"`
 		Constraint Expression `yaml:"constraint"`
 	}{
+		Location:   f.LocRange,
 		Name:       f.Name,
-		Location:   f.Location,
 		Variable:   v,
 		Type:       t,
 		Constraint: f.Constraint,
+	}, nil
+}
+
+func (n Name) MarshalYAML() (any, error) {
+	return struct {
+		Location LocRange `yaml:"location"`
+		Name     string   `yaml:"name"`
+	}{
+		Location: n.LocRange,
+		Name:     n.Name,
 	}, nil
 }
 
@@ -663,16 +681,16 @@ func (s *SelectionField) MarshalYAML() (any, error) {
 		t = s.Def.Type.String()
 	}
 	return struct {
+		Location      LocRange     `yaml:"location"`
 		SelectionType string       `yaml:"selectionType"`
-		Name          string       `yaml:"name"`
-		Location      Location     `yaml:"location"`
+		Name          Name         `yaml:"name"`
 		Type          string       `yaml:"type,omitempty"`
 		ArgumentList  ArgumentList `yaml:"argumentList,omitempty"`
 		SelectionSet  SelectionSet `yaml:"selectionSet,omitempty"`
 	}{
+		Location:      s.LocRange,
 		SelectionType: "field",
 		Name:          s.Name,
-		Location:      s.Location,
 		Type:          t,
 		ArgumentList:  s.ArgumentList,
 		SelectionSet:  s.SelectionSet,
@@ -681,14 +699,14 @@ func (s *SelectionField) MarshalYAML() (any, error) {
 
 func (e *SelectionMax) MarshalYAML() (any, error) {
 	return struct {
+		Location      LocRange     `yaml:"location"`
 		SelectionType string       `yaml:"selectionType"`
-		Location      Location     `yaml:"location"`
 		Limit         int          `yaml:"limit"`
 		Options       SelectionSet `yaml:"options"`
 	}{
+		Location:      e.LocRange,
 		SelectionType: "max",
 		Limit:         e.Limit,
-		Location:      e.Location,
 		Options:       e.Options,
 	}, nil
 }
@@ -699,25 +717,25 @@ func (a *Argument) MarshalYAML() (any, error) {
 		t = a.Def.Type.String()
 	}
 	type Var struct {
-		Location Location `yaml:"location"`
+		Location LocRange `yaml:"location"`
 		Name     string   `yaml:"name"`
 	}
 	var v *Var
 	if a.AssociatedVariable != nil {
 		v = &Var{
-			Location: a.AssociatedVariable.Location,
+			Location: a.AssociatedVariable.LocRange,
 			Name:     a.AssociatedVariable.Name,
 		}
 	}
 	return struct {
-		Name       string     `yaml:"name"`
-		Location   Location   `yaml:"location"`
+		Location   LocRange   `yaml:"location"`
+		Name       Name       `yaml:"name"`
 		Variable   *Var       `yaml:"variable,omitempty"`
 		Type       string     `yaml:"type,omitempty"`
 		Constraint Expression `yaml:"constraint"`
 	}{
+		Location:   a.LocRange,
 		Name:       a.Name,
-		Location:   a.Location,
 		Variable:   v,
 		Type:       t,
 		Constraint: a.Constraint,

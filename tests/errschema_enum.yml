@@ -22,32 +22,38 @@ expect-errors:
   - '3:10: expected type Fruit but received Color'
 
 expect-ast(schemaless):
+  location: 0:1:1-54:4:4
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-54:4:4
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-52:4:2
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-52:4:2
         arguments:
-        - name: color
-          location: "13:2:3"
+        - location: 13:2:3-26:2:16
+          name:
+            location: 13:2:3-18:2:8
+            name: color
           constraint:
+            location: 20:2:10-26:2:16
             constraintType: equals
-            location: "20:2:10"
             value:
+              location: 20:2:10-26:2:16
               expressionType: enum
-              location: "20:2:10"
               value: banana
-        - name: fruit
-          location: "30:3:3"
+        - location: 30:3:3-49:3:22
+          name:
+            location: 30:3:3-35:3:8
+            name: fruit
           constraint:
+            location: 37:3:10-49:3:22
             constraintType: equals
-            location: "37:3:10"
             value:
+              location: 37:3:10-49:3:22
               expressionType: enum
-              location: "37:3:10"
               value: bananayellow

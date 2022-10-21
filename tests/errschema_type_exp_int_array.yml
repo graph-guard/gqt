@@ -18,77 +18,85 @@ expect-errors:
   - '2:8: expected type Int but received array{Int,String,{x:array,y:[Float]},*}'
 
 expect-ast(schemaless):
+  location: 0:1:1-99:11:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-99:11:2
     selections:
-    - selectionType: field
-      name: f
-      location: "10:2:3"
+    - location: 10:2:3-97:10:5
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: f
       argumentList:
-        location: "11:2:4"
+        location: 11:2:4-97:10:5
         arguments:
-        - name: a
-          location: "12:2:5"
+        - location: 12:2:5-96:10:4
+          name:
+            location: 12:2:5-13:2:6
+            name: a
           constraint:
+            location: 15:2:8-96:10:4
             constraintType: equals
-            location: "15:2:8"
             value:
+              location: 15:2:8-96:10:4
               expressionType: array
-              location: "15:2:8"
               items:
-              - constraintType: equals
-                location: "21:3:5"
+              - location: 21:3:5-22:3:6
+                constraintType: equals
                 value:
+                  location: 21:3:5-22:3:6
                   expressionType: int
-                  location: "21:3:5"
                   value: 1
-              - constraintType: equals
-                location: "28:4:5"
+              - location: 28:4:5-33:4:10
+                constraintType: equals
                 value:
+                  location: 28:4:5-33:4:10
                   expressionType: string
-                  location: "28:4:5"
                   value: foo
-              - constraintType: equals
-                location: "39:5:5"
+              - location: 39:5:5-84:8:6
+                constraintType: equals
                 value:
+                  location: 39:5:5-84:8:6
                   expressionType: object
-                  location: "39:5:5"
                   fields:
-                  - name: x
-                    location: "47:6:7"
+                  - location: 47:6:7-56:6:16
+                    name:
+                      location: 47:6:7-48:6:8
+                      name: x
                     constraint:
+                      location: 50:6:10-56:6:16
                       constraintType: equals
-                      location: "50:6:10"
                       value:
+                        location: 50:6:10-56:6:16
                         expressionType: array
-                        location: "50:6:10"
                         items:
-                        - constraintType: equals
-                          location: "51:6:11"
+                        - location: 51:6:11-55:6:15
+                          constraintType: equals
                           value:
+                            location: 51:6:11-55:6:15
                             expressionType: "null"
-                            location: "51:6:11"
-                  - name: "y"
-                    location: "64:7:7"
+                  - location: 64:7:7-78:7:21
+                    name:
+                      location: 64:7:7-65:7:8
+                      name: "y"
                     constraint:
+                      location: 67:7:10-78:7:21
                       constraintType: equals
-                      location: "67:7:10"
                       value:
+                        location: 67:7:10-78:7:21
                         expressionType: array
-                        location: "67:7:10"
                         items:
-                        - constraintType: equals
-                          location: "68:7:11"
+                        - location: 68:7:11-72:7:15
+                          constraintType: equals
                           value:
+                            location: 68:7:11-72:7:15
                             expressionType: float
-                            location: "68:7:11"
                             value: 3.14
-                        - constraintType: equals
-                          location: "73:7:16"
+                        - location: 73:7:16-77:7:20
+                          constraintType: equals
                           value:
+                            location: 73:7:16-77:7:20
                             expressionType: "null"
-                            location: "73:7:16"
-              - constraintType: any
-                location: "90:9:5"
+              - location: 90:9:5-91:9:6
+                constraintType: any

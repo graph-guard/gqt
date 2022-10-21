@@ -5,56 +5,60 @@ template: >
   mutation { ... on Mutation { ... on Mutation { name } } }
 
 expect-ast:
+  location: 0:1:1-57:1:58
   operationType: Mutation
-  location: "0:1:1"
   selectionSet:
-    location: "9:1:10"
+    location: 9:1:10-57:1:58
     selections:
-    - selectionType: inlineFragment
+    - location: 11:1:12-55:1:56
+      selectionType: inlineFragment
       typeCondition:
-        location: "18:1:19"
+        location: 18:1:19-26:1:27
         typeName: Mutation
         type: Mutation
-      location: "11:1:12"
       selectionSet:
-        location: "27:1:28"
+        location: 27:1:28-55:1:56
         selections:
-        - selectionType: inlineFragment
+        - location: 29:1:30-53:1:54
+          selectionType: inlineFragment
           typeCondition:
-            location: "36:1:37"
+            location: 36:1:37-44:1:45
             typeName: Mutation
             type: Mutation
-          location: "29:1:30"
           selectionSet:
-            location: "45:1:46"
+            location: 45:1:46-53:1:54
             selections:
-            - selectionType: field
-              name: name
-              location: "47:1:48"
+            - location: 47:1:48-51:1:52
+              selectionType: field
+              name:
+                location: 47:1:48-51:1:52
+                name: name
               type: String!
 
 expect-ast(schemaless):
+  location: 0:1:1-57:1:58
   operationType: Mutation
-  location: "0:1:1"
   selectionSet:
-    location: "9:1:10"
+    location: 9:1:10-57:1:58
     selections:
-    - selectionType: inlineFragment
+    - location: 11:1:12-55:1:56
+      selectionType: inlineFragment
       typeCondition:
-        location: "18:1:19"
+        location: 18:1:19-26:1:27
         typeName: Mutation
-      location: "11:1:12"
       selectionSet:
-        location: "27:1:28"
+        location: 27:1:28-55:1:56
         selections:
-        - selectionType: inlineFragment
+        - location: 29:1:30-53:1:54
+          selectionType: inlineFragment
           typeCondition:
-            location: "36:1:37"
+            location: 36:1:37-44:1:45
             typeName: Mutation
-          location: "29:1:30"
           selectionSet:
-            location: "45:1:46"
+            location: 45:1:46-53:1:54
             selections:
-            - selectionType: field
-              name: name
-              location: "47:1:48"
+            - location: 47:1:48-51:1:52
+              selectionType: field
+              name:
+                location: 47:1:48-51:1:52
+                name: name

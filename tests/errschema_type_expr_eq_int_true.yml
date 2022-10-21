@@ -8,37 +8,43 @@ expect-errors:
   - '1:23: mismatching types Boolean and Int!'
 
 expect-ast(schemaless):
+  location: 0:1:1-35:1:36
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-35:1:36
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-33:1:34
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-33:1:34
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-17:1:18
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           variable:
-            location: "12:1:13"
+            location: 12:1:13-14:1:15
             name: a
           constraint:
+            location: 16:1:17-17:1:18
             constraintType: any
-            location: "16:1:17"
-        - name: b
-          location: "19:1:20"
+        - location: 19:1:20-32:1:33
+          name:
+            location: 19:1:20-20:1:21
+            name: b
           constraint:
+            location: 22:1:23-32:1:33
             constraintType: equals
-            location: "22:1:23"
             value:
+              location: 22:1:23-32:1:33
               expressionType: equals
-              location: "22:1:23"
               left:
+                location: 22:1:23-26:1:27
                 expressionType: "true"
-                location: "22:1:23"
               right:
+                location: 30:1:31-32:1:33
                 expressionType: variableReference
-                location: "30:1:31"
                 name: a

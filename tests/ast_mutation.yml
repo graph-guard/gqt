@@ -14,53 +14,64 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-46:5:2
   operationType: Mutation
-  location: "0:1:1"
   selectionSet:
-    location: "9:1:10"
+    location: 9:1:10-46:5:2
     selections:
-    - selectionType: field
-      name: newUser
-      location: "13:2:3"
+    - location: 13:2:3-44:4:4
+      selectionType: field
+      name:
+        location: 13:2:3-20:2:10
+        name: newUser
       type: User!
       argumentList:
-        location: "20:2:10"
+        location: 20:2:10-29:2:19
         arguments:
-        - name: name
-          location: "21:2:11"
+        - location: 21:2:11-28:2:18
+          name:
+            location: 21:2:11-25:2:15
+            name: name
           type: String!
           constraint:
+            location: 27:2:17-28:2:18
             constraintType: any
-            location: "27:2:17"
       selectionSet:
-        location: "30:2:20"
+        location: 30:2:20-44:4:4
         selections:
-        - selectionType: field
-          name: name
-          location: "36:3:5"
+        - location: 36:3:5-40:3:9
+          selectionType: field
+          name:
+            location: 36:3:5-40:3:9
+            name: name
           type: String!
-
 
 expect-ast(schemaless):
+  location: 0:1:1-46:5:2
   operationType: Mutation
-  location: "0:1:1"
   selectionSet:
-    location: "9:1:10"
+    location: 9:1:10-46:5:2
     selections:
-    - selectionType: field
-      name: newUser
-      location: "13:2:3"
+    - location: 13:2:3-44:4:4
+      selectionType: field
+      name:
+        location: 13:2:3-20:2:10
+        name: newUser
       argumentList:
-        location: "20:2:10"
+        location: 20:2:10-29:2:19
         arguments:
-        - name: name
-          location: "21:2:11"
+        - location: 21:2:11-28:2:18
+          name:
+            location: 21:2:11-25:2:15
+            name: name
           constraint:
+            location: 27:2:17-28:2:18
             constraintType: any
-            location: "27:2:17"
       selectionSet:
-        location: "30:2:20"
+        location: 30:2:20-44:4:4
         selections:
-        - selectionType: field
-          name: name
-          location: "36:3:5"
+        - location: 36:3:5-40:3:9
+          selectionType: field
+          name:
+            location: 36:3:5-40:3:9
+            name: name

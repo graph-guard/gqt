@@ -12,23 +12,27 @@ expect-errors:
   - '2:11: expected type Int! but received Float'
 
 expect-ast(schemaless):
+  location: 0:1:1-25:3:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-25:3:2
     selections:
-    - selectionType: field
-      name: f
-      location: "10:2:3"
+    - location: 10:2:3-23:2:16
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: f
       argumentList:
-        location: "11:2:4"
+        location: 11:2:4-23:2:16
         arguments:
-        - name: a
-          location: "12:2:5"
+        - location: 12:2:5-22:2:15
+          name:
+            location: 12:2:5-13:2:6
+            name: a
           constraint:
+            location: 15:2:8-22:2:15
             constraintType: notEquals
-            location: "15:2:8"
             value:
+              location: 18:2:11-22:2:15
               expressionType: float
-              location: "18:2:11"
               value: 3.14

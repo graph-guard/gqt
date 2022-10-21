@@ -1,7 +1,6 @@
 package gqt
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 	"strconv"
@@ -33,48 +32,11 @@ func (t OperationType) String() string {
 }
 
 type (
-	Location struct{ Index, Line, Column int }
-
-	Operation struct {
+	Location    struct{ Index, Line, Column int }
+	LocationEnd struct{ IndexEnd, LineEnd, ColumnEnd int }
+	LocRange    struct {
 		Location
-		Type OperationType
-		SelectionSet
-		Def *ast.Definition
-	}
-
-	// Selection can be either of:
-	//
-	//	*SelectionField
-	//	*SelectionInlineFrag
-	//	*SelectionMax
-	Selection Expression
-
-	SelectionField struct {
-		Location
-		Parent Expression
-		Name   string
-		ArgumentList
-		SelectionSet
-		Def *ast.FieldDefinition
-	}
-
-	SelectionSet struct {
-		Location
-		Selections []Selection
-	}
-
-	ArgumentList struct {
-		Location
-		Arguments []*Argument
-	}
-
-	Argument struct {
-		Location
-		Parent             Expression
-		Name               string
-		AssociatedVariable *VariableDeclaration
-		Constraint         Expression
-		Def                *ast.ArgumentDefinition
+		LocationEnd
 	}
 
 	// Expression can be either of:
@@ -126,108 +88,155 @@ type (
 	//  *Argument
 	Expression interface {
 		GetParent() Expression
-		GetLocation() Location
+		GetLocation() LocRange
 		TypeDesignation() string
 		IsFloat() bool
 	}
 
+	// Selection can be either of:
+	//
+	//	*SelectionField
+	//	*SelectionInlineFrag
+	//	*SelectionMax
+	Selection Expression
+
+	Operation struct {
+		LocRange
+		Type OperationType
+		SelectionSet
+		Def *ast.Definition
+	}
+
+	Name struct {
+		LocRange
+		Name string
+	}
+
+	SelectionField struct {
+		LocRange
+		Name
+		Parent Expression
+		ArgumentList
+		SelectionSet
+		Def *ast.FieldDefinition
+	}
+
+	SelectionSet struct {
+		LocRange
+		Selections []Selection
+	}
+
+	ArgumentList struct {
+		LocRange
+		Arguments []*Argument
+	}
+
+	Argument struct {
+		LocRange
+		Name
+		Parent             Expression
+		AssociatedVariable *VariableDeclaration
+		Constraint         Expression
+		Def                *ast.ArgumentDefinition
+	}
+
 	ConstrAny struct {
-		Location
+		LocRange
 		Parent Expression
 	}
 
 	ConstrEquals struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrNotEquals struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLess struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLessOrEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrGreater struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrGreaterOrEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenEquals struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenNotEquals struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenLess struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenLessOrEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenGreater struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrLenGreaterOrEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
 	ConstrMap struct {
-		Location
+		LocRange
 		Parent     Expression
 		Constraint Expression
 	}
 
 	ExprParentheses struct {
-		Location
+		LocRange
 		Parent     Expression
 		Expression Expression
 	}
 
 	ExprLogicalNegation struct {
-		Location
+		LocRange
 		Parent     Expression
 		Expression Expression
 	}
 
 	ExprModulo struct {
-		Location
+		LocRange
 		Parent   Expression
 		Dividend Expression
 		Divisor  Expression
@@ -235,7 +244,7 @@ type (
 	}
 
 	ExprDivision struct {
-		Location
+		LocRange
 		Parent   Expression
 		Dividend Expression
 		Divisor  Expression
@@ -243,7 +252,7 @@ type (
 	}
 
 	ExprMultiplication struct {
-		Location
+		LocRange
 		Parent        Expression
 		Multiplicant  Expression
 		Multiplicator Expression
@@ -251,7 +260,7 @@ type (
 	}
 
 	ExprAddition struct {
-		Location
+		LocRange
 		Parent      Expression
 		AddendLeft  Expression
 		AddendRight Expression
@@ -259,7 +268,7 @@ type (
 	}
 
 	ExprSubtraction struct {
-		Location
+		LocRange
 		Parent     Expression
 		Minuend    Expression
 		Subtrahend Expression
@@ -267,151 +276,151 @@ type (
 	}
 
 	ExprEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprNotEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprLess struct {
-		Location
+		LocRange
 		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprLessOrEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprGreater struct {
-		Location
+		LocRange
 		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprGreaterOrEqual struct {
-		Location
+		LocRange
 		Parent Expression
 		Left   Expression
 		Right  Expression
 	}
 
 	ExprLogicalAnd struct {
-		Location
+		LocRange
 		Parent      Expression
 		Expressions []Expression
 	}
 
 	ExprLogicalOr struct {
-		Location
+		LocRange
 		Parent      Expression
 		Expressions []Expression
 	}
 
 	Int struct {
-		Location
+		LocRange
 		Parent  Expression
 		Value   int64
 		TypeDef *ast.Definition
 	}
 
 	Float struct {
-		Location
+		LocRange
 		Parent  Expression
 		Value   float64
 		TypeDef *ast.Definition
 	}
 
 	String struct {
-		Location
+		LocRange
 		Parent  Expression
 		Value   string
 		TypeDef *ast.Definition
 	}
 
 	True struct {
-		Location
+		LocRange
 		Parent  Expression
 		TypeDef *ast.Definition
 	}
 
 	False struct {
-		Location
+		LocRange
 		Parent  Expression
 		TypeDef *ast.Definition
 	}
 
 	Null struct {
-		Location
+		LocRange
 		Parent  Expression
 		TypeDef *ast.Definition
 	}
 
 	Enum struct {
-		Location
+		LocRange
 		Parent  Expression
 		Value   string
 		TypeDef *ast.Definition
 	}
 
 	Array struct {
-		Location
+		LocRange
 		Parent      Expression
 		Items       []Expression
 		ItemTypeDef *ast.Definition
 	}
 
 	Object struct {
-		Location
+		LocRange
 		Parent  Expression
 		Fields  []*ObjectField
 		TypeDef *ast.Definition
 	}
 
 	ObjectField struct {
-		Location
+		LocRange
+		Name
 		Parent             Expression
-		Name               string
 		AssociatedVariable *VariableDeclaration
 		Constraint         Expression
 		Def                *ast.FieldDefinition
 	}
 
 	Variable struct {
-		Location
+		LocRange
+		Name
 		Parent      Expression
-		Name        string
 		Declaration *VariableDeclaration
 	}
 
 	SelectionMax struct {
-		Location
+		LocRange
 		Parent  Expression
 		Limit   int
 		Options SelectionSet
 	}
 
 	SelectionInlineFrag struct {
-		Location
+		LocRange
 		Parent        Expression
 		TypeCondition TypeCondition
 		SelectionSet
 	}
 
 	TypeCondition struct {
-		Location
+		LocRange
 		TypeName string
 		TypeDef  *ast.Definition
 	}
@@ -467,55 +476,51 @@ func (e *SelectionField) GetParent() Expression      { return e.Parent }
 func (e *SelectionMax) GetParent() Expression        { return e.Parent }
 func (e *Argument) GetParent() Expression            { return e.Parent }
 
-func (e *Operation) GetLocation() Location               { return e.Location }
-func (e *ExprParentheses) GetLocation() Location         { return e.Location }
-func (e *ConstrAny) GetLocation() Location               { return e.Location }
-func (e *ConstrEquals) GetLocation() Location            { return e.Location }
-func (e *ConstrNotEquals) GetLocation() Location         { return e.Location }
-func (e *ConstrLess) GetLocation() Location              { return e.Location }
-func (e *ConstrLessOrEqual) GetLocation() Location       { return e.Location }
-func (e *ConstrGreater) GetLocation() Location           { return e.Location }
-func (e *ConstrGreaterOrEqual) GetLocation() Location    { return e.Location }
-func (e *ConstrLenEquals) GetLocation() Location         { return e.Location }
-func (e *ConstrLenNotEquals) GetLocation() Location      { return e.Location }
-func (e *ConstrLenLess) GetLocation() Location           { return e.Location }
-func (e *ConstrLenLessOrEqual) GetLocation() Location    { return e.Location }
-func (e *ConstrLenGreater) GetLocation() Location        { return e.Location }
-func (e *ConstrLenGreaterOrEqual) GetLocation() Location { return e.Location }
-
-func (e *ExprModulo) GetLocation() Location         { return e.Location }
-func (e *ExprDivision) GetLocation() Location       { return e.Location }
-func (e *ExprMultiplication) GetLocation() Location { return e.Location }
-func (e *ExprAddition) GetLocation() Location       { return e.Location }
-func (e *ExprSubtraction) GetLocation() Location    { return e.Location }
-
-func (e *ExprLogicalNegation) GetLocation() Location { return e.Location }
-func (e *ExprEqual) GetLocation() Location           { return e.Location }
-func (e *ExprNotEqual) GetLocation() Location        { return e.Location }
-func (e *ExprLess) GetLocation() Location            { return e.Location }
-func (e *ExprLessOrEqual) GetLocation() Location     { return e.Location }
-func (e *ExprGreater) GetLocation() Location         { return e.Location }
-func (e *ExprGreaterOrEqual) GetLocation() Location  { return e.Location }
-func (e *ExprLogicalAnd) GetLocation() Location      { return e.Location }
-func (e *ExprLogicalOr) GetLocation() Location       { return e.Location }
-
-func (e *True) GetLocation() Location      { return e.Location }
-func (e *False) GetLocation() Location     { return e.Location }
-func (e *Int) GetLocation() Location       { return e.Location }
-func (e *Float) GetLocation() Location     { return e.Location }
-func (e *String) GetLocation() Location    { return e.Location }
-func (e *Null) GetLocation() Location      { return e.Location }
-func (e *Enum) GetLocation() Location      { return e.Location }
-func (e *Array) GetLocation() Location     { return e.Location }
-func (e *ConstrMap) GetLocation() Location { return e.Location }
-func (e *Object) GetLocation() Location    { return e.Location }
-func (e *Variable) GetLocation() Location  { return e.Location }
-
-func (e *SelectionInlineFrag) GetLocation() Location { return e.Location }
-func (e *ObjectField) GetLocation() Location         { return e.Location }
-func (e *SelectionField) GetLocation() Location      { return e.Location }
-func (e *SelectionMax) GetLocation() Location        { return e.Location }
-func (e *Argument) GetLocation() Location            { return e.Location }
+func (e *Operation) GetLocation() LocRange               { return e.LocRange }
+func (e *ExprParentheses) GetLocation() LocRange         { return e.LocRange }
+func (e *ConstrAny) GetLocation() LocRange               { return e.LocRange }
+func (e *ConstrEquals) GetLocation() LocRange            { return e.LocRange }
+func (e *ConstrNotEquals) GetLocation() LocRange         { return e.LocRange }
+func (e *ConstrLess) GetLocation() LocRange              { return e.LocRange }
+func (e *ConstrLessOrEqual) GetLocation() LocRange       { return e.LocRange }
+func (e *ConstrGreater) GetLocation() LocRange           { return e.LocRange }
+func (e *ConstrGreaterOrEqual) GetLocation() LocRange    { return e.LocRange }
+func (e *ConstrLenEquals) GetLocation() LocRange         { return e.LocRange }
+func (e *ConstrLenNotEquals) GetLocation() LocRange      { return e.LocRange }
+func (e *ConstrLenLess) GetLocation() LocRange           { return e.LocRange }
+func (e *ConstrLenLessOrEqual) GetLocation() LocRange    { return e.LocRange }
+func (e *ConstrLenGreater) GetLocation() LocRange        { return e.LocRange }
+func (e *ConstrLenGreaterOrEqual) GetLocation() LocRange { return e.LocRange }
+func (e *ExprModulo) GetLocation() LocRange              { return e.LocRange }
+func (e *ExprDivision) GetLocation() LocRange            { return e.LocRange }
+func (e *ExprMultiplication) GetLocation() LocRange      { return e.LocRange }
+func (e *ExprAddition) GetLocation() LocRange            { return e.LocRange }
+func (e *ExprSubtraction) GetLocation() LocRange         { return e.LocRange }
+func (e *ExprLogicalNegation) GetLocation() LocRange     { return e.LocRange }
+func (e *ExprEqual) GetLocation() LocRange               { return e.LocRange }
+func (e *ExprNotEqual) GetLocation() LocRange            { return e.LocRange }
+func (e *ExprLess) GetLocation() LocRange                { return e.LocRange }
+func (e *ExprLessOrEqual) GetLocation() LocRange         { return e.LocRange }
+func (e *ExprGreater) GetLocation() LocRange             { return e.LocRange }
+func (e *ExprGreaterOrEqual) GetLocation() LocRange      { return e.LocRange }
+func (e *ExprLogicalAnd) GetLocation() LocRange          { return e.LocRange }
+func (e *ExprLogicalOr) GetLocation() LocRange           { return e.LocRange }
+func (e *True) GetLocation() LocRange                    { return e.LocRange }
+func (e *False) GetLocation() LocRange                   { return e.LocRange }
+func (e *Int) GetLocation() LocRange                     { return e.LocRange }
+func (e *Float) GetLocation() LocRange                   { return e.LocRange }
+func (e *String) GetLocation() LocRange                  { return e.LocRange }
+func (e *Null) GetLocation() LocRange                    { return e.LocRange }
+func (e *Enum) GetLocation() LocRange                    { return e.LocRange }
+func (e *Array) GetLocation() LocRange                   { return e.LocRange }
+func (e *ConstrMap) GetLocation() LocRange               { return e.LocRange }
+func (e *Object) GetLocation() LocRange                  { return e.LocRange }
+func (e *Variable) GetLocation() LocRange                { return e.LocRange }
+func (e *SelectionInlineFrag) GetLocation() LocRange     { return e.LocRange }
+func (e *ObjectField) GetLocation() LocRange             { return e.LocRange }
+func (e *SelectionField) GetLocation() LocRange          { return e.LocRange }
+func (e *SelectionMax) GetLocation() LocRange            { return e.LocRange }
+func (e *Argument) GetLocation() LocRange                { return e.LocRange }
 
 func (e *Operation) IsFloat() bool               { return false }
 func (e *ConstrAny) IsFloat() bool               { return false }
@@ -778,7 +783,7 @@ func (e *Object) TypeDesignation() string {
 	var b strings.Builder
 	b.WriteByte('{')
 	for i, f := range e.Fields {
-		b.WriteString(f.Name)
+		b.WriteString(f.Name.Name)
 		b.WriteByte(':')
 		b.WriteString(f.Constraint.TypeDesignation())
 		if i+1 < len(e.Fields) {
@@ -817,8 +822,9 @@ func (e *SelectionField) TypeDesignation() string      { return "" }
 func (e *SelectionMax) TypeDesignation() string        { return "" }
 
 type VariableDeclaration struct {
-	Location Location
-	Name     string
+	LocRange
+
+	Name string
 
 	// References can be any of:
 	//
@@ -924,7 +930,7 @@ func (p *Parser) Parse(src []byte) (
 	}
 
 	s = s.consumeIgnored()
-	o := &Operation{Location: s.Location}
+	o := &Operation{LocRange: locRange(s.Location)}
 
 	var tok []byte
 	si := s
@@ -948,6 +954,7 @@ func (p *Parser) Parse(src []byte) (
 	if s, o.SelectionSet = p.ParseSelectionSet(s); s.stop() {
 		return nil, nil, p.errors
 	}
+	o.LocationEnd = o.SelectionSet.LocationEnd
 
 	s = s.consumeIgnored()
 	if !s.isEOF() {
@@ -960,10 +967,8 @@ func (p *Parser) Parse(src []byte) (
 
 	// Link variable declarations and references
 	for _, r := range p.varRefs {
-		if v, ok := p.varDecls[r.Name]; !ok {
-			sc := s
-			sc.Location = r.Location
-			p.newErr(sc.Location, "undefined variable")
+		if v, ok := p.varDecls[r.Name.Name]; !ok {
+			p.newErr(r.LocRange, "undefined variable")
 			return nil, nil, p.errors
 		} else {
 			r.Declaration = v
@@ -1015,13 +1020,13 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 	for _, s := range s.Selections {
 		switch s := s.(type) {
 		case *SelectionField:
-			s.Def = find(s.Name)
+			s.Def = find(s.Name.Name)
 			if s.Def != nil {
 				if t := p.schema.Types[s.Def.Type.NamedType]; t != nil {
 					p.setTypesSelSet(s.SelectionSet, t.Fields)
 				}
 				for _, a := range s.Arguments {
-					a.Def = s.Def.Arguments.ForName(a.Name)
+					a.Def = s.Def.Arguments.ForName(a.Name.Name)
 					if a.Def == nil {
 						continue
 					}
@@ -1237,7 +1242,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					e.TypeDef = t
 					for _, f := range e.Fields {
 						var tp *ast.Type
-						f.Def = t.Fields.ForName(f.Name)
+						f.Def = t.Fields.ForName(f.Name.Name)
 						if f.Def != nil {
 							tp = f.Def.Type
 						}
@@ -1257,7 +1262,7 @@ func (p *Parser) validate(o *Operation) (ok bool) {
 	case OperationTypeQuery:
 		if p.schema != nil {
 			if p.schema.Query == nil {
-				p.newErr(o.Location, "type Query is undefined")
+				p.newErr(o.LocRange, "type Query is undefined")
 				return false
 			}
 			def = p.schema.Query
@@ -1266,7 +1271,7 @@ func (p *Parser) validate(o *Operation) (ok bool) {
 	case OperationTypeMutation:
 		if p.schema != nil {
 			if p.schema.Mutation == nil {
-				p.newErr(o.Location, "type Mutation is undefined")
+				p.newErr(o.LocRange, "type Mutation is undefined")
 				return false
 			}
 			def = p.schema.Mutation
@@ -1275,7 +1280,7 @@ func (p *Parser) validate(o *Operation) (ok bool) {
 	case OperationTypeSubscription:
 		if p.schema != nil {
 			if p.schema.Subscription == nil {
-				p.newErr(o.Location, "type Subscription is undefined")
+				p.newErr(o.LocRange, "type Subscription is undefined")
 				return false
 			}
 			def = p.schema.Subscription
@@ -1310,7 +1315,7 @@ func (p *Parser) validateSelSet(
 	}
 
 	if s.Location.Index != 0 && len(s.Selections) < 1 {
-		p.newErr(s.Location, "empty selection set")
+		p.newErr(s.LocRange, "empty selection set")
 		return false
 	}
 
@@ -1319,7 +1324,7 @@ func (p *Parser) validateSelSet(
 		expect != nil &&
 		len(s.Selections) < 1 &&
 		len(expect.Fields) > 0 {
-		p.errMissingSelSet(l, parent.Name, hostTypeName)
+		p.errMissingSelSet(locRange(l), parent.Name.Name, hostTypeName)
 		return false
 	}
 
@@ -1330,21 +1335,23 @@ func (p *Parser) validateSelSet(
 	for _, s := range s.Selections {
 		switch s := s.(type) {
 		case *SelectionField:
-			if _, decl := fields[s.Name]; decl {
+			if _, decl := fields[s.Name.Name]; decl {
 				ok = false
 				p.errRedeclField(s)
 				continue
 			}
-			fields[s.Name] = struct{}{}
+			fields[s.Name.Name] = struct{}{}
 
 			var def *ast.FieldDefinition
 			if expect != nil {
-				def = expect.Fields.ForName(s.Name)
+				def = expect.Fields.ForName(s.Name.Name)
 				if def == nil {
-					if s.Name == "__typename" {
+					if s.Name.Name == "__typename" {
 						continue
 					}
-					p.errUndefFieldInType(s.Location, s.Name, expect.Name)
+					p.errUndefFieldInType(
+						s.LocRange, s.Name.Name, expect.Name,
+					)
 					ok = false
 					continue
 				}
@@ -1372,25 +1379,25 @@ func (p *Parser) validateSelSet(
 			for _, s := range s.Options.Selections {
 				switch s := s.(type) {
 				case *SelectionField:
-					if _, decl := fields[s.Name]; decl {
+					if _, decl := fields[s.Name.Name]; decl {
 						ok = false
 						p.errRedeclField(s)
 						continue
 					}
-					fields[s.Name] = struct{}{}
+					fields[s.Name.Name] = struct{}{}
 
-					if s.Name == "__typename" {
+					if s.Name.Name == "__typename" {
 						ok = false
 						p.errTypenameInMax(s)
 						continue
 					}
 					var def *ast.FieldDefinition
 					if expect != nil {
-						def = expect.Fields.ForName(s.Name)
+						def = expect.Fields.ForName(s.Name.Name)
 						if def == nil {
 							ok = false
 							p.errUndefFieldInType(
-								s.Location, s.Name, expect.Name,
+								s.LocRange, s.Name.Name, expect.Name,
 							)
 							continue
 						}
@@ -1431,19 +1438,19 @@ func (p *Parser) validateField(
 		args := make(map[string]*Argument, len(f.Arguments))
 		for _, a := range f.Arguments {
 			// Check undefined arguments
-			if ad := expect.Arguments.ForName(a.Name); ad == nil {
+			if ad := expect.Arguments.ForName(a.Name.Name); ad == nil {
 				p.errUndefArg(a, f, host.Name)
 			}
-			args[a.Name] = a
+			args[a.Name.Name] = a
 		}
 
 		// Check required arguments
 		for _, a := range expect.Arguments {
 			if a.Type.NonNull && a.DefaultValue == nil {
 				if _, ok := args[a.Name]; !ok {
-					l := f.ArgumentList.Location
+					l := f.ArgumentList.LocRange
 					if len(f.Arguments) < 1 {
-						l = f.Location
+						l = f.LocRange
 					}
 					p.errMissingArg(l, a)
 					return false
@@ -1453,7 +1460,7 @@ func (p *Parser) validateField(
 	}
 
 	if f.ArgumentList.Location.Index != 0 && len(f.Arguments) < 1 {
-		p.newErr(f.ArgumentList.Location, "empty argument list")
+		p.newErr(f.ArgumentList.LocRange, "empty argument list")
 	}
 
 	// Check constraints
@@ -1578,12 +1585,12 @@ func (p *Parser) validateExpr(
 			push(e.Expression, expect)
 		case *ExprEqual, *ExprNotEqual:
 			var left, right Expression
-			var loc Location
+			var loc LocRange
 			switch e := e.(type) {
 			case *ExprEqual:
-				loc, left, right = e.Location, e.Left, e.Right
+				loc, left, right = e.LocRange, e.Left, e.Right
 			case *ExprNotEqual:
-				loc, left, right = e.Location, e.Left, e.Right
+				loc, left, right = e.LocRange, e.Left, e.Right
 			}
 			if !p.assumeComparableValue(left) {
 				ok = false
@@ -1621,7 +1628,7 @@ func (p *Parser) validateExpr(
 				o := getConstrEqValue[*Object](e)
 				if o != nil && objEncountered {
 					ok = false
-					p.newErr(o.Location, "use single object "+
+					p.newErr(o.LocRange, "use single object "+
 						"with multiple field constraints instead of "+
 						"multiple object variants in an OR statement")
 					continue
@@ -1638,7 +1645,7 @@ func (p *Parser) validateExpr(
 				o := getConstrEqValue[*Object](e)
 				if o != nil && objEncountered {
 					ok = false
-					p.newErr(o.Location, "use single object "+
+					p.newErr(o.LocRange, "use single object "+
 						"with multiple field constraints instead of "+
 						"multiple object variants in an AND statement")
 					continue
@@ -1843,7 +1850,7 @@ func (p *Parser) validateObject(
 	ok = true
 
 	if len(o.Fields) < 1 {
-		p.newErr(o.Location, "empty input object")
+		p.newErr(o.LocRange, "empty input object")
 		return false
 	}
 
@@ -1866,13 +1873,13 @@ func (p *Parser) validateObject(
 		if d != nil && d.Kind != ast.Scalar {
 			for _, f := range o.Fields {
 				// Check undefined fields
-				fd := d.Fields.ForName(f.Name)
+				fd := d.Fields.ForName(f.Name.Name)
 				if fd == nil {
 					ok = false
 					p.errUndefField(f, exp.NamedType)
 					continue
 				}
-				fieldNames[f.Name] = struct{}{}
+				fieldNames[f.Name.Name] = struct{}{}
 				validFields = append(validFields, f)
 			}
 
@@ -1881,7 +1888,7 @@ func (p *Parser) validateObject(
 				if f.Type.NonNull && f.DefaultValue == nil {
 					if _, exists := fieldNames[f.Name]; !exists {
 						ok = false
-						p.errMissingInputField(o.Location, f)
+						p.errMissingInputField(o.LocRange, f)
 					}
 				}
 			}
@@ -1908,7 +1915,7 @@ func (p *Parser) validateObject(
 
 func (p *Parser) errUncompVal(e Expression) {
 	p.errors = append(p.errors, Error{
-		Location: e.GetLocation(),
+		LocRange: e.GetLocation(),
 		Msg:      "uncomparable value of type " + e.TypeDesignation(),
 	})
 }
@@ -1917,15 +1924,15 @@ func (p *Parser) errConstrSelf(v *Variable) {
 	var on, name string
 	switch v := v.Declaration.Parent.(type) {
 	case *Argument:
-		on, name = "argument", v.Name
+		on, name = "argument", v.Name.Name
 	case *ObjectField:
-		on, name = "object field", v.Name
+		on, name = "object field", v.Name.Name
 	}
 	p.errors = append(p.errors, Error{
-		Location: v.Location,
+		LocRange: v.LocRange,
 		Msg: fmt.Sprintf(
 			"illegal self-reference of %s %q through variable %q in constraint",
-			on, name, v.Name,
+			on, name, v.Name.Name,
 		),
 	})
 }
@@ -1936,35 +1943,35 @@ func (p *Parser) errUnexpTok(s source, msg string) {
 		prefix = "unexpected end of file, "
 	}
 	p.errors = append(p.errors, Error{
-		Location: s.Location,
+		LocRange: locRange(s.Location),
 		Msg:      prefix + msg,
 	})
 }
 
 func (p *Parser) errTypenameInMax(f *SelectionField) {
 	p.errors = append(p.errors, Error{
-		Location: f.Location,
+		LocRange: f.LocRange,
 		Msg:      "avoid __typename in max sets",
 	})
 }
 
 func (p *Parser) errNestedMaxSet(s *SelectionMax) {
 	p.errors = append(p.errors, Error{
-		Location: s.Location,
+		LocRange: s.LocRange,
 		Msg:      "nested max set",
 	})
 }
 
 func (p *Parser) errRedeclMax(s *SelectionMax) {
 	p.errors = append(p.errors, Error{
-		Location: s.Location,
+		LocRange: s.LocRange,
 		Msg:      "redeclared max set",
 	})
 }
 
-func (p *Parser) errUndefType(l Location, name string) {
+func (p *Parser) errUndefType(l LocRange, name string) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg:      "type " + name + " is undefined in schema",
 	})
 }
@@ -1979,10 +1986,10 @@ func errFieldTypenameCantHaveSels() string {
 
 func (p *Parser) errUndefField(f *ObjectField, hostTypeName string) {
 	p.errors = append(p.errors, Error{
-		Location: f.Location,
+		LocRange: f.LocRange,
 		Msg: fmt.Sprintf(
 			"field %q is undefined in type %s",
-			f.Name, hostTypeName,
+			f.Name.Name, hostTypeName,
 		),
 	})
 }
@@ -1993,49 +2000,49 @@ func (p *Parser) errUndefArg(
 	hostTypeName string,
 ) {
 	p.errors = append(p.errors, Error{
-		Location: a.Location,
+		LocRange: a.LocRange,
 		Msg: fmt.Sprintf(
 			"argument %q is undefined on field %q in type %s",
-			a.Name, f.Name, hostTypeName,
+			a.Name.Name, f.Name.Name, hostTypeName,
 		),
 	})
 }
 
-func (p *Parser) errMismatchingTypes(l Location, left, right Expression) {
+func (p *Parser) errMismatchingTypes(l LocRange, left, right Expression) {
 	ld := left.TypeDesignation()
 	rd := right.TypeDesignation()
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg:      fmt.Sprintf("mismatching types %s and %s", ld, rd),
 	})
 }
 
-func (p *Parser) errCompareWithNull(l Location, e Expression) {
+func (p *Parser) errCompareWithNull(l LocRange, e Expression) {
 	d := e.TypeDesignation()
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg:      fmt.Sprintf("mismatching types %s and null", d),
 	})
 }
 
 func (p *Parser) errRedeclField(f *SelectionField) {
-	p.newErr(f.Location, fmt.Sprintf("redeclared field %q", f.Name))
+	p.newErr(f.LocRange, fmt.Sprintf("redeclared field %q", f.Name.Name))
 }
 
 func (p *Parser) errRedeclVar(v *VariableDeclaration) {
-	p.newErr(v.Location, fmt.Sprintf("redeclared variable %q", v.Name))
+	p.newErr(v.LocRange, fmt.Sprintf("redeclared variable %q", v.Name))
 }
 
 func (p *Parser) errRedeclTypeCond(f *SelectionInlineFrag) {
 	p.newErr(
-		f.TypeCondition.Location,
+		f.TypeCondition.LocRange,
 		"redeclared condition for type "+f.TypeCondition.TypeName,
 	)
 }
 
-func (p *Parser) newErr(l Location, msg string) {
+func (p *Parser) newErr(l LocRange, msg string) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg:      msg,
 	})
 }
@@ -2050,7 +2057,7 @@ const (
 )
 
 func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
-	selset := SelectionSet{Location: s.Location}
+	selset := SelectionSet{LocRange: locRange(s.Location)}
 	var ok bool
 	if s, ok = s.consume("{"); !ok {
 		p.errUnexpTok(s, "expected selection set")
@@ -2067,6 +2074,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 		}
 
 		if s, ok = s.consume("}"); ok {
+			selset.LocationEnd = locEnd(s)
 			break
 		}
 
@@ -2082,16 +2090,23 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 		}
 
 		lBeforeName := s.Location
-		sel := &SelectionField{Location: s.Location}
+		sel := &SelectionField{LocRange: locRange(s.Location)}
 		if s, name = s.consumeName(); name == nil {
 			p.errUnexpTok(s, "expected selection")
 			return stop(), SelectionSet{}
 		}
-		sel.Name = string(name)
+		sel.Name = Name{
+			LocRange: LocRange{
+				Location:    lBeforeName,
+				LocationEnd: locEnd(s),
+			},
+			Name: string(name),
+		}
+		sel.LocationEnd = locEnd(s)
 
 		s = s.consumeIgnored()
 
-		if sel.Name == "max" {
+		if sel.Name.Name == "max" {
 			lBeforeMaxNum := s.Location
 			var maxNum int64
 			if s, maxNum, ok = s.consumeUnsignedInt(); ok {
@@ -2100,7 +2115,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 
 				if maxNum < 1 {
 					p.newErr(
-						lBeforeMaxNum,
+						locRange(lBeforeMaxNum),
 						"limit of options must be an unsigned integer greater 0",
 					)
 					return stop(), SelectionSet{}
@@ -2114,20 +2129,23 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 
 				if len(options.Selections) < 2 {
 					p.newErr(
-						sBeforeOptionsBlock.Location,
+						locRange(sBeforeOptionsBlock.Location),
 						"max set must have at least 2 selection options",
 					)
 				} else if maxNum > int64(len(options.Selections)-1) {
 					p.newErr(
-						lBeforeMaxNum,
+						locRange(lBeforeMaxNum),
 						"max limit exceeds number of options-1",
 					)
 				}
 
 				e := &SelectionMax{
-					Location: lBeforeName,
-					Limit:    int(maxNum),
-					Options:  options,
+					LocRange: LocRange{
+						Location:    lBeforeName,
+						LocationEnd: options.LocationEnd,
+					},
+					Limit:   int(maxNum),
+					Options: options,
 				}
 				selset.Selections = append(selset.Selections, e)
 				continue
@@ -2135,8 +2153,8 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 		}
 
 		if s.peek1('(') {
-			if sel.Name == "__typename" {
-				p.newErr(s.Location, errFieldTypenameCantHaveArgs())
+			if sel.Name.Name == "__typename" {
+				p.newErr(locRange(s.Location), errFieldTypenameCantHaveArgs())
 				return stop(), SelectionSet{}
 			}
 			if s, sel.ArgumentList = p.ParseArguments(s); s.stop() {
@@ -2145,13 +2163,14 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 			for _, arg := range sel.Arguments {
 				setParent(arg, sel)
 			}
+			sel.LocationEnd = sel.ArgumentList.LocationEnd
 		}
 
 		s = s.consumeIgnored()
 
 		if s.peek1('{') {
-			if sel.Name == "__typename" {
-				p.newErr(s.Location, errFieldTypenameCantHaveSels())
+			if sel.Name.Name == "__typename" {
+				p.newErr(locRange(s.Location), errFieldTypenameCantHaveSels())
 				return stop(), SelectionSet{}
 			}
 
@@ -2161,8 +2180,8 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 			for _, sub := range sel.Selections {
 				setParent(sub, sel)
 			}
+			sel.LocationEnd = sel.SelectionSet.LocationEnd
 		}
-
 		selset.Selections = append(selset.Selections, sel)
 	}
 
@@ -2177,7 +2196,7 @@ func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
 		return stop(), nil
 	}
 
-	inlineFrag := &SelectionInlineFrag{Location: l}
+	inlineFrag := &SelectionInlineFrag{LocRange: locRange(l)}
 	s = s.consumeIgnored()
 
 	var tok []byte
@@ -2198,7 +2217,10 @@ func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
 		return stop(), nil
 	}
 	inlineFrag.TypeCondition = TypeCondition{
-		Location: sBeforeName.Location,
+		LocRange: LocRange{
+			Location:    sBeforeName.Location,
+			LocationEnd: locEnd(s),
+		},
 		TypeName: string(name),
 	}
 
@@ -2212,6 +2234,7 @@ func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
 	}
 
 	inlineFrag.SelectionSet = selset
+	inlineFrag.LocationEnd = selset.LocationEnd
 	return s, inlineFrag
 }
 
@@ -2223,7 +2246,7 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 		return stop(), ArgumentList{}
 	}
 
-	list := ArgumentList{Location: si.Location}
+	list := ArgumentList{LocRange: locRange(si.Location)}
 	names := map[string]struct{}{}
 	for {
 		s = s.consumeIgnored()
@@ -2235,25 +2258,32 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 		}
 
 		if s, ok = s.consume(")"); ok {
+			list.LocationEnd = locEnd(s)
 			break
 		}
 
 		s = s.consumeIgnored()
 
 		sBeforeName := s
-		arg := &Argument{Location: s.Location}
+		arg := &Argument{LocRange: locRange(s.Location)}
 		if s, name = s.consumeName(); name == nil {
 			p.errUnexpTok(s, "expected argument name")
 			return stop(), ArgumentList{}
 		}
-		arg.Name = string(name)
+		arg.Name = Name{
+			LocRange: LocRange{
+				Location:    sBeforeName.Location,
+				LocationEnd: locEnd(s),
+			},
+			Name: string(name),
+		}
 
-		if _, ok := names[arg.Name]; ok {
-			p.newErr(sBeforeName.Location, "redeclared argument")
+		if _, ok := names[arg.Name.Name]; ok {
+			p.newErr(locRange(sBeforeName.Location), "redeclared argument")
 			return stop(), ArgumentList{}
 		}
 
-		names[arg.Name] = struct{}{}
+		names[arg.Name.Name] = struct{}{}
 
 		s = s.consumeIgnored()
 
@@ -2274,9 +2304,12 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 			}
 
 			def := &VariableDeclaration{
-				Location: sBeforeDollar.Location,
-				Parent:   arg,
-				Name:     string(name),
+				LocRange: LocRange{
+					Location:    sBeforeDollar.Location,
+					LocationEnd: locEnd(s),
+				},
+				Parent: arg,
+				Name:   string(name),
 			}
 			arg.AssociatedVariable = def
 			if _, ok := p.varDecls[def.Name]; ok {
@@ -2305,7 +2338,7 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 		}
 		setParent(expr, arg)
 		arg.Constraint = expr
-
+		arg.LocationEnd = expr.GetLocation().LocationEnd
 		list.Arguments = append(list.Arguments, arg)
 		s = s.consumeIgnored()
 
@@ -2314,6 +2347,7 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 				p.errUnexpTok(s, "expected comma or end of argument list")
 				return stop(), ArgumentList{}
 			}
+			list.LocationEnd = locEnd(s)
 			break
 		}
 		s = s.consumeIgnored()
@@ -2337,7 +2371,7 @@ func (p *Parser) ParseValue(
 	var num Expression
 	var ok bool
 	if s, ok = s.consume("("); ok {
-		e := &ExprParentheses{Location: l}
+		e := &ExprParentheses{LocRange: locRange(l)}
 
 		s = s.consumeIgnored()
 
@@ -2350,27 +2384,44 @@ func (p *Parser) ParseValue(
 			p.errUnexpTok(s, "missing closing parenthesis")
 			return stop(), nil
 		}
+		e.LocationEnd = locEnd(s)
 
 		s = s.consumeIgnored()
 		return s, e
 	} else if s, ok = s.consume("$"); ok {
-		v := &Variable{Location: l}
-
+		lBeforeName := s.Location
 		var name []byte
 		if s, name = s.consumeName(); name == nil {
 			p.errUnexpTok(s, "expected variable name")
 			return stop(), nil
 		}
 
-		v.Name = string(name)
-
+		v := &Variable{
+			LocRange: LocRange{
+				Location:    l,
+				LocationEnd: locEnd(s),
+			},
+			Name: Name{
+				LocRange: LocRange{
+					Location:    lBeforeName,
+					LocationEnd: locEnd(s),
+				},
+				Name: string(name),
+			},
+		}
 		p.varRefs = append(p.varRefs, v)
 
 		s = s.consumeIgnored()
 
 		return s, v
 	} else if s, str, ok = s.consumeString(); ok {
-		return s, &String{Location: l, Value: string(str)}
+		return s, &String{
+			LocRange: LocRange{
+				Location:    l,
+				LocationEnd: locEnd(s),
+			},
+			Value: string(str),
+		}
 	}
 
 	if s, num = p.ParseNumber(s); s.stop() {
@@ -2387,11 +2438,12 @@ func (p *Parser) ParseValue(
 	}
 
 	if s, ok = s.consume("["); ok {
-		e := &Array{Location: l}
+		e := &Array{LocRange: locRange(l)}
 		s = s.consumeIgnored()
 
 		for {
 			if s, ok = s.consume("]"); ok {
+				e.LocationEnd = locEnd(s)
 				break
 			}
 
@@ -2410,6 +2462,7 @@ func (p *Parser) ParseValue(
 					p.errUnexpTok(s, "expected comma or end of array")
 					return stop(), nil
 				}
+				e.LocationEnd = locEnd(s)
 				break
 			}
 			s = s.consumeIgnored()
@@ -2419,7 +2472,7 @@ func (p *Parser) ParseValue(
 		return s, e
 	} else if s, ok = s.consume("{"); ok {
 		// Object
-		o := &Object{Location: l}
+		o := &Object{LocRange: locRange(l)}
 		var ok bool
 		fieldNames := map[string]struct{}{}
 
@@ -2433,6 +2486,7 @@ func (p *Parser) ParseValue(
 			}
 
 			if s, ok = s.consume("}"); ok {
+				o.LocationEnd = locEnd(s)
 				break
 			}
 
@@ -2440,21 +2494,27 @@ func (p *Parser) ParseValue(
 
 			sBeforeName := s
 			fld := &ObjectField{
-				Location: s.Location,
+				LocRange: locRange(s.Location),
 				Parent:   o,
 			}
 			if s, name = s.consumeName(); name == nil {
 				p.errUnexpTok(s, "expected object field name")
 				return stop(), nil
 			}
-			fld.Name = string(name)
+			fld.Name = Name{
+				LocRange: LocRange{
+					Location:    sBeforeName.Location,
+					LocationEnd: locEnd(s),
+				},
+				Name: string(name),
+			}
 
-			if _, ok := fieldNames[fld.Name]; ok {
-				p.newErr(sBeforeName.Location, "redeclared object field")
+			if _, ok := fieldNames[fld.Name.Name]; ok {
+				p.newErr(locRange(sBeforeName.Location), "redeclared object field")
 				return stop(), nil
 			}
 
-			fieldNames[fld.Name] = struct{}{}
+			fieldNames[fld.Name.Name] = struct{}{}
 
 			s = s.consumeIgnored()
 
@@ -2476,7 +2536,7 @@ func (p *Parser) ParseValue(
 
 				if expect == expectValueInMap {
 					p.newErr(
-						sBeforeDollar.Location,
+						locRange(sBeforeDollar.Location),
 						"declaration of variables inside "+
 							"map constraints is prohibited",
 					)
@@ -2484,9 +2544,12 @@ func (p *Parser) ParseValue(
 				}
 
 				def := &VariableDeclaration{
-					Location: sBeforeDollar.Location,
-					Parent:   fld,
-					Name:     string(name),
+					LocRange: LocRange{
+						Location:    sBeforeDollar.Location,
+						LocationEnd: locEnd(s),
+					},
+					Parent: fld,
+					Name:   string(name),
 				}
 				fld.AssociatedVariable = def
 				if _, ok := p.varDecls[def.Name]; ok {
@@ -2514,7 +2577,7 @@ func (p *Parser) ParseValue(
 			}
 			setParent(expr, fld)
 			fld.Constraint = expr
-
+			fld.LocationEnd = expr.GetLocation().LocationEnd
 			o.Fields = append(o.Fields, fld)
 			s = s.consumeIgnored()
 
@@ -2523,6 +2586,7 @@ func (p *Parser) ParseValue(
 					p.errUnexpTok(s, "expected comma or end of object")
 					return stop(), nil
 				}
+				o.LocationEnd = locEnd(s)
 				break
 			}
 			s = s.consumeIgnored()
@@ -2534,16 +2598,37 @@ func (p *Parser) ParseValue(
 	s, str = s.consumeName()
 	switch string(str) {
 	case "true":
-		return s, &True{Location: l}
+		return s, &True{
+			LocRange: LocRange{
+				Location:    l,
+				LocationEnd: locEnd(s),
+			},
+		}
 	case "false":
-		return s, &False{Location: l}
+		return s, &False{
+			LocRange: LocRange{
+				Location:    l,
+				LocationEnd: locEnd(s),
+			},
+		}
 	case "null":
-		return s, &Null{Location: l}
+		return s, &Null{
+			LocRange: LocRange{
+				Location:    l,
+				LocationEnd: locEnd(s),
+			},
+		}
 	case "":
 		p.errUnexpTok(s, "invalid value")
 		return stop(), nil
 	default:
-		return s, &Enum{Location: l, Value: string(str)}
+		return s, &Enum{
+			LocRange: LocRange{
+				Location:    l,
+				LocationEnd: locEnd(s),
+			},
+			Value: string(str),
+		}
 	}
 }
 
@@ -2554,7 +2639,7 @@ func (p *Parser) ParseExprUnary(
 	l := s.Location
 	var ok bool
 	if s, ok = s.consume("!"); ok {
-		e := &ExprLogicalNegation{Location: l}
+		e := &ExprLogicalNegation{LocRange: locRange(l)}
 
 		s = s.consumeIgnored()
 
@@ -2562,6 +2647,7 @@ func (p *Parser) ParseExprUnary(
 			return stop(), nil
 		}
 		setParent(e.Expression, e)
+		e.LocationEnd = e.Expression.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 		return s, e
@@ -2587,7 +2673,7 @@ func (p *Parser) ParseExprMultiplicative(
 		switch selected {
 		case 0:
 			e := &ExprMultiplication{
-				Location:     si.Location,
+				LocRange:     locRange(si.Location),
 				Multiplicant: result,
 			}
 			setParent(e.Multiplicant, e)
@@ -2599,12 +2685,13 @@ func (p *Parser) ParseExprMultiplicative(
 			setParent(e.Multiplicator, e)
 
 			e.Float = e.Multiplicant.IsFloat() || e.Multiplicator.IsFloat()
+			e.LocationEnd = e.Multiplicator.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 			result = e
 		case 1:
 			e := &ExprDivision{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Dividend: result,
 			}
 			setParent(e.Dividend, e)
@@ -2616,12 +2703,13 @@ func (p *Parser) ParseExprMultiplicative(
 			setParent(e.Divisor, e)
 
 			e.Float = e.Dividend.IsFloat() || e.Divisor.IsFloat()
+			e.LocationEnd = e.Divisor.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 			result = e
 		case 2:
 			e := &ExprModulo{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Dividend: result,
 			}
 			setParent(e.Dividend, e)
@@ -2633,6 +2721,7 @@ func (p *Parser) ParseExprMultiplicative(
 			setParent(e.Divisor, e)
 
 			e.Float = e.Dividend.IsFloat() || e.Divisor.IsFloat()
+			e.LocationEnd = e.Divisor.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 			result = e
@@ -2661,35 +2750,39 @@ func (p *Parser) ParseExprAdditive(
 		switch selected {
 		case 0:
 			e := &ExprAddition{
-				Location:   si.Location,
+				LocRange:   locRange(si.Location),
 				AddendLeft: result,
 			}
 			setParent(e.AddendLeft, e)
 
 			s = s.consumeIgnored()
-			if s, e.AddendRight = p.ParseExprMultiplicative(s, expect); s.stop() {
+			s, e.AddendRight = p.ParseExprMultiplicative(s, expect)
+			if s.stop() {
 				return stop(), nil
 			}
 			setParent(e.AddendRight, e)
 
 			e.Float = e.AddendLeft.IsFloat() || e.AddendRight.IsFloat()
+			e.LocationEnd = e.AddendRight.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 			result = e
 		case 1:
 			e := &ExprSubtraction{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Minuend:  result,
 			}
 			setParent(e.Minuend, e)
 
 			s = s.consumeIgnored()
-			if s, e.Subtrahend = p.ParseExprMultiplicative(s, expect); s.stop() {
+			s, e.Subtrahend = p.ParseExprMultiplicative(s, expect)
+			if s.stop() {
 				return stop(), nil
 			}
 			setParent(e.Subtrahend, e)
 
 			e.Float = e.Minuend.IsFloat() || e.Subtrahend.IsFloat()
+			e.LocationEnd = e.Subtrahend.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 			result = e
@@ -2716,7 +2809,7 @@ func (p *Parser) ParseExprRelational(
 	var ok bool
 	if s, ok = s.consume("<="); ok {
 		e := &ExprLessOrEqual{
-			Location: l,
+			LocRange: locRange(l),
 			Left:     left,
 		}
 		setParent(e.Left, e)
@@ -2727,12 +2820,13 @@ func (p *Parser) ParseExprRelational(
 			return stop(), nil
 		}
 		setParent(e.Right, e)
+		e.LocationEnd = e.Right.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 		return s, e
 	} else if s, ok = s.consume(">="); ok {
 		e := &ExprGreaterOrEqual{
-			Location: l,
+			LocRange: locRange(l),
 			Left:     left,
 		}
 		setParent(e.Left, e)
@@ -2743,12 +2837,13 @@ func (p *Parser) ParseExprRelational(
 			return s, nil
 		}
 		setParent(e.Right, e)
+		e.LocationEnd = e.Right.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 		return s, e
 	} else if s, ok = s.consume("<"); ok {
 		e := &ExprLess{
-			Location: l,
+			LocRange: locRange(l),
 			Left:     left,
 		}
 		setParent(e.Left, e)
@@ -2759,12 +2854,13 @@ func (p *Parser) ParseExprRelational(
 			return stop(), nil
 		}
 		setParent(e.Right, e)
+		e.LocationEnd = e.Right.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 		return s, e
 	} else if s, ok = s.consume(">"); ok {
 		e := &ExprGreater{
-			Location: l,
+			LocRange: locRange(l),
 			Left:     left,
 		}
 		setParent(e.Left, e)
@@ -2775,6 +2871,7 @@ func (p *Parser) ParseExprRelational(
 			return stop(), nil
 		}
 		setParent(e.Right, e)
+		e.LocationEnd = e.Right.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 		return s, e
@@ -2799,7 +2896,7 @@ func (p *Parser) ParseExprEquality(
 	var ok bool
 	if s, ok = s.consume("=="); ok {
 		e := &ExprEqual{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Left:     exprLeft,
 		}
 		setParent(e.Left, e)
@@ -2810,13 +2907,15 @@ func (p *Parser) ParseExprEquality(
 			return stop(), nil
 		}
 		setParent(e.Right, e)
+		e.LocationEnd = e.Right.GetLocation().LocationEnd
+
 		s = s.consumeIgnored()
 
 		return s, e
 	}
 	if s, ok = s.consume("!="); ok {
 		e := &ExprNotEqual{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Left:     exprLeft,
 		}
 		setParent(e.Left, e)
@@ -2827,6 +2926,8 @@ func (p *Parser) ParseExprEquality(
 			return stop(), nil
 		}
 		setParent(e.Right, e)
+		e.LocationEnd = e.Right.GetLocation().LocationEnd
+
 		s = s.consumeIgnored()
 
 		return s, e
@@ -2840,7 +2941,7 @@ func (p *Parser) ParseExprLogicalOr(
 	s source,
 	expect expect,
 ) (source, Expression) {
-	e := &ExprLogicalOr{Location: s.Location}
+	e := &ExprLogicalOr{LocRange: locRange(s.Location)}
 
 	for {
 		var expr Expression
@@ -2859,6 +2960,8 @@ func (p *Parser) ParseExprLogicalOr(
 			if len(e.Expressions) < 2 {
 				return s, e.Expressions[0]
 			}
+			e.LocationEnd = e.Expressions[len(e.Expressions)-1].
+				GetLocation().LocationEnd
 			return s, e
 		}
 
@@ -2870,7 +2973,7 @@ func (p *Parser) ParseExprLogicalAnd(
 	s source,
 	expect expect,
 ) (source, Expression) {
-	e := &ExprLogicalAnd{Location: s.Location}
+	e := &ExprLogicalAnd{LocRange: locRange(s.Location)}
 
 	for {
 		var expr Expression
@@ -2887,6 +2990,8 @@ func (p *Parser) ParseExprLogicalAnd(
 			if len(e.Expressions) < 2 {
 				return s, e.Expressions[0]
 			}
+			e.LocationEnd = e.Expressions[len(e.Expressions)-1].
+				GetLocation().LocationEnd
 			return s, e
 		}
 
@@ -2913,13 +3018,18 @@ func (p *Parser) ParseConstr(
 	}
 
 	if s, ok = s.consume("*"); ok {
-		e := &ConstrAny{Location: si.Location}
+		e := &ConstrAny{
+			LocRange: LocRange{
+				Location:    si.Location,
+				LocationEnd: locEnd(s),
+			},
+		}
 		s = s.consumeIgnored()
 
 		return s, e
 	} else if s, ok = s.consume("!="); ok {
 		e := &ConstrNotEquals{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -2929,13 +3039,14 @@ func (p *Parser) ParseConstr(
 		}
 		setParent(expr, e)
 		e.Value = expr
+		e.LocationEnd = expr.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 
 		return s, e
 	} else if s, ok = s.consume("<="); ok {
 		e := &ConstrLessOrEqual{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -2945,13 +3056,14 @@ func (p *Parser) ParseConstr(
 		}
 		setParent(expr, e)
 		e.Value = expr
+		e.LocationEnd = expr.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 
 		return s, e
 	} else if s, ok = s.consume(">="); ok {
 		e := &ConstrGreaterOrEqual{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -2961,13 +3073,14 @@ func (p *Parser) ParseConstr(
 		}
 		setParent(expr, e)
 		e.Value = expr
+		e.LocationEnd = expr.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 
 		return s, e
 	} else if s, ok = s.consume("<"); ok {
 		e := &ConstrLess{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -2977,13 +3090,14 @@ func (p *Parser) ParseConstr(
 		}
 		setParent(expr, e)
 		e.Value = expr
+		e.LocationEnd = expr.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 
 		return s, e
 	} else if s, ok = s.consume(">"); ok {
 		e := &ConstrGreater{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Value:    expr,
 		}
 		s = s.consumeIgnored()
@@ -2993,6 +3107,7 @@ func (p *Parser) ParseConstr(
 		}
 		setParent(expr, e)
 		e.Value = expr
+		e.LocationEnd = expr.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 
@@ -3002,7 +3117,7 @@ func (p *Parser) ParseConstr(
 
 		if s, ok = s.consume("!="); ok {
 			e := &ConstrLenNotEquals{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -3014,13 +3129,14 @@ func (p *Parser) ParseConstr(
 			}
 			setParent(expr, e)
 			e.Value = expr
+			e.LocationEnd = expr.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 
 			return s, e
 		} else if s, ok = s.consume("<="); ok {
 			e := &ConstrLenLessOrEqual{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -3030,13 +3146,14 @@ func (p *Parser) ParseConstr(
 			}
 			setParent(expr, e)
 			e.Value = expr
+			e.LocationEnd = expr.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 
 			return s, e
 		} else if s, ok = s.consume(">="); ok {
 			e := &ConstrLenGreaterOrEqual{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -3046,13 +3163,14 @@ func (p *Parser) ParseConstr(
 			}
 			setParent(expr, e)
 			e.Value = expr
+			e.LocationEnd = expr.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 
 			return s, e
 		} else if s, ok = s.consume("<"); ok {
 			e := &ConstrLenLess{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -3062,13 +3180,14 @@ func (p *Parser) ParseConstr(
 			}
 			setParent(expr, e)
 			e.Value = expr
+			e.LocationEnd = expr.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 
 			return s, e
 		} else if s, ok = s.consume(">"); ok {
 			e := &ConstrLenGreater{
-				Location: si.Location,
+				LocRange: locRange(si.Location),
 				Value:    expr,
 			}
 			s = s.consumeIgnored()
@@ -3078,6 +3197,7 @@ func (p *Parser) ParseConstr(
 			}
 			setParent(expr, e)
 			e.Value = expr
+			e.LocationEnd = expr.GetLocation().LocationEnd
 
 			s = s.consumeIgnored()
 
@@ -3085,7 +3205,7 @@ func (p *Parser) ParseConstr(
 		}
 
 		e := &ConstrLenEquals{
-			Location: si.Location,
+			LocRange: locRange(si.Location),
 			Value:    expr,
 		}
 
@@ -3094,6 +3214,7 @@ func (p *Parser) ParseConstr(
 		}
 		setParent(expr, e)
 		e.Value = expr
+		e.LocationEnd = expr.GetLocation().LocationEnd
 
 		s = s.consumeIgnored()
 
@@ -3103,7 +3224,7 @@ func (p *Parser) ParseConstr(
 	if s, ok = s.consume("["); ok {
 		s = s.consumeIgnored()
 		if s, ok = s.consume("..."); ok {
-			e := &ConstrMap{Location: si.Location}
+			e := &ConstrMap{LocRange: locRange(si.Location)}
 			s = s.consumeIgnored()
 
 			if s.isEOF() {
@@ -3125,6 +3246,7 @@ func (p *Parser) ParseConstr(
 				p.errUnexpTok(s, "expected end of map constraint ']'")
 				return stop(), nil
 			}
+			e.LocationEnd = locEnd(s)
 
 			return s, e
 		} else {
@@ -3133,7 +3255,7 @@ func (p *Parser) ParseConstr(
 	}
 
 	e := &ConstrEquals{
-		Location: si.Location,
+		LocRange: locRange(si.Location),
 		Value:    expr,
 	}
 
@@ -3148,23 +3270,11 @@ func (p *Parser) ParseConstr(
 	}
 	setParent(expr, e)
 	e.Value = expr
+	e.LocationEnd = expr.GetLocation().LocationEnd
 
 	s = s.consumeIgnored()
 
 	return s, e
-}
-
-func (s source) consumeUnsignedInt() (next source, i int64, ok bool) {
-	si := s
-	for s.s[s.Index] >= '0' && s.s[s.Index] <= '9' {
-		s.Index++
-		s.Column++
-	}
-	i, err := strconv.ParseInt(string(s.s[si.Index:s.Index]), 10, 64)
-	if err != nil {
-		return si, 0, false
-	}
-	return s, i, true
 }
 
 func (p *Parser) ParseNumber(s source) (_ source, number Expression) {
@@ -3192,12 +3302,26 @@ func (p *Parser) ParseNumber(s source) (_ source, number Expression) {
 			s.Index++
 			s.Column++
 			if s.Index >= len(s.s) {
-				p.newErr(s.Location, "exponent has no digits")
+				p.newErr(LocRange{
+					Location: si.Location,
+					LocationEnd: LocationEnd{
+						IndexEnd:  s.Index,
+						LineEnd:   s.Line,
+						ColumnEnd: s.Column,
+					},
+				}, "exponent has no digits")
 				return stop(), nil
 			}
 			s, _ = s.consumeEitherOf3("+", "-", "")
 			if !s.isDigit() {
-				p.newErr(s.Location, "exponent has no digits")
+				p.newErr(LocRange{
+					Location: si.Location,
+					LocationEnd: LocationEnd{
+						IndexEnd:  s.Index,
+						LineEnd:   s.Line,
+						ColumnEnd: s.Column,
+					},
+				}, "exponent has no digits")
 				return stop(), nil
 			}
 		}
@@ -3210,20 +3334,30 @@ func (p *Parser) ParseNumber(s source) (_ source, number Expression) {
 		return si, nil
 	} else if v, err := strconv.ParseInt(str, 10, 64); err == nil {
 		return s, &Int{
-			Location: si.Location,
-			Value:    v,
+			LocRange: LocRange{
+				Location: si.Location,
+				LocationEnd: LocationEnd{
+					IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
+				},
+			},
+			Value: v,
 		}
 	} else if v, err := strconv.ParseFloat(str, 64); err == nil {
 		return s, &Float{
-			Location: si.Location,
-			Value:    v,
+			LocRange: LocRange{
+				Location: si.Location,
+				LocationEnd: LocationEnd{
+					IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
+				},
+			},
+			Value: v,
 		}
 	}
 	return si, nil
 }
 
 type Error struct {
-	Location
+	LocRange
 	Msg string
 }
 
@@ -3236,203 +3370,6 @@ func (e Error) Error() string {
 		return ""
 	}
 	return fmt.Sprintf("%d:%d: %s", e.Line, e.Column, e.Msg)
-}
-
-type source struct {
-	Location
-	s []byte
-}
-
-func (s source) stop() bool { return s.s == nil }
-
-func stop() source { return source{} }
-
-func (s source) isEOF() bool {
-	return s.Index >= len(s.s)
-}
-
-func (s source) isDigit() bool {
-	return s.Index < len(s.s) &&
-		s.s[s.Index] >= '0' && s.s[s.Index] <= '9'
-}
-
-func (s source) peek1(b byte) bool {
-	return s.Index < len(s.s) && s.s[s.Index] == b
-}
-
-// consumeIgnored skips spaces, tabs, line-feeds
-// carriage-returns and comment sequences.
-func (s source) consumeIgnored() source {
-MAIN:
-	for s.Index < len(s.s) {
-		switch s.s[s.Index] {
-		case '#':
-			s.Index++
-			s.Column++
-			for s.Index < len(s.s) {
-				if s.s[s.Index] == '\n' {
-					s.Index++
-					s.Line++
-					s.Column = 1
-					continue MAIN
-				} else if s.s[s.Index] < 0x20 {
-					return s
-				}
-				s.Index++
-				s.Column++
-			}
-		case ' ', '\t', '\r':
-			s.Index++
-			s.Column++
-			continue
-		case '\n':
-			s.Index++
-			s.Line++
-			s.Column = 1
-			continue
-		}
-		break
-	}
-	return s
-}
-
-func (s source) consumeEitherOf3(a, b, c string) (_ source, selected int) {
-	selected = -1
-	if s.Index >= len(s.s) {
-		return s, selected
-	}
-	x := s.s[s.Index:]
-	if a != "" && bytes.HasPrefix(x, []byte(a)) {
-		selected = 0
-		for i := len(a); len(x) > 0 && i > 0; i-- {
-			s.Index++
-			if x[0] == '\n' {
-				s.Line++
-				s.Column = 1
-			} else {
-				s.Column++
-			}
-			x = x[1:]
-		}
-	} else if b != "" && bytes.HasPrefix(x, []byte(b)) {
-		selected = 1
-		for i := len(b); len(x) > 0 && i > 0; i-- {
-			s.Index++
-			if x[0] == '\n' {
-				s.Line++
-				s.Column = 1
-			} else {
-				s.Column++
-			}
-			x = x[1:]
-		}
-	} else if c != "" && bytes.HasPrefix(x, []byte(c)) {
-		selected = 2
-		for i := len(c); len(x) > 0 && i > 0; i-- {
-			s.Index++
-			if x[0] == '\n' {
-				s.Line++
-				s.Column = 1
-			} else {
-				s.Column++
-			}
-			x = x[1:]
-		}
-	}
-	return s, selected
-}
-
-func (s source) consume(x string) (_ source, ok bool) {
-	si, i := s, 0
-	for ; s.Index < len(s.s); i++ {
-		if i >= len(x) {
-			return s, true
-		}
-		if s.s[s.Index] != x[i] {
-			return si, false
-		}
-		if s.s[s.Index] == '\n' {
-			s.Index++
-			s.Line++
-			s.Column = 1
-		} else {
-			s.Index++
-			s.Column++
-		}
-	}
-	return s, i >= len(x)
-}
-
-func (s source) consumeToken() (_ source, token []byte) {
-	i, ii := s.s[s.Index:], s.Index
-	for s.Index < len(s.s) {
-		if b := s.s[s.Index]; b < 0x20 ||
-			b == ' ' || b == '\n' || b == '\t' ||
-			b == '\r' || b == ',' || b == '{' ||
-			b == '}' || b == '(' || b == ')' ||
-			b == ']' || b == '[' || b == '#' {
-			break
-		}
-		s.Index++
-		s.Column++
-	}
-	return s, i[:s.Index-ii]
-}
-
-func (s source) consumeName() (_ source, name []byte) {
-	ii := s.Index
-	if s.Index >= len(s.s) {
-		return s, nil
-	}
-	if b := s.s[s.Index]; b == '_' ||
-		(b >= 'a' && b <= 'z') ||
-		(b >= 'A' && b <= 'Z') {
-		s.Index++
-		s.Column++
-	} else {
-		return s, nil
-	}
-	for s.Index < len(s.s) && (s.s[s.Index] == '_' ||
-		(s.s[s.Index] >= 'a' && s.s[s.Index] <= 'z') ||
-		(s.s[s.Index] >= 'A' && s.s[s.Index] <= 'Z') ||
-		(s.s[s.Index] >= '0' && s.s[s.Index] <= '9')) {
-		s.Index++
-		s.Column++
-	}
-	return s, s.s[ii:s.Index]
-}
-
-func (s source) consumeString() (n source, str []byte, ok bool) {
-	escaped := false
-	n = s
-
-	if n.Index >= len(n.s) || n.s[n.Index] != '"' {
-		return s, nil, false
-	}
-	n.Index++
-	n.Column++
-	ii := n.Index
-
-	for n.Index < len(n.s) {
-		switch {
-		case n.s[n.Index] < 0x20:
-			return s, nil, false
-		case n.s[n.Index] == '"':
-			if escaped {
-				escaped = false
-			} else {
-				str = n.s[ii:n.Index]
-				n.Index++
-				n.Column++
-				return n, str, true
-			}
-		case n.s[n.Index] == '\\':
-			escaped = !escaped
-		}
-		n.Index++
-		n.Column++
-	}
-	return s, nil, false
 }
 
 func (p *Parser) isNumeric(e Expression) bool {
@@ -3638,13 +3575,13 @@ func (p *Parser) isArray(e Expression) bool {
 }
 
 func (p *Parser) assumeComparableValues(
-	l Location, left, right Expression,
+	l LocRange, left, right Expression,
 ) (ok bool) {
 	// Check for ineffectual comparison
 	{
 		varLeft, isLVar := find[*Variable](left)
 		varRight, isRVar := find[*Variable](right)
-		if isLVar && isRVar && varLeft.Name == varRight.Name {
+		if isLVar && isRVar && varLeft.Name.Name == varRight.Name.Name {
 			p.newErr(l, "ineffectual comparison")
 		}
 	}
@@ -3874,7 +3811,7 @@ func (p *Parser) validateInlineFrag(
 	def := p.schema.Types[frag.TypeCondition.TypeName]
 	if def == nil {
 		p.errUndefType(
-			frag.TypeCondition.Location,
+			frag.TypeCondition.LocRange,
 			frag.TypeCondition.TypeName,
 		)
 		return false
@@ -4006,7 +3943,7 @@ func (p *Parser) validateCond(frag *SelectionInlineFrag) (ok bool) {
 
 func (p *Parser) errCondOnScalarType(s *SelectionInlineFrag) {
 	p.errors = append(p.errors, Error{
-		Location: s.TypeCondition.Location,
+		LocRange: s.TypeCondition.LocRange,
 		Msg: "fragment can't condition on scalar type " +
 			s.TypeCondition.TypeName,
 	})
@@ -4014,7 +3951,7 @@ func (p *Parser) errCondOnScalarType(s *SelectionInlineFrag) {
 
 func (p *Parser) errCondOnEnumType(s *SelectionInlineFrag) {
 	p.errors = append(p.errors, Error{
-		Location: s.TypeCondition.Location,
+		LocRange: s.TypeCondition.LocRange,
 		Msg: "fragment can't condition on enum type " +
 			s.TypeCondition.TypeName,
 	})
@@ -4022,7 +3959,7 @@ func (p *Parser) errCondOnEnumType(s *SelectionInlineFrag) {
 
 func (p *Parser) errCondOnInputType(s *SelectionInlineFrag) {
 	p.errors = append(p.errors, Error{
-		Location: s.TypeCondition.Location,
+		LocRange: s.TypeCondition.LocRange,
 		Msg: "fragment can't condition on input type " +
 			s.TypeCondition.TypeName,
 	})
@@ -4034,7 +3971,7 @@ func (p *Parser) errCanNeverBeOfType(
 	cantBeOf string,
 ) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: locRange(l),
 		Msg: "type " + thisType +
 			" can never be of type " + cantBeOf,
 	})
@@ -4085,10 +4022,10 @@ func (p *Parser) errCantApplyConstrLen(c Expression, expect *ast.Type) {
 }
 
 func (p *Parser) errMissingArg(
-	l Location, missingArgument *ast.ArgumentDefinition,
+	l LocRange, missingArgument *ast.ArgumentDefinition,
 ) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg: fmt.Sprintf(
 			"argument %q of type %s is required but missing",
 			missingArgument.Name, missingArgument.Type,
@@ -4097,11 +4034,11 @@ func (p *Parser) errMissingArg(
 }
 
 func (p *Parser) errMissingInputField(
-	l Location,
+	l LocRange,
 	missingField *ast.FieldDefinition,
 ) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg: fmt.Sprintf(
 			"field %q of type %q is required but missing",
 			missingField.Name, missingField.Type,
@@ -4110,10 +4047,10 @@ func (p *Parser) errMissingInputField(
 }
 
 func (p *Parser) errMissingSelSet(
-	l Location, fieldName, hostTypeName string,
+	l LocRange, fieldName, hostTypeName string,
 ) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg: fmt.Sprintf(
 			"missing selection set for field %q of type %s",
 			fieldName, hostTypeName,
@@ -4124,7 +4061,7 @@ func (p *Parser) errMissingSelSet(
 func (p *Parser) errExpectedNum(actual Expression) {
 	td := actual.TypeDesignation()
 	p.errors = append(p.errors, Error{
-		Location: actual.GetLocation(),
+		LocRange: actual.GetLocation(),
 		Msg:      "expected number but received " + td,
 	})
 }
@@ -4132,21 +4069,21 @@ func (p *Parser) errExpectedNum(actual Expression) {
 func (p *Parser) errExpectedBool(actual Expression) {
 	td := actual.TypeDesignation()
 	p.errors = append(p.errors, Error{
-		Location: actual.GetLocation(),
+		LocRange: actual.GetLocation(),
 		Msg:      "expected type Boolean but received " + td,
 	})
 }
 
-func (p *Parser) errExpectedNumGotNull(l Location) {
+func (p *Parser) errExpectedNumGotNull(l LocRange) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg:      "expected number but received null",
 	})
 }
 
-func (p *Parser) errExpectedBoolGotNull(l Location) {
+func (p *Parser) errExpectedBoolGotNull(l LocRange) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg:      "expected type Boolean but received null",
 	})
 }
@@ -4157,7 +4094,7 @@ func (p *Parser) errUnexpType(
 ) {
 	td := actual.TypeDesignation()
 	p.errors = append(p.errors, Error{
-		Location: actual.GetLocation(),
+		LocRange: actual.GetLocation(),
 		Msg: fmt.Sprintf(
 			"expected type %s but received %s", expected, td,
 		),
@@ -4166,16 +4103,16 @@ func (p *Parser) errUnexpType(
 
 func (p *Parser) errUndefEnumVal(e *Enum) {
 	p.errors = append(p.errors, Error{
-		Location: e.Location,
+		LocRange: e.LocRange,
 		Msg:      fmt.Sprintf("undefined enum value %q", e.Value),
 	})
 }
 
 func (p *Parser) errUndefFieldInType(
-	l Location, fieldName, typeName string,
+	l LocRange, fieldName, typeName string,
 ) {
 	p.errors = append(p.errors, Error{
-		Location: l,
+		LocRange: l,
 		Msg: fmt.Sprintf(
 			"field %q is undefined in type %s",
 			fieldName, typeName,
@@ -4515,4 +4452,12 @@ func areTypesCompatible(a, b *ast.Type) bool {
 		return false
 	}
 	return true
+}
+
+func locRange(l Location) LocRange { return LocRange{Location: l} }
+
+func locEnd(s source) LocationEnd {
+	return LocationEnd{
+		IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
+	}
 }

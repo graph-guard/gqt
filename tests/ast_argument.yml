@@ -5,39 +5,47 @@ template: >
   query { f(a:*) }
 
 expect-ast:
+  location: 0:1:1-16:1:17
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-16:1:17
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-14:1:15
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       type: Boolean
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-14:1:15
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-13:1:14
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           type: Int
           constraint:
+            location: 12:1:13-13:1:14
             constraintType: any
-            location: "12:1:13"
 
 expect-ast(schemaless):
+  location: 0:1:1-16:1:17
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-16:1:17
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-14:1:15
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-14:1:15
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-13:1:14
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
+            location: 12:1:13-13:1:14
             constraintType: any
-            location: "12:1:13"

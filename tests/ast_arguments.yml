@@ -8,74 +8,94 @@ template: >
   query { a(a:*) b(b1:*,b2:*) }
 
 expect-ast:
+  location: 0:1:1-29:1:30
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-29:1:30
     selections:
-    - selectionType: field
-      name: a
-      location: "8:1:9"
+    - location: 8:1:9-14:1:15
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: a
       type: Boolean
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-14:1:15
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-13:1:14
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           type: Int
           constraint:
+            location: 12:1:13-13:1:14
             constraintType: any
-            location: "12:1:13"
-    - selectionType: field
-      name: b
-      location: "15:1:16"
+    - location: 15:1:16-27:1:28
+      selectionType: field
+      name:
+        location: 15:1:16-16:1:17
+        name: b
       type: Boolean!
       argumentList:
-        location: "16:1:17"
+        location: 16:1:17-27:1:28
         arguments:
-        - name: b1
-          location: "17:1:18"
+        - location: 17:1:18-21:1:22
+          name:
+            location: 17:1:18-19:1:20
+            name: b1
           type: Int!
           constraint:
+            location: 20:1:21-21:1:22
             constraintType: any
-            location: "20:1:21"
-        - name: b2
-          location: "22:1:23"
+        - location: 22:1:23-26:1:27
+          name:
+            location: 22:1:23-24:1:25
+            name: b2
           type: '[String]!'
           constraint:
+            location: 25:1:26-26:1:27
             constraintType: any
-            location: "25:1:26"
 
 expect-ast(schemaless):
+  location: 0:1:1-29:1:30
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-29:1:30
     selections:
-    - selectionType: field
-      name: a
-      location: "8:1:9"
+    - location: 8:1:9-14:1:15
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: a
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-14:1:15
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-13:1:14
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
+            location: 12:1:13-13:1:14
             constraintType: any
-            location: "12:1:13"
-    - selectionType: field
-      name: b
-      location: "15:1:16"
+    - location: 15:1:16-27:1:28
+      selectionType: field
+      name:
+        location: 15:1:16-16:1:17
+        name: b
       argumentList:
-        location: "16:1:17"
+        location: 16:1:17-27:1:28
         arguments:
-        - name: b1
-          location: "17:1:18"
+        - location: 17:1:18-21:1:22
+          name:
+            location: 17:1:18-19:1:20
+            name: b1
           constraint:
+            location: 20:1:21-21:1:22
             constraintType: any
-            location: "20:1:21"
-        - name: b2
-          location: "22:1:23"
+        - location: 22:1:23-26:1:27
+          name:
+            location: 22:1:23-24:1:25
+            name: b2
           constraint:
+            location: 25:1:26-26:1:27
             constraintType: any
-            location: "25:1:26"

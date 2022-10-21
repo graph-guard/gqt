@@ -6,48 +6,56 @@ template: >
   query { f(a: "string") }
 
 expect-ast:
+  location: 0:1:1-24:1:25
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-24:1:25
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-22:1:23
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       type: Custom
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-22:1:23
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-21:1:22
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           type: Custom
           constraint:
+            location: 13:1:14-21:1:22
             constraintType: equals
-            location: "13:1:14"
             value:
+              location: 13:1:14-21:1:22
               expressionType: string
-              location: "13:1:14"
               type: Custom
-              value: "string"
+              value: string
 
 expect-ast(schemaless):
+  location: 0:1:1-24:1:25
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-24:1:25
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-22:1:23
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-22:1:23
         arguments:
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-21:1:22
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
+            location: 13:1:14-21:1:22
             constraintType: equals
-            location: "13:1:14"
             value:
+              location: 13:1:14-21:1:22
               expressionType: string
-              location: "13:1:14"
-              value: "string"
+              value: string

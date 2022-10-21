@@ -15,207 +15,239 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-128:6:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-128:6:2
     selections:
-    - selectionType: field
-      name: comparisonEq
-      location: "10:2:3"
+    - location: 10:2:3-39:2:32
+      selectionType: field
+      name:
+        location: 10:2:3-22:2:15
+        name: comparisonEq
       type: Int
       argumentList:
-        location: "22:2:15"
+        location: 22:2:15-39:2:32
         arguments:
-        - name: a
-          location: "23:2:16"
+        - location: 23:2:16-38:2:31
+          name:
+            location: 23:2:16-24:2:17
+            name: a
           type: Boolean
           constraint:
+            location: 26:2:19-38:2:31
             constraintType: equals
-            location: "26:2:19"
             value:
+              location: 26:2:19-38:2:31
               expressionType: equals
-              location: "26:2:19"
               left:
+                location: 26:2:19-30:2:23
                 expressionType: parentheses
-                location: "26:2:19"
                 expression:
+                  location: 27:2:20-29:2:22
                   expressionType: int
-                  location: "27:2:20"
                   value: 42
               right:
+                location: 34:2:27-38:2:31
                 expressionType: variableReference
-                location: "34:2:27"
                 name: veq
-    - selectionType: field
-      name: comparisonNeq
-      location: "42:3:3"
+    - location: 42:3:3-73:3:34
+      selectionType: field
+      name:
+        location: 42:3:3-55:3:16
+        name: comparisonNeq
       type: Int
       argumentList:
-        location: "55:3:16"
+        location: 55:3:16-73:3:34
         arguments:
-        - name: a
-          location: "56:3:17"
+        - location: 56:3:17-72:3:33
+          name:
+            location: 56:3:17-57:3:18
+            name: a
           type: Boolean
           constraint:
+            location: 59:3:20-72:3:33
             constraintType: equals
-            location: "59:3:20"
             value:
+              location: 59:3:20-72:3:33
               expressionType: notEquals
-              location: "59:3:20"
               left:
+                location: 59:3:20-63:3:24
                 expressionType: parentheses
-                location: "59:3:20"
                 expression:
+                  location: 60:3:21-62:3:23
                   expressionType: int
-                  location: "60:3:21"
                   value: 42
               right:
+                location: 67:3:28-72:3:33
                 expressionType: variableReference
-                location: "67:3:28"
                 name: vneq
-    - selectionType: field
-      name: varEq
-      location: "76:4:3"
+    - location: 76:4:3-97:4:24
+      selectionType: field
+      name:
+        location: 76:4:3-81:4:8
+        name: varEq
       type: Int
       argumentList:
-        location: "81:4:8"
+        location: 81:4:8-97:4:24
         arguments:
-        - name: a
-          location: "82:4:9"
+        - location: 82:4:9-96:4:23
+          name:
+            location: 82:4:9-83:4:10
+            name: a
           variable:
-            location: "84:4:11"
+            location: 84:4:11-88:4:15
             name: veq
           type: Float
           constraint:
+            location: 90:4:17-96:4:23
             constraintType: equals
-            location: "90:4:17"
             value:
+              location: 90:4:17-96:4:23
               expressionType: parentheses
-              location: "90:4:17"
               expression:
+                location: 91:4:18-95:4:22
                 expressionType: float
-                location: "91:4:18"
                 value: 3.14
-    - selectionType: field
-      name: varNeq
-      location: "100:5:3"
+    - location: 100:5:3-126:5:29
+      selectionType: field
+      name:
+        location: 100:5:3-106:5:9
+        name: varNeq
       type: Int
       argumentList:
-        location: "106:5:9"
+        location: 106:5:9-126:5:29
         arguments:
-        - name: a
-          location: "107:5:10"
+        - location: 107:5:10-125:5:28
+          name:
+            location: 107:5:10-108:5:11
+            name: a
           variable:
-            location: "109:5:12"
+            location: 109:5:12-114:5:17
             name: vneq
           type: Float
           constraint:
+            location: 116:5:19-125:5:28
             constraintType: notEquals
-            location: "116:5:19"
             value:
+              location: 119:5:22-125:5:28
               expressionType: parentheses
-              location: "119:5:22"
               expression:
+                location: 120:5:23-124:5:27
                 expressionType: float
-                location: "120:5:23"
                 value: 3.14
 
 expect-ast(schemaless):
+  location: 0:1:1-128:6:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-128:6:2
     selections:
-    - selectionType: field
-      name: comparisonEq
-      location: "10:2:3"
+    - location: 10:2:3-39:2:32
+      selectionType: field
+      name:
+        location: 10:2:3-22:2:15
+        name: comparisonEq
       argumentList:
-        location: "22:2:15"
+        location: 22:2:15-39:2:32
         arguments:
-        - name: a
-          location: "23:2:16"
+        - location: 23:2:16-38:2:31
+          name:
+            location: 23:2:16-24:2:17
+            name: a
           constraint:
+            location: 26:2:19-38:2:31
             constraintType: equals
-            location: "26:2:19"
             value:
+              location: 26:2:19-38:2:31
               expressionType: equals
-              location: "26:2:19"
               left:
+                location: 26:2:19-30:2:23
                 expressionType: parentheses
-                location: "26:2:19"
                 expression:
+                  location: 27:2:20-29:2:22
                   expressionType: int
-                  location: "27:2:20"
                   value: 42
               right:
+                location: 34:2:27-38:2:31
                 expressionType: variableReference
-                location: "34:2:27"
                 name: veq
-    - selectionType: field
-      name: comparisonNeq
-      location: "42:3:3"
+    - location: 42:3:3-73:3:34
+      selectionType: field
+      name:
+        location: 42:3:3-55:3:16
+        name: comparisonNeq
       argumentList:
-        location: "55:3:16"
+        location: 55:3:16-73:3:34
         arguments:
-        - name: a
-          location: "56:3:17"
+        - location: 56:3:17-72:3:33
+          name:
+            location: 56:3:17-57:3:18
+            name: a
           constraint:
+            location: 59:3:20-72:3:33
             constraintType: equals
-            location: "59:3:20"
             value:
+              location: 59:3:20-72:3:33
               expressionType: notEquals
-              location: "59:3:20"
               left:
+                location: 59:3:20-63:3:24
                 expressionType: parentheses
-                location: "59:3:20"
                 expression:
+                  location: 60:3:21-62:3:23
                   expressionType: int
-                  location: "60:3:21"
                   value: 42
               right:
+                location: 67:3:28-72:3:33
                 expressionType: variableReference
-                location: "67:3:28"
                 name: vneq
-    - selectionType: field
-      name: varEq
-      location: "76:4:3"
+    - location: 76:4:3-97:4:24
+      selectionType: field
+      name:
+        location: 76:4:3-81:4:8
+        name: varEq
       argumentList:
-        location: "81:4:8"
+        location: 81:4:8-97:4:24
         arguments:
-        - name: a
-          location: "82:4:9"
+        - location: 82:4:9-96:4:23
+          name:
+            location: 82:4:9-83:4:10
+            name: a
           variable:
-            location: "84:4:11"
+            location: 84:4:11-88:4:15
             name: veq
           constraint:
+            location: 90:4:17-96:4:23
             constraintType: equals
-            location: "90:4:17"
             value:
+              location: 90:4:17-96:4:23
               expressionType: parentheses
-              location: "90:4:17"
               expression:
+                location: 91:4:18-95:4:22
                 expressionType: float
-                location: "91:4:18"
                 value: 3.14
-    - selectionType: field
-      name: varNeq
-      location: "100:5:3"
+    - location: 100:5:3-126:5:29
+      selectionType: field
+      name:
+        location: 100:5:3-106:5:9
+        name: varNeq
       argumentList:
-        location: "106:5:9"
+        location: 106:5:9-126:5:29
         arguments:
-        - name: a
-          location: "107:5:10"
+        - location: 107:5:10-125:5:28
+          name:
+            location: 107:5:10-108:5:11
+            name: a
           variable:
-            location: "109:5:12"
+            location: 109:5:12-114:5:17
             name: vneq
           constraint:
+            location: 116:5:19-125:5:28
             constraintType: notEquals
-            location: "116:5:19"
             value:
+              location: 119:5:22-125:5:28
               expressionType: parentheses
-              location: "119:5:22"
               expression:
+                location: 120:5:23-124:5:27
                 expressionType: float
-                location: "120:5:23"
                 value: 3.14

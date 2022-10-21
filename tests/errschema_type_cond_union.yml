@@ -12,25 +12,29 @@ expect-errors:
   - '1:20: type FooOrBar can never be of type Baz'
 
 expect-ast(schemaless):
+  location: 0:1:1-35:1:36
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-35:1:36
     selections:
-    - selectionType: field
-      name: u
-      location: "8:1:9"
+    - location: 8:1:9-33:1:34
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: u
       selectionSet:
-        location: "10:1:11"
+        location: 10:1:11-33:1:34
         selections:
-        - selectionType: inlineFragment
+        - location: 12:1:13-31:1:32
+          selectionType: inlineFragment
           typeCondition:
-            location: "19:1:20"
+            location: 19:1:20-22:1:23
             typeName: Baz
-          location: "12:1:13"
           selectionSet:
-            location: "23:1:24"
+            location: 23:1:24-31:1:32
             selections:
-            - selectionType: field
-              name: name
-              location: "25:1:26"
+            - location: 25:1:26-29:1:30
+              selectionType: field
+              name:
+                location: 25:1:26-29:1:30
+                name: name

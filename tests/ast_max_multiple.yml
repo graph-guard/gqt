@@ -17,80 +17,100 @@ template: >
   }
 
 expect-ast:
+  location: 0:1:1-64:8:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-64:8:2
     selections:
-    - selectionType: max
-      location: "10:2:3"
+    - location: 10:2:3-62:7:4
+      selectionType: max
       limit: 3
       options:
-        location: "16:2:9"
+        location: 16:2:9-62:7:4
         selections:
-        - selectionType: field
-          name: foo
-          location: "22:3:5"
+        - location: 22:3:5-25:3:8
+          selectionType: field
+          name:
+            location: 22:3:5-25:3:8
+            name: foo
           type: Int
-        - selectionType: field
-          name: bar
-          location: "30:4:5"
+        - location: 30:4:5-33:4:8
+          selectionType: field
+          name:
+            location: 30:4:5-33:4:8
+            name: bar
           type: String
-        - selectionType: field
-          name: bazz
-          location: "38:5:5"
+        - location: 38:5:5-42:5:9
+          selectionType: field
+          name:
+            location: 38:5:5-42:5:9
+            name: bazz
           type: Boolean
-        - selectionType: field
-          name: fazz
-          location: "47:6:5"
+        - location: 47:6:5-58:6:16
+          selectionType: field
+          name:
+            location: 47:6:5-51:6:9
+            name: fazz
           type: Int!
           argumentList:
-            location: "51:6:9"
+            location: 51:6:9-58:6:16
             arguments:
-            - name: a
-              location: "52:6:10"
+            - location: 52:6:10-57:6:15
+              name:
+                location: 52:6:10-53:6:11
+                name: a
               type: Int!
               constraint:
+                location: 55:6:13-57:6:15
                 constraintType: equals
-                location: "55:6:13"
                 value:
+                  location: 55:6:13-57:6:15
                   expressionType: int
-                  location: "55:6:13"
                   value: 10
 
 expect-ast(schemaless):
+  location: 0:1:1-64:8:2
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-64:8:2
     selections:
-    - selectionType: max
-      location: "10:2:3"
+    - location: 10:2:3-62:7:4
+      selectionType: max
       limit: 3
       options:
-        location: "16:2:9"
+        location: 16:2:9-62:7:4
         selections:
-        - selectionType: field
-          name: foo
-          location: "22:3:5"
-        - selectionType: field
-          name: bar
-          location: "30:4:5"
-        - selectionType: field
-          name: bazz
-          location: "38:5:5"
-        - selectionType: field
-          name: fazz
-          location: "47:6:5"
+        - location: 22:3:5-25:3:8
+          selectionType: field
+          name:
+            location: 22:3:5-25:3:8
+            name: foo
+        - location: 30:4:5-33:4:8
+          selectionType: field
+          name:
+            location: 30:4:5-33:4:8
+            name: bar
+        - location: 38:5:5-42:5:9
+          selectionType: field
+          name:
+            location: 38:5:5-42:5:9
+            name: bazz
+        - location: 47:6:5-58:6:16
+          selectionType: field
+          name:
+            location: 47:6:5-51:6:9
+            name: fazz
           argumentList:
-            location: "51:6:9"
+            location: 51:6:9-58:6:16
             arguments:
-            - name: a
-              location: "52:6:10"
+            - location: 52:6:10-57:6:15
+              name:
+                location: 52:6:10-53:6:11
+                name: a
               constraint:
+                location: 55:6:13-57:6:15
                 constraintType: equals
-                location: "55:6:13"
                 value:
+                  location: 55:6:13-57:6:15
                   expressionType: int
-                  location: "55:6:13"
                   value: 10

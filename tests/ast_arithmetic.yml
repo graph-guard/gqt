@@ -5,149 +5,141 @@ template: >
   query { f(a: > ( 1 + 4 - 2 % 5 ) * 2 / 10.4) }
 
 expect-ast:
+  location: 0:1:1-46:1:47
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-46:1:47
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-44:1:45
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       type: Float!
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-44:1:45
         arguments:
-        # Argument "a"
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-43:1:44
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           type: Float!
           constraint:
-            # > ...
+            location: 13:1:14-43:1:44
             constraintType: greaterThan
-            location: "13:1:14"
             value:
-              # ... / 10.4
+              location: 15:1:16-43:1:44
               expressionType: division
-              location: "15:1:16"
+              float: true
               dividend:
-                # ... * 2
+                location: 15:1:16-36:1:37
                 expressionType: multiplication
-                location: "15:1:16"
+                float: false
                 multiplicant:
-                  # ( ... )
+                  location: 15:1:16-32:1:33
                   expressionType: parentheses
-                  location: "15:1:16"
                   expression:
-                    # ... - ...
+                    location: 17:1:18-30:1:31
                     expressionType: subtraction
-                    location: "17:1:18"
+                    float: false
                     minuend:
-                      # 1 + 4
+                      location: 17:1:18-22:1:23
                       expressionType: addition
-                      location: "17:1:18"
+                      float: false
                       addendLeft:
+                        location: 17:1:18-18:1:19
                         expressionType: int
-                        location: "17:1:18"
                         value: 1
                       addendRight:
+                        location: 21:1:22-22:1:23
                         expressionType: int
-                        location: "21:1:22"
                         value: 4
-                      float: false
                     subtrahend:
-                      # 2 % 5
+                      location: 25:1:26-30:1:31
                       expressionType: modulo
-                      location: "25:1:26"
+                      float: false
                       dividend:
+                        location: 25:1:26-26:1:27
                         expressionType: int
-                        location: "25:1:26"
                         value: 2
                       divisor:
+                        location: 29:1:30-30:1:31
                         expressionType: int
-                        location: "29:1:30"
                         value: 5
-                      float: false
-                    float: false
                 multiplicator:
+                  location: 35:1:36-36:1:37
                   expressionType: int
-                  location: "35:1:36"
                   value: 2
-                float: false
               divisor:
+                location: 39:1:40-43:1:44
                 expressionType: float
-                location: "39:1:40"
                 value: 10.4
-              float: true
 
 expect-ast(schemaless):
+  location: 0:1:1-46:1:47
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-46:1:47
     selections:
-    - selectionType: field
-      name: f
-      location: "8:1:9"
+    - location: 8:1:9-44:1:45
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
       argumentList:
-        location: "9:1:10"
+        location: 9:1:10-44:1:45
         arguments:
-        # Argument "a"
-        - name: a
-          location: "10:1:11"
+        - location: 10:1:11-43:1:44
+          name:
+            location: 10:1:11-11:1:12
+            name: a
           constraint:
-            # > ...
+            location: 13:1:14-43:1:44
             constraintType: greaterThan
-            location: "13:1:14"
             value:
-              # ... / 10.4
+              location: 15:1:16-43:1:44
               expressionType: division
-              location: "15:1:16"
+              float: true
               dividend:
-                # ... * 2
+                location: 15:1:16-36:1:37
                 expressionType: multiplication
-                location: "15:1:16"
+                float: false
                 multiplicant:
-                  # ( ... )
+                  location: 15:1:16-32:1:33
                   expressionType: parentheses
-                  location: "15:1:16"
                   expression:
-                    # ... - ...
+                    location: 17:1:18-30:1:31
                     expressionType: subtraction
-                    location: "17:1:18"
+                    float: false
                     minuend:
-                      # 1 + 4
+                      location: 17:1:18-22:1:23
                       expressionType: addition
-                      location: "17:1:18"
+                      float: false
                       addendLeft:
+                        location: 17:1:18-18:1:19
                         expressionType: int
-                        location: "17:1:18"
                         value: 1
                       addendRight:
+                        location: 21:1:22-22:1:23
                         expressionType: int
-                        location: "21:1:22"
                         value: 4
-                      float: false
                     subtrahend:
-                      # 2 % 5
+                      location: 25:1:26-30:1:31
                       expressionType: modulo
-                      location: "25:1:26"
+                      float: false
                       dividend:
+                        location: 25:1:26-26:1:27
                         expressionType: int
-                        location: "25:1:26"
                         value: 2
                       divisor:
+                        location: 29:1:30-30:1:31
                         expressionType: int
-                        location: "29:1:30"
                         value: 5
-                      float: false
-                    float: false
                 multiplicator:
+                  location: 35:1:36-36:1:37
                   expressionType: int
-                  location: "35:1:36"
                   value: 2
-                float: false
               divisor:
+                location: 39:1:40-43:1:44
                 expressionType: float
-                location: "39:1:40"
                 value: 10.4
-              float: true

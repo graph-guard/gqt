@@ -13,17 +13,21 @@ expect-errors:
   - '1:13: field "foo" is undefined in type Interface'
 
 expect-ast(schemaless):
+  location: 0:1:1-19:1:20
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-19:1:20
     selections:
-    - selectionType: field
-      name: i
-      location: "8:1:9"
+    - location: 8:1:9-17:1:18
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: i
       selectionSet:
-        location: "10:1:11"
+        location: 10:1:11-17:1:18
         selections:
-        - selectionType: field
-          name: foo
-          location: "12:1:13"
+        - location: 12:1:13-15:1:16
+          selectionType: field
+          name:
+            location: 12:1:13-15:1:16
+            name: foo

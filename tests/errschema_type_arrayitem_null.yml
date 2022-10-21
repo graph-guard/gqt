@@ -8,28 +8,32 @@ expect-errors:
   - '1:18: expected type Int! but received null'
 
 expect-ast(schemaless):
+  location: 0:1:1-26:1:27
   operationType: Query
-  location: "0:1:1"
   selectionSet:
-    location: "6:1:7"
+    location: 6:1:7-26:1:27
     selections:
-    - selectionType: field
-      name: foo
-      location: "8:1:9"
+    - location: 8:1:9-24:1:25
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
       argumentList:
-        location: "11:1:12"
+        location: 11:1:12-24:1:25
         arguments:
-        - name: a
-          location: "12:1:13"
+        - location: 12:1:13-23:1:24
+          name:
+            location: 12:1:13-13:1:14
+            name: a
           constraint:
+            location: 15:1:16-23:1:24
             constraintType: equals
-            location: "15:1:16"
             value:
+              location: 15:1:16-23:1:24
               expressionType: array
-              location: "15:1:16"
               items:
-              - constraintType: equals
-                location: "17:1:18"
+              - location: 17:1:18-21:1:22
+                constraintType: equals
                 value:
+                  location: 17:1:18-21:1:22
                   expressionType: "null"
-                  location: "17:1:18"
