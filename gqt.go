@@ -4400,7 +4400,8 @@ func typeDesignationRelational(e Expression) string {
 	return "number"
 }
 
-// find returns true if e recursively find an instance of T.
+// find returns (instance, true) if e or any of its subexpressions
+// contains an instance of T, otherwise returns (zero, false).
 func find[T any](e Expression) (T, bool) {
 	var zero T
 	switch e := e.(type) {
