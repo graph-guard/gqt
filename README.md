@@ -39,6 +39,11 @@ query {
       }
     }
     pictures(
+      # Allow a string with a maximum byte length of 64.
+      prefix: len <= 64,
+      # Allow an array with a maximum of 8 items,
+      # where each item string is not longer than 64 bytes.
+      tags: len < 8 && [...len < 64],
       # Allow only a subset of possible enum values in the category argument.
       category: PUBLIC || FRIENDSONLY,
       # Allow a rating value between 10 and 20
@@ -46,6 +51,42 @@ query {
     ) { url }
   }
 }
+```
+
+GraphQL Schema:
+
+```graphqls
+# This is a GQT query template example.
+scalar Date
+enum PictureCategory {
+    PUBLIC
+    FRIENDSONLY
+    PRIVATE
+}
+type Query { user(id: ID!): User }
+type User {
+    id:        ID!
+    name:      String
+    birthdate: Date
+    email:     String
+    address:   Address
+    friends(
+        after: ID,
+        limit: Int!,
+    ): [User!]!
+    pictures(
+        prefix:   String,
+        tags:     [String!],
+        category: PictureCategory,
+        rating:   Int,
+    ): [Picture!]
+}
+type Address {
+    country: String!
+    city:    String!
+    street:  String!
+}
+type Picture { url: String! }
 ```
 
 ## Features
