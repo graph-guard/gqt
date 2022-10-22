@@ -1,0 +1,15 @@
+schema: >
+  type Query { foo:Int bar:Int }
+
+template: >
+  query {
+    max 1 {
+      foo
+    }
+  }
+
+expect-errors:
+  - "2:9: max set must have at least 2 selection options"
+
+expect-errors(schemaless):
+  - "2:9: max set must have at least 2 selection options"
