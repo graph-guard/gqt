@@ -1534,7 +1534,7 @@ func (p *Parser) validateField(
 		// Check required arguments
 		for _, a := range expect.Arguments {
 			if a.Type.NonNull && a.DefaultValue == nil {
-				if _, ok := args[a.Name]; !ok {
+				if _, found := args[a.Name]; !found {
 					l := f.ArgumentList.LocRange
 					if len(f.Arguments) < 1 {
 						l = f.LocRange
