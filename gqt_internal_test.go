@@ -415,7 +415,7 @@ func TestParseNumber(t *testing.T) {
 
 	run := test.New(t, func(t *testing.T, x T) {
 		p := &Parser{}
-		a, n := p.ParseNumber(source{
+		a, n := p.parseNumber(source{
 			s:        []byte(x.Input),
 			Location: x.Location,
 		})

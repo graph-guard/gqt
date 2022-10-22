@@ -32,9 +32,14 @@ func (t OperationType) String() string {
 }
 
 type (
-	Location    struct{ Index, Line, Column int }
+	// Location defines the start location of an expression.
+	Location struct{ Index, Line, Column int }
+
+	// LocationEnd defines the end location of an expression.
 	LocationEnd struct{ IndexEnd, LineEnd, ColumnEnd int }
-	LocRange    struct {
+
+	// LocRange defines the start and end locations of an expression.
+	LocRange struct {
 		Location
 		LocationEnd
 	}
@@ -100,6 +105,7 @@ type (
 	//	*SelectionMax
 	Selection Expression
 
+	// Operation is the root of the abstract syntax tree of an operation.
 	Operation struct {
 		LocRange
 		Type OperationType
@@ -112,6 +118,7 @@ type (
 		Name string
 	}
 
+	// SelectionField is a field selection.
 	SelectionField struct {
 		LocRange
 		Name
@@ -121,16 +128,19 @@ type (
 		Def *ast.FieldDefinition
 	}
 
+	// SelectionSet is a selection set.
 	SelectionSet struct {
 		LocRange
 		Selections []Selection
 	}
 
+	// ArgumentList is an argument list.
 	ArgumentList struct {
 		LocRange
 		Arguments []*Argument
 	}
 
+	// Argument is an input argument.
 	Argument struct {
 		LocRange
 		Name
@@ -140,101 +150,125 @@ type (
 		Def                *ast.ArgumentDefinition
 	}
 
+	// ConstrAny is the any value constraint (*)
 	ConstrAny struct {
 		LocRange
 		Parent Expression
 	}
 
+	// ConstrEquals is the equality constraint
 	ConstrEquals struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrNotEquals is the inequality constraint
 	ConstrNotEquals struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLess is the relational "less than" constraint (<)
 	ConstrLess struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLess is the relational "less than or equal" constraint (<=)
 	ConstrLessOrEqual struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrGreater is the relational "greater than" constraint (>)
 	ConstrGreater struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrGreater is the relational "greater than or equal" constraint (>=)
 	ConstrGreaterOrEqual struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLenEquals is the relational length equality constraint
+	// for String or array values.
 	ConstrLenEquals struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLenNotEquals is the relational length inequality constraint
+	// for String or array values.
 	ConstrLenNotEquals struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLenLess is the relational "length less than" constraint
+	// for String or array values (len <).
 	ConstrLenLess struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLenLessOrEqual is the relational "length less than or equal"
+	// constraint for String or array values (len <=).
 	ConstrLenLessOrEqual struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLenGreater is the relational "greater than"
+	// constraint for String or array values (len >).
 	ConstrLenGreater struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrLenGreaterOrEqual is the relational "greater than or equal"
+	// constraint for String or array values (len >=).
 	ConstrLenGreaterOrEqual struct {
 		LocRange
 		Parent Expression
 		Value  Expression
 	}
 
+	// ConstrMap maps a constraint to all items of the array.
 	ConstrMap struct {
 		LocRange
 		Parent     Expression
 		Constraint Expression
 	}
 
+	// ExprParentheses is an expression enclosed by parentheses.
 	ExprParentheses struct {
 		LocRange
 		Parent     Expression
 		Expression Expression
 	}
 
+	// ExprLogicalNegation is a logical negation expression
+	// using the prefix operator "!".
 	ExprLogicalNegation struct {
 		LocRange
 		Parent     Expression
 		Expression Expression
 	}
 
+	// ExprModulo is a modulo expression using the operator "%".
 	ExprModulo struct {
 		LocRange
 		Parent   Expression
@@ -243,6 +277,8 @@ type (
 		Float    bool
 	}
 
+	// ExprDivision is an arithmetic division expression
+	// using the operator "/".
 	ExprDivision struct {
 		LocRange
 		Parent   Expression
@@ -251,6 +287,8 @@ type (
 		Float    bool
 	}
 
+	// ExprMultiplication is an arithmetic multiplication expression
+	// using the operator "*".
 	ExprMultiplication struct {
 		LocRange
 		Parent        Expression
@@ -259,6 +297,8 @@ type (
 		Float         bool
 	}
 
+	// ExprAddition is an arithmetic addition expression
+	// using the operator "+".
 	ExprAddition struct {
 		LocRange
 		Parent      Expression
@@ -267,6 +307,8 @@ type (
 		Float       bool
 	}
 
+	// ExprSubtraction is an arithmetic subtraction expression
+	// using the operator "-".
 	ExprSubtraction struct {
 		LocRange
 		Parent     Expression
@@ -275,6 +317,8 @@ type (
 		Float      bool
 	}
 
+	// ExprEqual is a boolean equality expression
+	// using the operator "==".
 	ExprEqual struct {
 		LocRange
 		Parent Expression
@@ -282,6 +326,8 @@ type (
 		Right  Expression
 	}
 
+	// ExprNotEqual is a boolean inequality expression
+	// using the operator "!=".
 	ExprNotEqual struct {
 		LocRange
 		Parent Expression
@@ -289,6 +335,8 @@ type (
 		Right  Expression
 	}
 
+	// ExprLess is a boolean relational "less than" expression
+	// using the operator "<".
 	ExprLess struct {
 		LocRange
 		Parent Expression
@@ -296,6 +344,8 @@ type (
 		Right  Expression
 	}
 
+	// ExprLessOrEqual is a boolean relational "less than or equal"
+	// expression using the operator "<=".
 	ExprLessOrEqual struct {
 		LocRange
 		Parent Expression
@@ -303,6 +353,8 @@ type (
 		Right  Expression
 	}
 
+	// ExprGreater is a boolean relational "greater than" expression
+	// using the operator ">".
 	ExprGreater struct {
 		LocRange
 		Parent Expression
@@ -310,6 +362,8 @@ type (
 		Right  Expression
 	}
 
+	// ExprGreaterOrEqual is a boolean relational "greater than or equal"
+	// expression using the operator ">=".
 	ExprGreaterOrEqual struct {
 		LocRange
 		Parent Expression
@@ -317,18 +371,23 @@ type (
 		Right  Expression
 	}
 
+	// ExprLogicalAnd is a boolean logical AND expression
+	// using the operator "&&".
 	ExprLogicalAnd struct {
 		LocRange
 		Parent      Expression
 		Expressions []Expression
 	}
 
+	// ExprLogicalOr is a boolean logical OR expression
+	// using the operator "||".
 	ExprLogicalOr struct {
 		LocRange
 		Parent      Expression
 		Expressions []Expression
 	}
 
+	// Int is a signed 32-bit integer value constant.
 	Int struct {
 		LocRange
 		Parent  Expression
@@ -336,6 +395,7 @@ type (
 		TypeDef *ast.Definition
 	}
 
+	// Float is a signed 64-bit floating point value constant.
 	Float struct {
 		LocRange
 		Parent  Expression
@@ -343,6 +403,7 @@ type (
 		TypeDef *ast.Definition
 	}
 
+	// String is a UTF-8 string value constant.
 	String struct {
 		LocRange
 		Parent  Expression
@@ -350,24 +411,28 @@ type (
 		TypeDef *ast.Definition
 	}
 
+	// True is a boolean value constant.
 	True struct {
 		LocRange
 		Parent  Expression
 		TypeDef *ast.Definition
 	}
 
+	// False is a boolean value constant.
 	False struct {
 		LocRange
 		Parent  Expression
 		TypeDef *ast.Definition
 	}
 
+	// Null is a null-value constant.
 	Null struct {
 		LocRange
 		Parent  Expression
 		TypeDef *ast.Definition
 	}
 
+	// Enum is an enumeration value constant.
 	Enum struct {
 		LocRange
 		Parent  Expression
@@ -375,6 +440,7 @@ type (
 		TypeDef *ast.Definition
 	}
 
+	// Array is an array value constant or an array constraint.
 	Array struct {
 		LocRange
 		Parent      Expression
@@ -382,6 +448,7 @@ type (
 		ItemTypeDef *ast.Definition
 	}
 
+	// Object is an input object constraint.
 	Object struct {
 		LocRange
 		Parent  Expression
@@ -389,6 +456,7 @@ type (
 		TypeDef *ast.Definition
 	}
 
+	// ObjectField is an input object field.
 	ObjectField struct {
 		LocRange
 		Name
@@ -398,6 +466,7 @@ type (
 		Def                *ast.FieldDefinition
 	}
 
+	// Variable is a named value placeholder.
 	Variable struct {
 		LocRange
 		Name
@@ -405,6 +474,7 @@ type (
 		Declaration *VariableDeclaration
 	}
 
+	// SelectionMax is the max selection set.
 	SelectionMax struct {
 		LocRange
 		Parent  Expression
@@ -412,6 +482,7 @@ type (
 		Options SelectionSet
 	}
 
+	// SelectionInlineFrag is an inline fragment.
 	SelectionInlineFrag struct {
 		LocRange
 		Parent        Expression
@@ -419,6 +490,7 @@ type (
 		SelectionSet
 	}
 
+	// TypeCondition is the type condition inside an inline fragment.
 	TypeCondition struct {
 		LocRange
 		TypeName string
@@ -839,7 +911,12 @@ type VariableDeclaration struct {
 	Parent Expression
 }
 
-func (v *VariableDeclaration) GetInfo() (schemaType *ast.Type, constr Expression) {
+// GetInfo returns the schema-type and constraint expression of the value
+// behind the variable.
+func (v *VariableDeclaration) GetInfo() (
+	schemaType *ast.Type,
+	constr Expression,
+) {
 	switch p := v.Parent.(type) {
 	case *Argument:
 		constr = p.Constraint
@@ -855,6 +932,7 @@ func (v *VariableDeclaration) GetInfo() (schemaType *ast.Type, constr Expression
 	return schemaType, constr
 }
 
+// Parser is a GQT parser.
 type Parser struct {
 	schema   *ast.Schema
 	enumVal  map[string]*ast.Definition
@@ -863,6 +941,7 @@ type Parser struct {
 	errors   []Error
 }
 
+// Source is a GraphQL schema source file.
 type Source struct {
 	Name    string
 	Content string
@@ -875,6 +954,10 @@ func newParser() *Parser {
 	}
 }
 
+// NewParser reads a GraphQL schema from given sources (if any)
+// and returns a new Parser instance that will parse in schema-aware mode,
+// according to the specified schema.
+// Returns schemaless parser instance if no sources are provided.
 func NewParser(schema []Source) (*Parser, error) {
 	p := newParser()
 	if len(schema) < 1 {
@@ -904,6 +987,8 @@ func NewParser(schema []Source) (*Parser, error) {
 	return p, nil
 }
 
+// Parse parses the template in schemaless mode
+// and returns its abstract syntax tree.
 func Parse(src []byte) (
 	operation *Operation,
 	variables map[string]*VariableDeclaration,
@@ -912,6 +997,7 @@ func Parse(src []byte) (
 	return newParser().Parse(src)
 }
 
+// Parse parses the template and returns its abstract syntax tree.
 func (p *Parser) Parse(src []byte) (
 	operation *Operation,
 	variables map[string]*VariableDeclaration,
@@ -951,7 +1037,7 @@ func (p *Parser) Parse(src []byte) (
 	}
 
 	s = s.consumeIgnored()
-	if s, o.SelectionSet = p.ParseSelectionSet(s); s.stop() {
+	if s, o.SelectionSet = p.parseSelectionSet(s); s.stop() {
 		return nil, nil, p.errors
 	}
 	o.LocationEnd = o.SelectionSet.LocationEnd
@@ -2063,7 +2149,7 @@ const (
 	expectValueInMap      expect = 3
 )
 
-func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
+func (p *Parser) parseSelectionSet(s source) (source, SelectionSet) {
 	selset := SelectionSet{LocRange: locRange(s.Location)}
 	var ok bool
 	if s, ok = s.consume("{"); !ok {
@@ -2089,7 +2175,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 
 		if _, ok = s.consume("..."); ok {
 			var fragInline *SelectionInlineFrag
-			if s, fragInline = p.ParseInlineFrag(s); s.stop() {
+			if s, fragInline = p.parseInlineFrag(s); s.stop() {
 				return stop(), SelectionSet{}
 			}
 			selset.Selections = append(selset.Selections, fragInline)
@@ -2130,7 +2216,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 
 				var options SelectionSet
 				sBeforeOptionsBlock := s
-				if s, options = p.ParseSelectionSet(s); s.stop() {
+				if s, options = p.parseSelectionSet(s); s.stop() {
 					return stop(), SelectionSet{}
 				}
 
@@ -2164,7 +2250,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 				p.newErr(locRange(s.Location), errFieldTypenameCantHaveArgs())
 				return stop(), SelectionSet{}
 			}
-			if s, sel.ArgumentList = p.ParseArguments(s); s.stop() {
+			if s, sel.ArgumentList = p.parseArguments(s); s.stop() {
 				return stop(), SelectionSet{}
 			}
 			for _, arg := range sel.Arguments {
@@ -2181,7 +2267,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 				return stop(), SelectionSet{}
 			}
 
-			if s, sel.SelectionSet = p.ParseSelectionSet(s); s.stop() {
+			if s, sel.SelectionSet = p.parseSelectionSet(s); s.stop() {
 				return stop(), SelectionSet{}
 			}
 			for _, sub := range sel.Selections {
@@ -2195,7 +2281,7 @@ func (p *Parser) ParseSelectionSet(s source) (source, SelectionSet) {
 	return s, selset
 }
 
-func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
+func (p *Parser) parseInlineFrag(s source) (source, *SelectionInlineFrag) {
 	l := s.Location
 	var ok bool
 	if s, ok = s.consume("..."); !ok {
@@ -2233,7 +2319,7 @@ func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
 
 	s = s.consumeIgnored()
 	var selset SelectionSet
-	if s, selset = p.ParseSelectionSet(s); s.stop() {
+	if s, selset = p.parseSelectionSet(s); s.stop() {
 		return stop(), nil
 	}
 	for _, sel := range selset.Selections {
@@ -2245,7 +2331,7 @@ func (p *Parser) ParseInlineFrag(s source) (source, *SelectionInlineFrag) {
 	return s, inlineFrag
 }
 
-func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
+func (p *Parser) parseArguments(s source) (source, ArgumentList) {
 	si := s
 	var ok bool
 	if s, ok = s.consume("("); !ok {
@@ -2338,7 +2424,7 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 		}
 
 		var expr Expression
-		if s, expr = p.ParseExprLogicalOr(
+		if s, expr = p.parseExprLogicalOr(
 			s, expectConstraint,
 		); s.stop() {
 			return s, ArgumentList{}
@@ -2363,7 +2449,7 @@ func (p *Parser) ParseArguments(s source) (source, ArgumentList) {
 	return s, list
 }
 
-func (p *Parser) ParseValue(
+func (p *Parser) parseValue(
 	s source,
 	expect expect,
 ) (source, Expression) {
@@ -2382,7 +2468,7 @@ func (p *Parser) ParseValue(
 
 		s = s.consumeIgnored()
 
-		if s, e.Expression = p.ParseExprLogicalOr(s, expect); s.stop() {
+		if s, e.Expression = p.parseExprLogicalOr(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Expression, e)
@@ -2431,7 +2517,7 @@ func (p *Parser) ParseValue(
 		}
 	}
 
-	if s, num = p.ParseNumber(s); s.stop() {
+	if s, num = p.parseNumber(s); s.stop() {
 		return stop(), nil
 	} else if num != nil {
 		switch v := num.(type) {
@@ -2455,7 +2541,7 @@ func (p *Parser) ParseValue(
 			}
 
 			var expr Expression
-			if s, expr = p.ParseExprLogicalOr(s, expectConstraint); s.stop() {
+			if s, expr = p.parseExprLogicalOr(s, expectConstraint); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -2579,7 +2665,7 @@ func (p *Parser) ParseValue(
 			}
 
 			var expr Expression
-			if s, expr = p.ParseExprLogicalOr(s, expectConstraint); s.stop() {
+			if s, expr = p.parseExprLogicalOr(s, expectConstraint); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, fld)
@@ -2639,7 +2725,7 @@ func (p *Parser) ParseValue(
 	}
 }
 
-func (p *Parser) ParseExprUnary(
+func (p *Parser) parseExprUnary(
 	s source,
 	expect expect,
 ) (source, Expression) {
@@ -2650,7 +2736,7 @@ func (p *Parser) ParseExprUnary(
 
 		s = s.consumeIgnored()
 
-		if s, e.Expression = p.ParseValue(s, expect); s.stop() {
+		if s, e.Expression = p.parseValue(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Expression, e)
@@ -2659,17 +2745,17 @@ func (p *Parser) ParseExprUnary(
 		s = s.consumeIgnored()
 		return s, e
 	}
-	return p.ParseValue(s, expect)
+	return p.parseValue(s, expect)
 }
 
-func (p *Parser) ParseExprMultiplicative(
+func (p *Parser) parseExprMultiplicative(
 	s source,
 	expect expect,
 ) (source, Expression) {
 	si := s
 
 	var result Expression
-	if s, result = p.ParseExprUnary(s, expect); s.stop() {
+	if s, result = p.parseExprUnary(s, expect); s.stop() {
 		return stop(), nil
 	}
 
@@ -2686,7 +2772,7 @@ func (p *Parser) ParseExprMultiplicative(
 			setParent(e.Multiplicant, e)
 
 			s = s.consumeIgnored()
-			if s, e.Multiplicator = p.ParseExprUnary(s, expect); s.stop() {
+			if s, e.Multiplicator = p.parseExprUnary(s, expect); s.stop() {
 				return stop(), nil
 			}
 			setParent(e.Multiplicator, e)
@@ -2704,7 +2790,7 @@ func (p *Parser) ParseExprMultiplicative(
 			setParent(e.Dividend, e)
 
 			s = s.consumeIgnored()
-			if s, e.Divisor = p.ParseExprUnary(s, expect); s.stop() {
+			if s, e.Divisor = p.parseExprUnary(s, expect); s.stop() {
 				return stop(), nil
 			}
 			setParent(e.Divisor, e)
@@ -2722,7 +2808,7 @@ func (p *Parser) ParseExprMultiplicative(
 			setParent(e.Dividend, e)
 
 			s = s.consumeIgnored()
-			if s, e.Divisor = p.ParseExprUnary(s, expect); s.stop() {
+			if s, e.Divisor = p.parseExprUnary(s, expect); s.stop() {
 				return stop(), nil
 			}
 			setParent(e.Divisor, e)
@@ -2739,14 +2825,14 @@ func (p *Parser) ParseExprMultiplicative(
 	}
 }
 
-func (p *Parser) ParseExprAdditive(
+func (p *Parser) parseExprAdditive(
 	s source,
 	expect expect,
 ) (source, Expression) {
 	si := s
 
 	var result Expression
-	if s, result = p.ParseExprMultiplicative(s, expect); s.stop() {
+	if s, result = p.parseExprMultiplicative(s, expect); s.stop() {
 		return stop(), nil
 	}
 
@@ -2763,7 +2849,7 @@ func (p *Parser) ParseExprAdditive(
 			setParent(e.AddendLeft, e)
 
 			s = s.consumeIgnored()
-			s, e.AddendRight = p.ParseExprMultiplicative(s, expect)
+			s, e.AddendRight = p.parseExprMultiplicative(s, expect)
 			if s.stop() {
 				return stop(), nil
 			}
@@ -2782,7 +2868,7 @@ func (p *Parser) ParseExprAdditive(
 			setParent(e.Minuend, e)
 
 			s = s.consumeIgnored()
-			s, e.Subtrahend = p.ParseExprMultiplicative(s, expect)
+			s, e.Subtrahend = p.parseExprMultiplicative(s, expect)
 			if s.stop() {
 				return stop(), nil
 			}
@@ -2800,14 +2886,14 @@ func (p *Parser) ParseExprAdditive(
 	}
 }
 
-func (p *Parser) ParseExprRelational(
+func (p *Parser) parseExprRelational(
 	s source,
 	expect expect,
 ) (source, Expression) {
 	l := s.Location
 
 	var left Expression
-	if s, left = p.ParseExprAdditive(s, expect); s.stop() {
+	if s, left = p.parseExprAdditive(s, expect); s.stop() {
 		return stop(), nil
 	}
 
@@ -2823,7 +2909,7 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+		if s, e.Right = p.parseExprAdditive(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Right, e)
@@ -2840,7 +2926,7 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+		if s, e.Right = p.parseExprAdditive(s, expect); s.stop() {
 			return s, nil
 		}
 		setParent(e.Right, e)
@@ -2857,7 +2943,7 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+		if s, e.Right = p.parseExprAdditive(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Right, e)
@@ -2874,7 +2960,7 @@ func (p *Parser) ParseExprRelational(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right = p.ParseExprAdditive(s, expect); s.stop() {
+		if s, e.Right = p.parseExprAdditive(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Right, e)
@@ -2887,14 +2973,14 @@ func (p *Parser) ParseExprRelational(
 	return s, left
 }
 
-func (p *Parser) ParseExprEquality(
+func (p *Parser) parseExprEquality(
 	s source,
 	expect expect,
 ) (source, Expression) {
 	si := s
 
 	var exprLeft Expression
-	if s, exprLeft = p.ParseExprRelational(s, expect); s.stop() {
+	if s, exprLeft = p.parseExprRelational(s, expect); s.stop() {
 		return stop(), nil
 	}
 
@@ -2910,7 +2996,7 @@ func (p *Parser) ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right = p.ParseExprRelational(s, expect); s.stop() {
+		if s, e.Right = p.parseExprRelational(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Right, e)
@@ -2929,7 +3015,7 @@ func (p *Parser) ParseExprEquality(
 
 		s = s.consumeIgnored()
 
-		if s, e.Right = p.ParseExprRelational(s, expect); s.stop() {
+		if s, e.Right = p.parseExprRelational(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(e.Right, e)
@@ -2944,7 +3030,7 @@ func (p *Parser) ParseExprEquality(
 	return s, exprLeft
 }
 
-func (p *Parser) ParseExprLogicalOr(
+func (p *Parser) parseExprLogicalOr(
 	s source,
 	expect expect,
 ) (source, Expression) {
@@ -2952,7 +3038,7 @@ func (p *Parser) ParseExprLogicalOr(
 
 	for {
 		var expr Expression
-		if s, expr = p.ParseExprLogicalAnd(
+		if s, expr = p.parseExprLogicalAnd(
 			s, expect,
 		); s.stop() {
 			return s, nil
@@ -2976,7 +3062,7 @@ func (p *Parser) ParseExprLogicalOr(
 	}
 }
 
-func (p *Parser) ParseExprLogicalAnd(
+func (p *Parser) parseExprLogicalAnd(
 	s source,
 	expect expect,
 ) (source, Expression) {
@@ -2984,7 +3070,7 @@ func (p *Parser) ParseExprLogicalAnd(
 
 	for {
 		var expr Expression
-		if s, expr = p.ParseConstr(s, expect); s.stop() {
+		if s, expr = p.parseConstr(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3006,7 +3092,7 @@ func (p *Parser) ParseExprLogicalAnd(
 	}
 }
 
-func (p *Parser) ParseConstr(
+func (p *Parser) parseConstr(
 	s source,
 	expect expect,
 ) (source, Expression) {
@@ -3015,7 +3101,7 @@ func (p *Parser) ParseConstr(
 	var expr Expression
 
 	if expect == expectValue {
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 
@@ -3041,7 +3127,7 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3058,7 +3144,7 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3075,7 +3161,7 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3092,7 +3178,7 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3109,7 +3195,7 @@ func (p *Parser) ParseConstr(
 		}
 		s = s.consumeIgnored()
 
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3131,7 +3217,7 @@ func (p *Parser) ParseConstr(
 
 			var expr Expression
 
-			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -3148,7 +3234,7 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -3165,7 +3251,7 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -3182,7 +3268,7 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -3199,7 +3285,7 @@ func (p *Parser) ParseConstr(
 			}
 			s = s.consumeIgnored()
 
-			if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+			if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -3216,7 +3302,7 @@ func (p *Parser) ParseConstr(
 			Value:    expr,
 		}
 
-		if s, expr = p.ParseExprEquality(s, expectValue); s.stop() {
+		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3240,7 +3326,7 @@ func (p *Parser) ParseConstr(
 			}
 
 			var expr Expression
-			if s, expr = p.ParseExprLogicalOr(
+			if s, expr = p.parseExprLogicalOr(
 				s, expectConstraintInMap,
 			); s.stop() {
 				return stop(), nil
@@ -3272,7 +3358,7 @@ func (p *Parser) ParseConstr(
 		expect = expectValue
 	}
 
-	if s, expr = p.ParseExprEquality(s, expect); s.stop() {
+	if s, expr = p.parseExprEquality(s, expect); s.stop() {
 		return stop(), nil
 	}
 	setParent(expr, e)
@@ -3284,7 +3370,7 @@ func (p *Parser) ParseConstr(
 	return s, e
 }
 
-func (p *Parser) ParseNumber(s source) (_ source, number Expression) {
+func (p *Parser) parseNumber(s source) (_ source, number Expression) {
 	si := s
 	if s.Index >= len(s.s) {
 		return si, nil
