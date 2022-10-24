@@ -2,44 +2,44 @@ schema: >
   type Query { f(a: Float!): Float! }
 
 template: >
-  query { f(a: > ( 1 + 4 - 2 % 5 ) * 2 / 10.4) }
+  query { f(a: > ( 1 + 4 - -(2) % 5 ) * 2 / -10.4) }
 
 expect-ast:
-  location: 0:1:1-46:1:47
+  location: 0:1:1-50:1:51
   operationType: Query
   selectionSet:
-    location: 6:1:7-46:1:47
+    location: 6:1:7-50:1:51
     selections:
-    - location: 8:1:9-44:1:45
+    - location: 8:1:9-48:1:49
       selectionType: field
       name:
         location: 8:1:9-9:1:10
         name: f
       type: Float!
       argumentList:
-        location: 9:1:10-44:1:45
+        location: 9:1:10-48:1:49
         arguments:
-        - location: 10:1:11-43:1:44
+        - location: 10:1:11-47:1:48
           name:
             location: 10:1:11-11:1:12
             name: a
           type: Float!
           constraint:
-            location: 13:1:14-43:1:44
+            location: 13:1:14-47:1:48
             constraintType: greaterThan
             value:
-              location: 15:1:16-43:1:44
+              location: 15:1:16-47:1:48
               expressionType: division
               float: true
               dividend:
-                location: 15:1:16-36:1:37
+                location: 15:1:16-39:1:40
                 expressionType: multiplication
                 float: false
                 multiplicant:
-                  location: 15:1:16-32:1:33
+                  location: 15:1:16-35:1:36
                   expressionType: parentheses
                   expression:
-                    location: 17:1:18-30:1:31
+                    location: 17:1:18-33:1:34
                     expressionType: subtraction
                     float: false
                     minuend:
@@ -55,60 +55,69 @@ expect-ast:
                         expressionType: int
                         value: 4
                     subtrahend:
-                      location: 25:1:26-30:1:31
+                      location: 25:1:26-33:1:34
                       expressionType: modulo
                       float: false
                       dividend:
-                        location: 25:1:26-26:1:27
-                        expressionType: int
-                        value: 2
+                        location: 25:1:26-29:1:30
+                        expressionType: numericNegation
+                        expression:
+                          location: 26:1:27-29:1:30
+                          expressionType: parentheses
+                          expression:
+                            location: 27:1:28-28:1:29
+                            expressionType: int
+                            value: 2
                       divisor:
-                        location: 29:1:30-30:1:31
+                        location: 32:1:33-33:1:34
                         expressionType: int
                         value: 5
                 multiplicator:
-                  location: 35:1:36-36:1:37
+                  location: 38:1:39-39:1:40
                   expressionType: int
                   value: 2
               divisor:
-                location: 39:1:40-43:1:44
-                expressionType: float
-                value: 10.4
+                location: 42:1:43-47:1:48
+                expressionType: numericNegation
+                expression:
+                  location: 43:1:44-47:1:48
+                  expressionType: float
+                  value: 10.4
 
 expect-ast(schemaless):
-  location: 0:1:1-46:1:47
+  location: 0:1:1-50:1:51
   operationType: Query
   selectionSet:
-    location: 6:1:7-46:1:47
+    location: 6:1:7-50:1:51
     selections:
-    - location: 8:1:9-44:1:45
+    - location: 8:1:9-48:1:49
       selectionType: field
       name:
         location: 8:1:9-9:1:10
         name: f
       argumentList:
-        location: 9:1:10-44:1:45
+        location: 9:1:10-48:1:49
         arguments:
-        - location: 10:1:11-43:1:44
+        - location: 10:1:11-47:1:48
           name:
             location: 10:1:11-11:1:12
             name: a
           constraint:
-            location: 13:1:14-43:1:44
+            location: 13:1:14-47:1:48
             constraintType: greaterThan
             value:
-              location: 15:1:16-43:1:44
+              location: 15:1:16-47:1:48
               expressionType: division
               float: true
               dividend:
-                location: 15:1:16-36:1:37
+                location: 15:1:16-39:1:40
                 expressionType: multiplication
                 float: false
                 multiplicant:
-                  location: 15:1:16-32:1:33
+                  location: 15:1:16-35:1:36
                   expressionType: parentheses
                   expression:
-                    location: 17:1:18-30:1:31
+                    location: 17:1:18-33:1:34
                     expressionType: subtraction
                     float: false
                     minuend:
@@ -124,22 +133,31 @@ expect-ast(schemaless):
                         expressionType: int
                         value: 4
                     subtrahend:
-                      location: 25:1:26-30:1:31
+                      location: 25:1:26-33:1:34
                       expressionType: modulo
                       float: false
                       dividend:
-                        location: 25:1:26-26:1:27
-                        expressionType: int
-                        value: 2
+                        location: 25:1:26-29:1:30
+                        expressionType: numericNegation
+                        expression:
+                          location: 26:1:27-29:1:30
+                          expressionType: parentheses
+                          expression:
+                            location: 27:1:28-28:1:29
+                            expressionType: int
+                            value: 2
                       divisor:
-                        location: 29:1:30-30:1:31
+                        location: 32:1:33-33:1:34
                         expressionType: int
                         value: 5
                 multiplicator:
-                  location: 35:1:36-36:1:37
+                  location: 38:1:39-39:1:40
                   expressionType: int
                   value: 2
               divisor:
-                location: 39:1:40-43:1:44
-                expressionType: float
-                value: 10.4
+                location: 42:1:43-47:1:48
+                expressionType: numericNegation
+                expression:
+                  location: 43:1:44-47:1:48
+                  expressionType: float
+                  value: 10.4

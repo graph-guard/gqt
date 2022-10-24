@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int):Int }
+
+template: >
+  query { f(a: -null) }
+
+expect-errors:
+  - '1:15: expected number but received null'
+
+expect-errors(schemaless):
+  - '1:15: expected number but received null'

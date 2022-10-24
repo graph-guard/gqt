@@ -344,6 +344,18 @@ func (e *ExprLogicalNegation) MarshalYAML() (any, error) {
 	}, nil
 }
 
+func (e *ExprNumericNegation) MarshalYAML() (any, error) {
+	return struct {
+		Location       LocRange   `yaml:"location"`
+		ExpressionType string     `yaml:"expressionType"`
+		Expression     Expression `yaml:"expression"`
+	}{
+		Location:       e.LocRange,
+		ExpressionType: "numericNegation",
+		Expression:     e.Expression,
+	}, nil
+}
+
 func (e *ExprEqual) MarshalYAML() (any, error) {
 	return struct {
 		Location       LocRange   `yaml:"location"`

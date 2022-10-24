@@ -1,0 +1,18 @@
+schema: >
+  scalar Custom
+  type Query {
+    f(a: Int):Int
+    v(a: String):Int
+  }
+
+template: >
+  query {
+    f(a: -$v)
+    v(a=$v: null)
+  }
+
+expect-errors:
+  - '2:9: expected number but received null'
+
+expect-errors(schemaless):
+  - '2:9: expected number but received null'

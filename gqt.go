@@ -68,6 +68,7 @@ type (
 	//  *ExprAddition
 	//  *ExprSubtraction
 	//  *ExprLogicalNegation
+	//  *ExprNumericNegation
 	//  *ExprEqual
 	//  *ExprNotEqual
 	//  *ExprLess
@@ -266,6 +267,15 @@ type (
 		LocRange
 		Parent     Expression
 		Expression Expression
+	}
+
+	// ExprNumericNegation is a numeric negation expression
+	// using the prefix operator "-".
+	ExprNumericNegation struct {
+		LocRange
+		Parent     Expression
+		Expression Expression
+		Float      bool
 	}
 
 	// ExprModulo is a modulo expression using the operator "%".
@@ -522,6 +532,7 @@ func (e *ExprAddition) GetParent() Expression       { return e.Parent }
 func (e *ExprSubtraction) GetParent() Expression    { return e.Parent }
 
 func (e *ExprLogicalNegation) GetParent() Expression { return e.Parent }
+func (e *ExprNumericNegation) GetParent() Expression { return e.Parent }
 func (e *ExprEqual) GetParent() Expression           { return e.Parent }
 func (e *ExprNotEqual) GetParent() Expression        { return e.Parent }
 func (e *ExprLess) GetParent() Expression            { return e.Parent }
@@ -569,6 +580,7 @@ func (e *ExprMultiplication) GetLocation() LocRange      { return e.LocRange }
 func (e *ExprAddition) GetLocation() LocRange            { return e.LocRange }
 func (e *ExprSubtraction) GetLocation() LocRange         { return e.LocRange }
 func (e *ExprLogicalNegation) GetLocation() LocRange     { return e.LocRange }
+func (e *ExprNumericNegation) GetLocation() LocRange     { return e.LocRange }
 func (e *ExprEqual) GetLocation() LocRange               { return e.LocRange }
 func (e *ExprNotEqual) GetLocation() LocRange            { return e.LocRange }
 func (e *ExprLess) GetLocation() LocRange                { return e.LocRange }
@@ -618,6 +630,7 @@ func (e *ExprAddition) IsFloat() bool       { return e.Float }
 func (e *ExprSubtraction) IsFloat() bool    { return e.Float }
 
 func (e *ExprLogicalNegation) IsFloat() bool { return false }
+func (e *ExprNumericNegation) IsFloat() bool { return e.Expression.IsFloat() }
 func (e *ExprEqual) IsFloat() bool           { return false }
 func (e *ExprNotEqual) IsFloat() bool        { return false }
 func (e *ExprLess) IsFloat() bool            { return false }
@@ -754,14 +767,20 @@ func (e *ExprSubtraction) TypeDesignation() string {
 }
 
 func (e *ExprLogicalNegation) TypeDesignation() string { return "Boolean" }
-func (e *ExprEqual) TypeDesignation() string           { return "Boolean" }
-func (e *ExprNotEqual) TypeDesignation() string        { return "Boolean" }
-func (e *ExprLess) TypeDesignation() string            { return "Boolean" }
-func (e *ExprLessOrEqual) TypeDesignation() string     { return "Boolean" }
-func (e *ExprGreater) TypeDesignation() string         { return "Boolean" }
-func (e *ExprGreaterOrEqual) TypeDesignation() string  { return "Boolean" }
-func (e *ExprLogicalAnd) TypeDesignation() string      { return "Boolean" }
-func (e *ExprLogicalOr) TypeDesignation() string       { return "Boolean" }
+func (e *ExprNumericNegation) TypeDesignation() string {
+	if e.Float {
+		return "Float"
+	}
+	return "Int"
+}
+func (e *ExprEqual) TypeDesignation() string          { return "Boolean" }
+func (e *ExprNotEqual) TypeDesignation() string       { return "Boolean" }
+func (e *ExprLess) TypeDesignation() string           { return "Boolean" }
+func (e *ExprLessOrEqual) TypeDesignation() string    { return "Boolean" }
+func (e *ExprGreater) TypeDesignation() string        { return "Boolean" }
+func (e *ExprGreaterOrEqual) TypeDesignation() string { return "Boolean" }
+func (e *ExprLogicalAnd) TypeDesignation() string     { return "Boolean" }
+func (e *ExprLogicalOr) TypeDesignation() string      { return "Boolean" }
 
 func (e *True) TypeDesignation() string {
 	if e.TypeDef != nil {
@@ -1194,6 +1213,8 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprLogicalNegation:
+			push(e.Expression, nil)
+		case *ExprNumericNegation:
 			push(e.Expression, nil)
 		case *ExprLogicalOr:
 			for _, e := range e.Expressions {
@@ -1715,6 +1736,21 @@ func (p *Parser) validateExpr(
 				break TYPESWITCH
 			}
 			push(e.Expression, nil)
+		case *ExprNumericNegation:
+			if expect != nil && !p.expectationIsNum(expect) {
+				p.errUnexpType(expect, e)
+				ok = false
+				break TYPESWITCH
+			} else if _, found := find[*Null](e.Expression); found {
+				p.errExpectedNumGotNull(e.Expression.GetLocation())
+				ok = false
+				break TYPESWITCH
+			} else if !p.isNumeric(e.Expression) {
+				p.errExpectedNum(e.Expression)
+				ok = false
+				break TYPESWITCH
+			}
+			push(e.Expression, mustMakeExpectNumNonNull(expect))
 		case *ExprLogicalOr:
 			objEncountered := false
 			for _, e := range e.Expressions {
@@ -2744,6 +2780,19 @@ func (p *Parser) parseExprUnary(
 
 		s = s.consumeIgnored()
 		return s, e
+	} else if s, ok = s.consume("-"); ok {
+		e := &ExprNumericNegation{LocRange: locRange(l)}
+
+		s = s.consumeIgnored()
+
+		if s, e.Expression = p.parseValue(s, expect); s.stop() {
+			return stop(), nil
+		}
+		setParent(e.Expression, e)
+		e.LocationEnd = e.Expression.GetLocation().LocationEnd
+
+		s = s.consumeIgnored()
+		return s, e
 	}
 	return p.parseValue(s, expect)
 }
@@ -3376,11 +3425,6 @@ func (p *Parser) parseNumber(s source) (_ source, number Expression) {
 		return si, nil
 	}
 
-	if s.s[s.Index] == '-' || s.s[s.Index] == '+' {
-		s.Index++
-		s.Column++
-	}
-
 	for s.Index < len(s.s) {
 		if (s.s[s.Index] < '0' || s.s[s.Index] > '9') &&
 			s.s[s.Index] != '.' &&
@@ -3485,7 +3529,8 @@ func (p *Parser) isNumeric(e Expression) bool {
 		*ConstrGreater, *ConstrLess,
 		*ConstrGreaterOrEqual, *ConstrLessOrEqual,
 		*ExprAddition, *ExprSubtraction,
-		*ExprMultiplication, *ExprDivision, *ExprModulo:
+		*ExprMultiplication, *ExprDivision, *ExprModulo,
+		*ExprNumericNegation:
 		return true
 	case *ConstrEquals:
 		return p.isNumeric(e.Value)
@@ -3871,9 +3916,9 @@ func setParent(t, parent Expression) {
 		v.Parent = parent
 	case *ExprLogicalNegation:
 		v.Parent = parent
-	case *SelectionInlineFrag:
+	case *ExprNumericNegation:
 		v.Parent = parent
-	case *ObjectField:
+	case *SelectionInlineFrag:
 		v.Parent = parent
 	case *SelectionField:
 		v.Parent = parent
@@ -4378,6 +4423,8 @@ func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
 			push(e.Left)
 			push(e.Right)
 		case *ExprLogicalNegation:
+			push(e.Expression)
+		case *ExprNumericNegation:
 			push(e.Expression)
 		case *ExprLogicalOr:
 			for _, e := range e.Expressions {

@@ -488,19 +488,6 @@ func TestParseNumber(t *testing.T) {
 	})
 	run(T{
 		startLoc(),
-		"-1",
-		&Int{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{2, 1, 3},
-			},
-			Value: -1,
-		},
-		nil,
-		Location{2, 1, 3},
-	})
-	run(T{
-		startLoc(),
 		"0.1234",
 		&Float{
 			LocRange: LocRange{
@@ -511,19 +498,6 @@ func TestParseNumber(t *testing.T) {
 		},
 		nil,
 		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"-0.1234",
-		&Float{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
-			},
-			Value: -0.1234,
-		},
-		nil,
-		Location{7, 1, 8},
 	})
 	run(T{
 		startLoc(),
@@ -630,146 +604,146 @@ func TestParseNumber(t *testing.T) {
 	})
 	run(T{
 		startLoc(),
-		"-0.1234}x",
+		"0.1234}x",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234)x",
+		"0.1234)x",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234]x",
+		"0.1234]x",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234||",
+		"0.1234||",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234&&",
+		"0.1234&&",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234#x",
+		"0.1234#x",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234,x",
+		"0.1234,x",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234 x",
+		"0.1234 x",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234\tx",
+		"0.1234\tx",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234\nx",
+		"0.1234\nx",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		startLoc(),
-		"-0.1234\rx",
+		"0.1234\rx",
 		&Float{
 			LocRange: LocRange{
 				Location:    startLoc(),
-				LocationEnd: LocationEnd{7, 1, 8},
+				LocationEnd: LocationEnd{6, 1, 7},
 			},
-			Value: -0.1234,
+			Value: 0.1234,
 		},
 		nil,
-		Location{7, 1, 8},
+		Location{6, 1, 7},
 	})
 	run(T{
 		Location{2, 1, 3},

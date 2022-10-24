@@ -1,0 +1,40 @@
+schema: >
+  type Query {foo(a: Boolean!): Int!}
+
+template: >
+  query { foo(a: -(3)) }
+
+expect-errors:
+  - '1:16: expected type Boolean! but received Int'
+
+expect-ast(schemaless):
+  location: 0:1:1-22:1:23
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-22:1:23
+    selections:
+    - location: 8:1:9-20:1:21
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      argumentList:
+        location: 11:1:12-20:1:21
+        arguments:
+        - location: 12:1:13-19:1:20
+          name:
+            location: 12:1:13-13:1:14
+            name: a
+          constraint:
+            location: 15:1:16-19:1:20
+            constraintType: equals
+            value:
+              location: 15:1:16-19:1:20
+              expressionType: numericNegation
+              expression:
+                location: 16:1:17-19:1:20
+                expressionType: parentheses
+                expression:
+                  location: 17:1:18-18:1:19
+                  expressionType: int
+                  value: 3
