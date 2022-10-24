@@ -100,10 +100,9 @@ type (
 	}
 
 	// Selection can be either of:
-	//
-	//	*SelectionField
-	//	*SelectionInlineFrag
-	//	*SelectionMax
+	//   • *SelectionField
+	//   • *SelectionInlineFrag
+	//   • *SelectionMax
 	Selection Expression
 
 	// Operation is the root of the abstract syntax tree of an operation.
@@ -928,15 +927,13 @@ type VariableDeclaration struct {
 	Name string
 
 	// References can be any of:
-	//
-	//  *Argument
-	//  *ObjectField
+	//   • *Argument
+	//   • *ObjectField
 	References []Expression
 
 	// Parent can be any of:
-	//
-	//  *Argument
-	//  *ObjectField
+	//   • *Argument
+	//   • *ObjectField
 	Parent Expression
 }
 
@@ -1625,7 +1622,9 @@ func (p *Parser) validateField(
 
 func (p *Parser) validateExpr(
 	// hostPath defines the path to the origin argument
-	// can contain any of: *Argument, *ObjectField
+	// can contain any of:
+	//   • *Argument
+	//   • *ObjectField
 	pathToOriginArg []Expression,
 	e Expression,
 	expect *ast.Type,
