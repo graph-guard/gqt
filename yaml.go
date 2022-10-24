@@ -552,8 +552,8 @@ func (s *String) MarshalYAML() (any, error) {
 
 func (n *Null) MarshalYAML() (any, error) {
 	var t string
-	if n.TypeDef != nil {
-		t = n.TypeDef.Name
+	if n.Type != nil {
+		t = n.Type.String()
 	}
 	return struct {
 		Location       LocRange `yaml:"location"`
@@ -586,18 +586,18 @@ func (e *Enum) MarshalYAML() (any, error) {
 
 func (a *Array) MarshalYAML() (any, error) {
 	var t string
-	if a.ItemTypeDef != nil {
-		t = a.ItemTypeDef.Name
+	if a.Type != nil {
+		t = a.Type.String()
 	}
 	return struct {
 		Location       LocRange     `yaml:"location"`
 		ExpressionType string       `yaml:"expressionType"`
-		ItemType       string       `yaml:"itemType,omitempty"`
+		Type           string       `yaml:"type,omitempty"`
 		Items          []Expression `yaml:"items"`
 	}{
 		Location:       a.LocRange,
 		ExpressionType: "array",
-		ItemType:       t,
+		Type:           t,
 		Items:          a.Items,
 	}, nil
 }

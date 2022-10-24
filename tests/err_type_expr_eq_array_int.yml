@@ -75,7 +75,7 @@ schema: >
 
     variable_arg_true        (a:Boolean):    Int
     variable_arg_false       (a:Boolean):    Int
-    variable_arg_null        (a:Boolean):    Int
+    variable_arg_null        (a:[Int]):      Int
     variable_arg_int         (a:Int):        Int
     variable_arg_float       (a:Float):      Int
     variable_arg_string      (a:String):     Int
@@ -89,7 +89,7 @@ schema: >
 
     variable_obj_true        (a:Boolean):    Int
     variable_obj_false       (a:Boolean):    Int
-    variable_obj_null        (a:Boolean):    Int
+    variable_obj_null        (a:[Int]):      Int
     variable_obj_int         (a:Int):        Int
     variable_obj_float       (a:Float):      Int
     variable_obj_string      (a:String):     Int
@@ -103,7 +103,7 @@ schema: >
 
     constant_true        (a:Boolean):    Int
     constant_false       (a:Boolean):    Int
-    constant_null        (a:Boolean):    Int
+    constant_null        (a:[Int]):      Int
     constant_int         (a:Int):        Int
     constant_float       (a:Float):      Int
     constant_string      (a:String):     Int
@@ -122,7 +122,7 @@ schema: >
   input Object { 
     f_true:              Boolean,
     f_false:             Boolean,
-    f_null:              Boolean,
+    f_null:              [Int],
     f_int:               Int,
     f_float:             Float,
     f_string:            String,
@@ -272,7 +272,7 @@ expect-errors:
   - '12:41: uncomparable value of type {f:Int}'
   - '13:33: mismatching types [Int] and Boolean'
   - '14:33: mismatching types [Int] and Boolean'
-  - '15:33: mismatching types [Int] and null'
+  - '15:33: mismatching types [Int] and [Int](null)'
   - '16:33: mismatching types [Int] and Int'
   - '17:33: mismatching types [Int] and Float'
   - '18:33: mismatching types [Int] and String'
@@ -283,7 +283,7 @@ expect-errors:
   - '25:33: mismatching types [Int] and CustomAny'
   - '26:33: mismatching types [Int] and Boolean'
   - '27:33: mismatching types [Int] and Boolean'
-  - '28:33: mismatching types [Int] and null'
+  - '28:33: mismatching types [Int] and [Int](null)'
   - '29:33: mismatching types [Int] and Int'
   - '30:33: mismatching types [Int] and Float'
   - '31:33: mismatching types [Int] and String'
@@ -294,7 +294,7 @@ expect-errors:
   - '38:33: mismatching types [Int] and CustomAny'
   - '39:33: mismatching types [Int] and Boolean'
   - '40:33: mismatching types [Int] and Boolean'
-  - '41:33: mismatching types [Int] and null'
+  - '41:33: mismatching types [Int] and [Int](null)'
   - '42:33: mismatching types [Int] and Int'
   - '43:33: mismatching types [Int] and Float'
   - '44:33: mismatching types [Int] and String'
@@ -305,7 +305,7 @@ expect-errors:
   - '51:33: mismatching types [Int] and CustomAny'
   - '52:33: mismatching types [Int] and Boolean'
   - '53:33: mismatching types [Int] and Boolean'
-  - '54:33: mismatching types [Int] and null'
+  - '54:33: mismatching types [Int] and [Int](null)'
   - '55:33: mismatching types [Int] and Int'
   - '56:33: mismatching types [Int] and Float'
   - '57:33: mismatching types [Int] and String'

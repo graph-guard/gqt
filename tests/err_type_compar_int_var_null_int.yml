@@ -13,7 +13,7 @@ template: >
   }
 
 expect-errors:
-  - '2:19: mismatching types Int and null'
+  - '2:19: mismatching types Int and Int(null)'
 
 expect-errors(schemaless):
   - '2:19: mismatching types Int and null'

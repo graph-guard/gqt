@@ -438,8 +438,8 @@ type (
 	// Null is a null-value constant.
 	Null struct {
 		LocRange
-		Parent  Expression
-		TypeDef *ast.Definition
+		Parent Expression
+		Type   *ast.Type
 	}
 
 	// Enum is an enumeration value constant.
@@ -453,9 +453,9 @@ type (
 	// Array is an array value constant or an array constraint.
 	Array struct {
 		LocRange
-		Parent      Expression
-		Items       []Expression
-		ItemTypeDef *ast.Definition
+		Parent Expression
+		Items  []Expression
+		Type   *ast.Type
 	}
 
 	// Object is an input object constraint.
@@ -825,7 +825,17 @@ func (e *String) TypeDesignation() string {
 	return "String"
 }
 
-func (e *Null) TypeDesignation() string { return "null" }
+func (e *Null) TypeDesignation() string {
+	if e.Type != nil {
+		if e.Type.NonNull {
+			// Make type designation nullable
+			s := e.Type.String()
+			return s[:len(s)-1] + "(null)"
+		}
+		return e.Type.String() + "(null)"
+	}
+	return "null"
+}
 
 func (e *Enum) TypeDesignation() string {
 	if e.TypeDef != nil {
@@ -835,9 +845,9 @@ func (e *Enum) TypeDesignation() string {
 }
 
 func (e *Array) TypeDesignation() string {
-	if e.ItemTypeDef != nil {
+	if e.Type != nil {
 		// Determine type designation based on schema
-		return "[" + e.ItemTypeDef.Name + "]"
+		return e.Type.String()
 	}
 	if len(e.Items) < 1 {
 		return "array"
@@ -1311,15 +1321,24 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				}
 			}
 		case *Null:
-			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
-				e.TypeDef = t
-			}
+			e.Type = exp
 		case *Array:
 			var expItem *ast.Type
-			if exp != nil && exp.Elem != nil {
+			if exp != nil {
 				expItem = exp.Elem
-				e.ItemTypeDef = p.schema.Types[expItem.NamedType]
+				if exp.Elem != nil {
+					e.Type = exp
+				} else {
+					t := p.schema.Types[exp.NamedType]
+					if t.Kind == ast.Scalar &&
+						t.Name != "ID" &&
+						t.Name != "Int" &&
+						t.Name != "Float" &&
+						t.Name != "String" &&
+						t.Name != "Boolean" {
+						e.Type = exp
+					}
+				}
 			}
 			for _, i := range e.Items {
 				push(i, expItem)
@@ -1894,7 +1913,7 @@ func (p *Parser) validateExpr(
 		case *Null:
 			if expect != nil && expect.NonNull {
 				ok = false
-				p.errUnexpType(expect, top.Expr)
+				p.errUnexpType(expect, e)
 				break TYPESWITCH
 			}
 		case *Array:
@@ -1919,8 +1938,14 @@ func (p *Parser) validateExpr(
 				}
 			}
 
-			tp, _ := e.Declaration.GetInfo()
+			tp, constr := e.Declaration.GetInfo()
 			if expect != nil {
+				if expect.NonNull {
+					if f, found := find[*Null](constr); found {
+						p.errUnexpNull(e.LocRange, expect, f)
+						return false
+					}
+				}
 				if !areTypesCompatible(expect, tp) {
 					p.errUnexpType(expect, e)
 				}
@@ -2138,19 +2163,22 @@ func (p *Parser) errUndefArg(
 }
 
 func (p *Parser) errMismatchingTypes(l LocRange, left, right Expression) {
-	ld := left.TypeDesignation()
-	rd := right.TypeDesignation()
 	p.errors = append(p.errors, Error{
 		LocRange: l,
-		Msg:      fmt.Sprintf("mismatching types %s and %s", ld, rd),
+		Msg: "mismatching types " +
+			left.TypeDesignation() +
+			" and " +
+			right.TypeDesignation(),
 	})
 }
 
-func (p *Parser) errCompareWithNull(l LocRange, e Expression) {
-	d := e.TypeDesignation()
+func (p *Parser) errCompareWithNull(l LocRange, e, null Expression) {
 	p.errors = append(p.errors, Error{
 		LocRange: l,
-		Msg:      fmt.Sprintf("mismatching types %s and null", d),
+		Msg: "mismatching types " +
+			e.TypeDesignation() +
+			" and " +
+			null.TypeDesignation(),
 	})
 }
 
@@ -3730,8 +3758,8 @@ func (p *Parser) assumeComparableValues(
 		// Schemaless mode
 		return true
 	case p.isString(left):
-		if _, found := find[*Null](right); found {
-			p.errCompareWithNull(l, left)
+		if f, found := find[*Null](right); found {
+			p.errCompareWithNull(l, left, f)
 			return false
 		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
@@ -3741,8 +3769,8 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isBoolean(left):
-		if _, found := find[*Null](right); found {
-			p.errCompareWithNull(l, left)
+		if f, found := find[*Null](right); found {
+			p.errCompareWithNull(l, left, f)
 			return false
 		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
@@ -3752,8 +3780,8 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isNumeric(left):
-		if _, found := find[*Null](right); found {
-			p.errCompareWithNull(l, left)
+		if f, found := find[*Null](right); found {
+			p.errCompareWithNull(l, left, f)
 			return false
 		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
@@ -3763,8 +3791,8 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isEnum(left):
-		if _, found := find[*Null](right); found {
-			p.errCompareWithNull(l, left)
+		if f, found := find[*Null](right); found {
+			p.errCompareWithNull(l, left, f)
 			return false
 		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
@@ -3774,8 +3802,8 @@ func (p *Parser) assumeComparableValues(
 			return false
 		}
 	case p.isArray(left):
-		if _, found := find[*Null](right); found {
-			p.errCompareWithNull(l, left)
+		if f, found := find[*Null](right); found {
+			p.errCompareWithNull(l, left, f)
 			return false
 		} else if _, found := find[*Object](right); found {
 			p.errUncompVal(right)
@@ -4230,12 +4258,26 @@ func (p *Parser) errUnexpType(
 	expected *ast.Type,
 	actual Expression,
 ) {
-	td := actual.TypeDesignation()
 	p.errors = append(p.errors, Error{
 		LocRange: actual.GetLocation(),
-		Msg: fmt.Sprintf(
-			"expected type %s but received %s", expected, td,
-		),
+		Msg: "expected type " +
+			expected.String() +
+			" but received " +
+			actual.TypeDesignation(),
+	})
+}
+
+func (p *Parser) errUnexpNull(
+	l LocRange,
+	expected *ast.Type,
+	null Expression,
+) {
+	p.errors = append(p.errors, Error{
+		LocRange: l,
+		Msg: "expected type " +
+			expected.String() +
+			" but received " +
+			null.TypeDesignation(),
 	})
 }
 

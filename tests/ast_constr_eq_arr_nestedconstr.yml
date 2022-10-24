@@ -34,7 +34,7 @@ expect-ast:
             value:
               location: 15:2:8-26:2:19
               expressionType: array
-              itemType: Int
+              type: '[Int!]'
               items:
               - location: 16:2:9-19:2:12
                 constraintType: greaterThan

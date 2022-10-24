@@ -30,7 +30,7 @@ expect-ast:
             value:
               location: 13:1:14-23:1:24
               expressionType: array
-              itemType: Int
+              type: '[Int]!'
               items:
               - location: 14:1:15-16:1:17
                 constraintType: equals

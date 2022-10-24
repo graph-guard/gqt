@@ -25,14 +25,14 @@ template: >
   }
 
 expect-errors:
-  - '2:15: expected type Boolean! but received null'
-  - '3:15: expected type Int! but received null'
-  - '4:15: expected type Float! but received null'
-  - '5:15: expected type Color! but received null'
-  - '6:15: expected type ID! but received null'
-  - '7:15: expected type String! but received null'
-  - '8:15: expected type [Int]! but received null'
-  - '9:15: expected type In! but received null'
+  - '2:15: expected type Boolean! but received Boolean(null)'
+  - '3:15: expected type Int! but received Int(null)'
+  - '4:15: expected type Float! but received Float(null)'
+  - '5:15: expected type Color! but received Color(null)'
+  - '6:15: expected type ID! but received ID(null)'
+  - '7:15: expected type String! but received String(null)'
+  - '8:15: expected type [Int]! but received [Int](null)'
+  - '9:15: expected type In! but received In(null)'
 
 expect-ast(schemaless):
   location: 0:1:1-169:10:2

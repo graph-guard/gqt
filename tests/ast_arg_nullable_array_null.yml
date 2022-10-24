@@ -29,6 +29,7 @@ expect-ast:
             constraintType: equals
             value:
               location: 13:1:14-17:1:18
+              type: '[Int]'
               expressionType: "null"
 
 expect-ast(schemaless):

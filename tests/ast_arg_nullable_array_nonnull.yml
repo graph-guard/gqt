@@ -30,7 +30,7 @@ expect-ast:
             value:
               location: 13:1:14-15:1:16
               expressionType: array
-              itemType: Int
+              type: '[Int]'
               items: []
 
 expect-ast(schemaless):

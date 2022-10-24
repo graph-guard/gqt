@@ -5,7 +5,7 @@ template: >
   query { foo(a: [ null ]) }
 
 expect-errors:
-  - '1:18: expected type Int! but received null'
+  - '1:18: expected type Int! but received Int(null)'
 
 expect-ast(schemaless):
   location: 0:1:1-26:1:27
