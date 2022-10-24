@@ -46,52 +46,52 @@ type (
 
 	// Expression can be either of:
 	//
-	//  *Operation
-	//  *ConstrAny
-	//  *ConstrEquals
-	//  *ConstrNotEquals
-	//  *ConstrLess
-	//  *ConstrLessOrEqual
-	//  *ConstrGreater
-	//  *ConstrGreaterOrEqual
-	//  *ConstrLenEquals
-	//  *ConstrLenNotEquals
-	//  *ConstrLenLess
-	//  *ConstrLenLessOrEqual
-	//  *ConstrLenGreater
-	//  *ConstrLenGreaterOrEqual
-	//  *ConstrMap
-	//  *ExprParentheses
-	//  *ExprModulo
-	//  *ExprDivision
-	//  *ExprMultiplication
-	//  *ExprAddition
-	//  *ExprSubtraction
-	//  *ExprLogicalNegation
-	//  *ExprNumericNegation
-	//  *ExprEqual
-	//  *ExprNotEqual
-	//  *ExprLess
-	//  *ExprLessOrEqual
-	//  *ExprGreater
-	//  *ExprGreaterOrEqual
-	//  *ExprLogicalAnd
-	//  *ExprLogicalOr
-	//  *True
-	//  *False
-	//  *Int
-	//  *Float
-	//  *String
-	//  *Null
-	//  *Enum
-	//  *Array
-	//  *Object
-	//  *Variable
-	//  *SelectionInlineFrag
-	//  *ObjectField
-	//  *SelectionField
-	//  *SelectionMax
-	//  *Argument
+	//   • *Operation
+	//   • *ConstrAny
+	//   • *ConstrEquals
+	//   • *ConstrNotEquals
+	//   • *ConstrLess
+	//   • *ConstrLessOrEqual
+	//   • *ConstrGreater
+	//   • *ConstrGreaterOrEqual
+	//   • *ConstrLenEquals
+	//   • *ConstrLenNotEquals
+	//   • *ConstrLenLess
+	//   • *ConstrLenLessOrEqual
+	//   • *ConstrLenGreater
+	//   • *ConstrLenGreaterOrEqual
+	//   • *ConstrMap
+	//   • *ExprParentheses
+	//   • *ExprModulo
+	//   • *ExprDivision
+	//   • *ExprMultiplication
+	//   • *ExprAddition
+	//   • *ExprSubtraction
+	//   • *ExprLogicalNegation
+	//   • *ExprNumericNegation
+	//   • *ExprEqual
+	//   • *ExprNotEqual
+	//   • *ExprLess
+	//   • *ExprLessOrEqual
+	//   • *ExprGreater
+	//   • *ExprGreaterOrEqual
+	//   • *ExprLogicalAnd
+	//   • *ExprLogicalOr
+	//   • *True
+	//   • *False
+	//   • *Int
+	//   • *Float
+	//   • *String
+	//   • *Null
+	//   • *Enum
+	//   • *Array
+	//   • *Object
+	//   • *Variable
+	//   • *SelectionInlineFrag
+	//   • *ObjectField
+	//   • *SelectionField
+	//   • *SelectionMax
+	//   • *Argument
 	Expression interface {
 		GetParent() Expression
 		GetLocation() LocRange
@@ -1560,21 +1560,36 @@ func (p *Parser) validateField(
 	f *SelectionField,
 	expect *ast.FieldDefinition,
 ) (ok bool) {
+	if f.ArgumentList.Location.Index != 0 && len(f.Arguments) < 1 {
+		p.newErr(f.ArgumentList.LocRange, "empty argument list")
+		return false
+	}
+
+	byName := make(map[string]*Argument, len(f.Arguments))
+	for _, a := range f.Arguments {
+		if _, found := byName[a.Name.Name]; found {
+			p.newErr(a.LocRange, fmt.Sprintf(
+				"redeclared argument %q", a.Name.Name,
+			))
+			ok = false
+			continue
+		}
+		byName[a.Name.Name] = a
+	}
+
 	if expect != nil {
-		args := make(map[string]*Argument, len(f.Arguments))
 		for _, a := range f.Arguments {
 			// Check undefined arguments
 			if ad := expect.Arguments.ForName(a.Name.Name); ad == nil {
 				p.errUndefArg(a, f, host.Name)
 				ok = false
 			}
-			args[a.Name.Name] = a
 		}
 
 		// Check required arguments
 		for _, a := range expect.Arguments {
 			if a.Type.NonNull && a.DefaultValue == nil {
-				if _, found := args[a.Name]; !found {
+				if _, found := byName[a.Name]; !found {
 					l := f.ArgumentList.LocRange
 					if len(f.Arguments) < 1 {
 						l = f.LocRange
@@ -1586,13 +1601,8 @@ func (p *Parser) validateField(
 		}
 	}
 
-	if f.ArgumentList.Location.Index != 0 && len(f.Arguments) < 1 {
-		p.newErr(f.ArgumentList.LocRange, "empty argument list")
-		ok = false
-	}
-
 	// Check constraints
-	for _, a := range f.Arguments {
+	for _, a := range byName {
 		var exp *ast.Type
 		if a.Def != nil {
 			exp = a.Def.Type
@@ -2404,7 +2414,6 @@ func (p *Parser) parseArguments(s source) (source, ArgumentList) {
 	}
 
 	list := ArgumentList{LocRange: locRange(si.Location)}
-	names := map[string]struct{}{}
 	for {
 		s = s.consumeIgnored()
 		var name []byte
@@ -2434,13 +2443,6 @@ func (p *Parser) parseArguments(s source) (source, ArgumentList) {
 			},
 			Name: string(name),
 		}
-
-		if _, ok := names[arg.Name.Name]; ok {
-			p.newErr(locRange(sBeforeName.Location), "redeclared argument")
-			return stop(), ArgumentList{}
-		}
-
-		names[arg.Name.Name] = struct{}{}
 
 		s = s.consumeIgnored()
 

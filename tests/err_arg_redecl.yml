@@ -2,10 +2,12 @@ schema: >
   type Query { f(a: Int, b: Int): Int }
 
 template: >
-  query { f(a:*, b:*, a:*) }
+  query { f(a:*, b:*, a:*, b:*) }
 
 expect-errors:
-  - '1:21: redeclared argument'
+  - '1:21: redeclared argument "a"'
+  - '1:26: redeclared argument "b"'
 
 expect-errors(schemaless):
-  - '1:21: redeclared argument'
+  - '1:21: redeclared argument "a"'
+  - '1:26: redeclared argument "b"'
