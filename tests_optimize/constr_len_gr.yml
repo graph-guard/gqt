@@ -1,0 +1,33 @@
+schema: >
+  type Query { foo(x:String):Int }
+
+template: >
+  query { foo(x: len > 2 + 1) }
+
+expect-ast:
+  location: 0:1:1-29:1:30
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-29:1:30
+    selections:
+    - location: 8:1:9-27:1:28
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Int
+      argumentList:
+        location: 11:1:12-27:1:28
+        arguments:
+        - location: 12:1:13-26:1:27
+          name:
+            location: 12:1:13-13:1:14
+            name: x
+          type: String
+          constraint:
+            location: 15:1:16-26:1:27
+            constraintType: lengthGreaterThan
+            value: # 2 + 1 = 3
+              location: 21:1:22-26:1:27
+              expressionType: int
+              value: 3

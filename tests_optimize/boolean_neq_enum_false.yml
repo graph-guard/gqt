@@ -1,0 +1,33 @@
+schema: >
+  type Query { foo(x:Enum):Enum }
+  enum Enum { enumVal1 enumVal2 }
+
+template: >
+  query { foo(x: enumVal1 != enumVal1) }
+
+expect-ast:
+  location: 0:1:1-38:1:39
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-38:1:39
+    selections:
+    - location: 8:1:9-36:1:37
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Enum
+      argumentList:
+        location: 11:1:12-36:1:37
+        arguments:
+        - location: 12:1:13-35:1:36
+          name:
+            location: 12:1:13-13:1:14
+            name: x
+          type: Enum
+          constraint: # enumVal1 != enumVal1 = false
+            location: 15:1:16-35:1:36
+            constraintType: equals
+            value:
+              location: 15:1:16-35:1:36
+              expressionType: "false"

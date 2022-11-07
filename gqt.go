@@ -3964,6 +3964,101 @@ func setParent(t, parent Expression) {
 	}
 }
 
+func setLocRange(t Expression, l LocRange) {
+	switch v := t.(type) {
+	case *Variable:
+		v.LocRange = l
+	case *Int:
+		v.LocRange = l
+	case *Float:
+		v.LocRange = l
+	case *String:
+		v.LocRange = l
+	case *True:
+		v.LocRange = l
+	case *False:
+		v.LocRange = l
+	case *Null:
+		v.LocRange = l
+	case *Enum:
+		v.LocRange = l
+	case *Array:
+		v.LocRange = l
+	case *Object:
+		v.LocRange = l
+	case *ExprModulo:
+		v.LocRange = l
+	case *ExprDivision:
+		v.LocRange = l
+	case *ExprMultiplication:
+		v.LocRange = l
+	case *ExprAddition:
+		v.LocRange = l
+	case *ExprSubtraction:
+		v.LocRange = l
+	case *ExprEqual:
+		v.LocRange = l
+	case *ExprNotEqual:
+		v.LocRange = l
+	case *ExprLess:
+		v.LocRange = l
+	case *ExprGreater:
+		v.LocRange = l
+	case *ExprLessOrEqual:
+		v.LocRange = l
+	case *ExprGreaterOrEqual:
+		v.LocRange = l
+	case *ExprParentheses:
+		v.LocRange = l
+	case *ConstrEquals:
+		v.LocRange = l
+	case *ConstrNotEquals:
+		v.LocRange = l
+	case *ConstrLess:
+		v.LocRange = l
+	case *ConstrGreater:
+		v.LocRange = l
+	case *ConstrLessOrEqual:
+		v.LocRange = l
+	case *ConstrGreaterOrEqual:
+		v.LocRange = l
+	case *ConstrLenEquals:
+		v.LocRange = l
+	case *ConstrLenNotEquals:
+		v.LocRange = l
+	case *ConstrLenLess:
+		v.LocRange = l
+	case *ConstrLenGreater:
+		v.LocRange = l
+	case *ConstrLenLessOrEqual:
+		v.LocRange = l
+	case *ConstrLenGreaterOrEqual:
+		v.LocRange = l
+	case *ExprLogicalAnd:
+		v.LocRange = l
+	case *ExprLogicalOr:
+		v.LocRange = l
+	case *ExprLogicalNegation:
+		v.LocRange = l
+	case *ExprNumericNegation:
+		v.LocRange = l
+	case *SelectionInlineFrag:
+		v.LocRange = l
+	case *SelectionField:
+		v.LocRange = l
+	case *Argument:
+		v.LocRange = l
+	case *SelectionMax:
+		v.LocRange = l
+	case *ConstrMap:
+		v.LocRange = l
+	case *ConstrAny:
+		v.LocRange = l
+	default:
+		panic(fmt.Errorf("unsupported type: %T", t))
+	}
+}
+
 func (p *Parser) validateInlineFrag(
 	frag *SelectionInlineFrag,
 	hostDef *ast.Definition,
