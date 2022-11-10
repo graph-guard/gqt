@@ -1,0 +1,29 @@
+schema: >
+  type Query { f(x:Int):Int }
+
+template: >
+  query { f(x: *) }
+
+expect-ast:
+  location: 0:1:1-17:1:18
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-17:1:18
+    selections:
+    - location: 8:1:9-15:1:16
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      type: Int
+      argumentList:
+        location: 9:1:10-15:1:16
+        arguments:
+        - location: 10:1:11-14:1:15
+          name:
+            location: 10:1:11-11:1:12
+            name: x
+          type: Int
+          constraint:
+            location: 13:1:14-14:1:15
+            constraintType: any
