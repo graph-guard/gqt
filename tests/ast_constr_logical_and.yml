@@ -1,0 +1,77 @@
+schema: >
+  type Query { f(a:Int):Int }
+
+template: >
+  query { f(a: 5 && 10) }
+
+expect-ast:
+  location: 0:1:1-23:1:24
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-23:1:24
+    selections:
+    - location: 8:1:9-21:1:22
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      type: Int
+      argumentList:
+        location: 9:1:10-21:1:22
+        arguments:
+        - location: 10:1:11-20:1:21
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          type: Int
+          constraint:
+            location: 13:1:14-20:1:21
+            expressionType: logicalAND
+            expressions:
+            - location: 13:1:14-14:1:15
+              constraintType: equals
+              value:
+                location: 13:1:14-14:1:15
+                expressionType: int
+                value: 5
+            - location: 18:1:19-20:1:21
+              constraintType: equals
+              value:
+                location: 18:1:19-20:1:21
+                expressionType: int
+                value: 10
+
+expect-ast(schemaless):
+  location: 0:1:1-23:1:24
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-23:1:24
+    selections:
+    - location: 8:1:9-21:1:22
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      argumentList:
+        location: 9:1:10-21:1:22
+        arguments:
+        - location: 10:1:11-20:1:21
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          constraint:
+            location: 13:1:14-20:1:21
+            expressionType: logicalAND
+            expressions:
+            - location: 13:1:14-14:1:15
+              constraintType: equals
+              value:
+                location: 13:1:14-14:1:15
+                expressionType: int
+                value: 5
+            - location: 18:1:19-20:1:21
+              constraintType: equals
+              value:
+                location: 18:1:19-20:1:21
+                expressionType: int
+                value: 10

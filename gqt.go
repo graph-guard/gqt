@@ -2489,7 +2489,7 @@ func (p *Parser) parseArguments(s source) (source, ArgumentList) {
 		}
 
 		var expr Expression
-		if s, expr = p.parseExprLogicalOr(
+		if s, expr = p.parseConstrLogicalOr(
 			s, expectConstraint,
 		); s.stop() {
 			return s, ArgumentList{}
@@ -2606,7 +2606,7 @@ func (p *Parser) parseValue(
 			}
 
 			var expr Expression
-			if s, expr = p.parseExprLogicalOr(s, expectConstraint); s.stop() {
+			if s, expr = p.parseConstrLogicalOr(s, expectConstraint); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -2730,7 +2730,7 @@ func (p *Parser) parseValue(
 			}
 
 			var expr Expression
-			if s, expr = p.parseExprLogicalOr(s, expectConstraint); s.stop() {
+			if s, expr = p.parseConstrLogicalOr(s, expectConstraint); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, fld)
@@ -3108,6 +3108,68 @@ func (p *Parser) parseExprEquality(
 	return s, exprLeft
 }
 
+func (p *Parser) parseConstrLogicalOr(
+	s source,
+	expect expect,
+) (source, Expression) {
+	e := &ExprLogicalOr{LocRange: locRange(s.Location)}
+
+	for {
+		var expr Expression
+		if s, expr = p.parseConstrLogicalAnd(
+			s, expect,
+		); s.stop() {
+			return s, nil
+		}
+		setParent(expr, e)
+		e.Expressions = append(e.Expressions, expr)
+
+		s = s.consumeIgnored()
+
+		var ok bool
+		if s, ok = s.consume("||"); !ok {
+			if len(e.Expressions) < 2 {
+				return s, e.Expressions[0]
+			}
+			e.LocationEnd = e.Expressions[len(e.Expressions)-1].
+				GetLocation().LocationEnd
+			return s, e
+		}
+
+		s = s.consumeIgnored()
+	}
+}
+
+func (p *Parser) parseConstrLogicalAnd(
+	s source,
+	expect expect,
+) (source, Expression) {
+	e := &ExprLogicalAnd{LocRange: locRange(s.Location)}
+
+	for {
+		var expr Expression
+		if s, expr = p.parseConstr(s, expect); s.stop() {
+			return stop(), nil
+		}
+		setParent(expr, e)
+		e.Expressions = append(e.Expressions, expr)
+
+		s = s.consumeIgnored()
+
+		var ok bool
+		if s, ok = s.consume("&&"); !ok {
+			if len(e.Expressions) < 2 {
+				return s, e.Expressions[0]
+			}
+			e.LocationEnd = e.Expressions[len(e.Expressions)-1].
+				GetLocation().LocationEnd
+			return s, e
+		}
+
+		s = s.consumeIgnored()
+	}
+}
+
 func (p *Parser) parseExprLogicalOr(
 	s source,
 	expect expect,
@@ -3148,7 +3210,7 @@ func (p *Parser) parseExprLogicalAnd(
 
 	for {
 		var expr Expression
-		if s, expr = p.parseConstr(s, expect); s.stop() {
+		if s, expr = p.parseExprEquality(s, expect); s.stop() {
 			return stop(), nil
 		}
 		setParent(expr, e)
@@ -3178,17 +3240,41 @@ func (p *Parser) parseConstr(
 	var ok bool
 	var expr Expression
 
-	if expect == expectValue {
-		if s, expr = p.parseExprEquality(s, expectValue); s.stop() {
-			return stop(), nil
-		}
+	if s, ok = s.consume("("); ok {
+		e := &ExprParentheses{LocRange: locRange(si.Location)}
 
 		s = s.consumeIgnored()
 
-		return s, expr
-	}
+		if s, e.Expression = p.parseConstrLogicalOr(
+			s, expect,
+		); s.stop() {
+			return stop(), nil
+		}
+		setParent(e.Expression, e)
 
-	if s, ok = s.consume("*"); ok {
+		if s, ok = s.consume(")"); !ok {
+			p.errUnexpTok(s, "missing closing parenthesis")
+			return stop(), nil
+		}
+		e.LocationEnd = locEnd(s)
+		s = s.consumeIgnored()
+
+		// Look ahead
+		if ceq, ok := e.Expression.(*ConstrEquals); ok &&
+			s.lookaheadIsValOperator() {
+
+			if si, ceq.Value = p.parseExprLogicalOr(
+				si, expectValue,
+			); si.stop() {
+				return stop(), nil
+			}
+			setParent(e.Expression, e)
+			ceq.LocRange = ceq.Value.GetLocation()
+			return si, ceq
+		}
+
+		return s, e
+	} else if s, ok = s.consume("*"); ok {
 		e := &ConstrAny{
 			LocRange: LocRange{
 				Location:    si.Location,
@@ -3404,7 +3490,7 @@ func (p *Parser) parseConstr(
 			}
 
 			var expr Expression
-			if s, expr = p.parseExprLogicalOr(
+			if s, expr = p.parseConstrLogicalOr(
 				s, expectConstraintInMap,
 			); s.stop() {
 				return stop(), nil
@@ -3758,6 +3844,14 @@ func (p *Parser) assumeComparableValues(
 	case p.isAny(left):
 		// Schemaless mode
 		return true
+	case p.isNull(left):
+		if _, found := find[*Object](right); found {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isNull(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
 	case p.isString(left):
 		if f, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left, f)
@@ -3816,14 +3910,6 @@ func (p *Parser) assumeComparableValues(
 		ld, rd := left.TypeDesignation(), right.TypeDesignation()
 		if ld != rd && !(ld == "array" || rd == "array" ||
 			ld == "*" || rd == "*") {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-	case p.isNull(left):
-		if _, found := find[*Object](right); found {
-			p.errUncompVal(right)
-			return false
-		} else if !p.isNull(right) {
 			p.errMismatchingTypes(l, left, right)
 			return false
 		}
@@ -3995,7 +4081,7 @@ func (p *Parser) validateInlineFrag(
 		p.errCondOnInputType(frag)
 		return false
 	case ast.Object:
-		if hostDef != nil && hostDef.Name == def.Name {
+		if hostDef != nil && hostDef == def {
 			return p.validateSelSet(frag, def)
 		}
 		for _, c := range def.Interfaces {
@@ -4011,15 +4097,12 @@ func (p *Parser) validateInlineFrag(
 			}
 		}
 	case ast.Interface:
-		if hostDef.Name == def.Name {
+		if hostDef == def {
 			return p.validateSelSet(frag, def)
 		}
 		impls := p.schema.GetPossibleTypes(def)
+		possibleTypes := p.schema.GetPossibleTypes(hostDef)
 		for _, t := range impls {
-			if t == hostDef {
-				return p.validateSelSet(frag, def)
-			}
-			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
 					return p.validateSelSet(frag, def)
@@ -4027,15 +4110,12 @@ func (p *Parser) validateInlineFrag(
 			}
 		}
 	case ast.Union:
-		if hostDef.Name == def.Name {
+		if hostDef == def {
 			return p.validateSelSet(frag, def)
 		}
 		impls := p.schema.GetPossibleTypes(def)
+		possibleTypes := p.schema.GetPossibleTypes(hostDef)
 		for _, t := range impls {
-			if t == hostDef {
-				return p.validateSelSet(frag, def)
-			}
-			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
 					return p.validateSelSet(frag, def)
@@ -4644,4 +4724,32 @@ func locEnd(s source) LocationEnd {
 	return LocationEnd{
 		IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
 	}
+}
+
+func (s source) lookaheadIsValOperator() bool {
+	var ok bool
+	if s, ok = s.consume("+"); ok {
+		return ok
+	} else if _, ok = s.consume("-"); ok {
+		return ok
+	} else if _, ok = s.consume("*"); ok {
+		return ok
+	} else if _, ok = s.consume("/"); ok {
+		return ok
+	} else if _, ok = s.consume("%"); ok {
+		return ok
+	} else if _, ok = s.consume("!="); ok {
+		return ok
+	} else if _, ok = s.consume("=="); ok {
+		return ok
+	} else if _, ok = s.consume(">"); ok {
+		return ok
+	} else if _, ok = s.consume("<"); ok {
+		return ok
+	} else if _, ok = s.consume(">="); ok {
+		return ok
+	} else if _, ok = s.consume("<="); ok {
+		return ok
+	}
+	return false
 }
