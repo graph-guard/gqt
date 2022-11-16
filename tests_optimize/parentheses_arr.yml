@@ -28,7 +28,7 @@ expect-ast:
             location: 15:1:16-21:1:22
             constraintType: equals
             value:
-              location: 15:1:16-21:1:22
+              location: 17:1:18-19:1:20
               expressionType: array
               type: '[Int]'
               items: []

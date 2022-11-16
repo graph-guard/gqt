@@ -28,6 +28,6 @@ expect-ast:
             location: 15:1:16-22:1:23
             constraintType: equals
             value:
-              location: 15:1:16-22:1:23
+              location: 17:1:18-20:1:21
               expressionType: int
               value: 1

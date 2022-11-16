@@ -25,12 +25,8 @@ expect-ast:
             name: x
           type: Boolean
           constraint:
-            # TODO: this is wrong!ö#
             location: 15:1:16-32:1:33
             constraintType: equals
             value:
-              location: 15:1:16-32:1:33
-              constraintType: equals
-              value:
-                location: 18:1:19-29:1:30
-                expressionType: "false"
+              location: 18:1:19-29:1:30
+              expressionType: "true"
