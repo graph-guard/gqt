@@ -101,11 +101,11 @@ expect-ast:
           type: Float
           constraint:
             location: 90:4:17-96:4:23
-            constraintType: equals
-            value:
-              location: 90:4:17-96:4:23
-              expressionType: parentheses
-              expression:
+            expressionType: parentheses
+            expression:
+              location: 91:4:18-95:4:22
+              constraintType: equals
+              value:
                 location: 91:4:18-95:4:22
                 expressionType: float
                 value: 3.14
@@ -218,11 +218,11 @@ expect-ast(schemaless):
             name: veq
           constraint:
             location: 90:4:17-96:4:23
-            constraintType: equals
-            value:
-              location: 90:4:17-96:4:23
-              expressionType: parentheses
-              expression:
+            expressionType: parentheses
+            expression:
+              location: 91:4:18-95:4:22
+              constraintType: equals
+              value:
                 location: 91:4:18-95:4:22
                 expressionType: float
                 value: 3.14

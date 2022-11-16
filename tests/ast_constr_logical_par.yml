@@ -1,0 +1,113 @@
+schema: >
+  type Query { f(a:Int):Int }
+
+template: >
+  query { f(a: (< 5 || > 10 || 42) && >= 1) }
+
+expect-ast:
+  location: 0:1:1-43:1:44
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-43:1:44
+    selections:
+    - location: 8:1:9-41:1:42
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      type: Int
+      argumentList:
+        location: 9:1:10-41:1:42
+        arguments:
+        - location: 10:1:11-40:1:41
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          type: Int
+          constraint:
+            location: 13:1:14-40:1:41
+            expressionType: logicalAND
+            expressions:
+            - location: 13:1:14-32:1:33
+              expressionType: parentheses
+              expression:
+                location: 14:1:15-31:1:32
+                expressionType: logicalOR
+                expressions:
+                - location: 14:1:15-17:1:18
+                  constraintType: lessThan
+                  value:
+                    location: 16:1:17-17:1:18
+                    expressionType: int
+                    value: 5
+                - location: 21:1:22-25:1:26
+                  constraintType: greaterThan
+                  value:
+                    location: 23:1:24-25:1:26
+                    expressionType: int
+                    value: 10
+                - location: 29:1:30-31:1:32
+                  constraintType: equals
+                  value:
+                    location: 29:1:30-31:1:32
+                    expressionType: int
+                    value: 42
+            - location: 36:1:37-40:1:41
+              constraintType: greaterThanOrEquals
+              value:
+                location: 39:1:40-40:1:41
+                expressionType: int
+                value: 1
+
+expect-ast(schemaless):
+  location: 0:1:1-43:1:44
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-43:1:44
+    selections:
+    - location: 8:1:9-41:1:42
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      argumentList:
+        location: 9:1:10-41:1:42
+        arguments:
+        - location: 10:1:11-40:1:41
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          constraint:
+            location: 13:1:14-40:1:41
+            expressionType: logicalAND
+            expressions:
+            - location: 13:1:14-32:1:33
+              expressionType: parentheses
+              expression:
+                location: 14:1:15-31:1:32
+                expressionType: logicalOR
+                expressions:
+                - location: 14:1:15-17:1:18
+                  constraintType: lessThan
+                  value:
+                    location: 16:1:17-17:1:18
+                    expressionType: int
+                    value: 5
+                - location: 21:1:22-25:1:26
+                  constraintType: greaterThan
+                  value:
+                    location: 23:1:24-25:1:26
+                    expressionType: int
+                    value: 10
+                - location: 29:1:30-31:1:32
+                  constraintType: equals
+                  value:
+                    location: 29:1:30-31:1:32
+                    expressionType: int
+                    value: 42
+            - location: 36:1:37-40:1:41
+              constraintType: greaterThanOrEquals
+              value:
+                location: 39:1:40-40:1:41
+                expressionType: int
+                value: 1
