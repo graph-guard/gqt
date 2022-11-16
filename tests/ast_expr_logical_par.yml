@@ -1,0 +1,141 @@
+schema: >
+  type Query { f(a:Boolean!):Boolean! }
+
+template: >
+  query { f(a: != ((2 < 4 || 20 > 10 || true) && 1 != 2)) }
+
+expect-ast:
+  location: 0:1:1-57:1:58
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-57:1:58
+    selections:
+    - location: 8:1:9-55:1:56
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      type: Boolean!
+      argumentList:
+        location: 9:1:10-55:1:56
+        arguments:
+        - location: 10:1:11-54:1:55
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          type: Boolean!
+          constraint:
+            location: 13:1:14-54:1:55
+            constraintType: notEquals
+            value:
+              location: 16:1:17-54:1:55
+              expressionType: parentheses
+              expression:
+                location: 17:1:18-53:1:54
+                expressionType: logicalAND
+                expressions:
+                - location: 17:1:18-43:1:44
+                  expressionType: parentheses
+                  expression:
+                    location: 18:1:19-42:1:43
+                    expressionType: logicalOR
+                    expressions:
+                    - location: 18:1:19-23:1:24
+                      expressionType: lessThan
+                      left:
+                        location: 18:1:19-19:1:20
+                        expressionType: int
+                        value: 2
+                      right:
+                        location: 22:1:23-23:1:24
+                        expressionType: int
+                        value: 4
+                    - location: 27:1:28-34:1:35
+                      expressionType: greaterThan
+                      left:
+                        location: 27:1:28-29:1:30
+                        expressionType: int
+                        value: 20
+                      right:
+                        location: 32:1:33-34:1:35
+                        expressionType: int
+                        value: 10
+                    - location: 38:1:39-42:1:43
+                      expressionType: "true"
+                - location: 47:1:48-53:1:54
+                  expressionType: notEquals
+                  left:
+                    location: 47:1:48-48:1:49
+                    expressionType: int
+                    value: 1
+                  right:
+                    location: 52:1:53-53:1:54
+                    expressionType: int
+                    value: 2
+
+expect-ast(schemaless):
+  location: 0:1:1-57:1:58
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-57:1:58
+    selections:
+    - location: 8:1:9-55:1:56
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      argumentList:
+        location: 9:1:10-55:1:56
+        arguments:
+        - location: 10:1:11-54:1:55
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          constraint:
+            location: 13:1:14-54:1:55
+            constraintType: notEquals
+            value:
+              location: 16:1:17-54:1:55
+              expressionType: parentheses
+              expression:
+                location: 17:1:18-53:1:54
+                expressionType: logicalAND
+                expressions:
+                - location: 17:1:18-43:1:44
+                  expressionType: parentheses
+                  expression:
+                    location: 18:1:19-42:1:43
+                    expressionType: logicalOR
+                    expressions:
+                    - location: 18:1:19-23:1:24
+                      expressionType: lessThan
+                      left:
+                        location: 18:1:19-19:1:20
+                        expressionType: int
+                        value: 2
+                      right:
+                        location: 22:1:23-23:1:24
+                        expressionType: int
+                        value: 4
+                    - location: 27:1:28-34:1:35
+                      expressionType: greaterThan
+                      left:
+                        location: 27:1:28-29:1:30
+                        expressionType: int
+                        value: 20
+                      right:
+                        location: 32:1:33-34:1:35
+                        expressionType: int
+                        value: 10
+                    - location: 38:1:39-42:1:43
+                      expressionType: "true"
+                - location: 47:1:48-53:1:54
+                  expressionType: notEquals
+                  left:
+                    location: 47:1:48-48:1:49
+                    expressionType: int
+                    value: 1
+                  right:
+                    location: 52:1:53-53:1:54
+                    expressionType: int
+                    value: 2

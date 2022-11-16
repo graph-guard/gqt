@@ -4081,7 +4081,7 @@ func (p *Parser) validateInlineFrag(
 		p.errCondOnInputType(frag)
 		return false
 	case ast.Object:
-		if hostDef != nil && hostDef.Name == def.Name {
+		if hostDef != nil && hostDef == def {
 			return p.validateSelSet(frag, def)
 		}
 		for _, c := range def.Interfaces {
@@ -4097,15 +4097,12 @@ func (p *Parser) validateInlineFrag(
 			}
 		}
 	case ast.Interface:
-		if hostDef.Name == def.Name {
+		if hostDef == def {
 			return p.validateSelSet(frag, def)
 		}
 		impls := p.schema.GetPossibleTypes(def)
+		possibleTypes := p.schema.GetPossibleTypes(hostDef)
 		for _, t := range impls {
-			if t == hostDef {
-				return p.validateSelSet(frag, def)
-			}
-			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
 					return p.validateSelSet(frag, def)
@@ -4113,15 +4110,12 @@ func (p *Parser) validateInlineFrag(
 			}
 		}
 	case ast.Union:
-		if hostDef.Name == def.Name {
+		if hostDef == def {
 			return p.validateSelSet(frag, def)
 		}
 		impls := p.schema.GetPossibleTypes(def)
+		possibleTypes := p.schema.GetPossibleTypes(hostDef)
 		for _, t := range impls {
-			if t == hostDef {
-				return p.validateSelSet(frag, def)
-			}
-			possibleTypes := p.schema.GetPossibleTypes(hostDef)
 			for _, ht := range possibleTypes {
 				if ht == t {
 					return p.validateSelSet(frag, def)
