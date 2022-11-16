@@ -3844,6 +3844,14 @@ func (p *Parser) assumeComparableValues(
 	case p.isAny(left):
 		// Schemaless mode
 		return true
+	case p.isNull(left):
+		if _, found := find[*Object](right); found {
+			p.errUncompVal(right)
+			return false
+		} else if !p.isNull(right) {
+			p.errMismatchingTypes(l, left, right)
+			return false
+		}
 	case p.isString(left):
 		if f, found := find[*Null](right); found {
 			p.errCompareWithNull(l, left, f)
@@ -3902,14 +3910,6 @@ func (p *Parser) assumeComparableValues(
 		ld, rd := left.TypeDesignation(), right.TypeDesignation()
 		if ld != rd && !(ld == "array" || rd == "array" ||
 			ld == "*" || rd == "*") {
-			p.errMismatchingTypes(l, left, right)
-			return false
-		}
-	case p.isNull(left):
-		if _, found := find[*Object](right); found {
-			p.errUncompVal(right)
-			return false
-		} else if !p.isNull(right) {
 			p.errMismatchingTypes(l, left, right)
 			return false
 		}
