@@ -1,0 +1,73 @@
+schema: >
+  type Query { foo(x:Boolean):Int }
+
+# x: ((2 < 1 || false || false) || (1 > 2 || false || true))
+# x: ((false || false || false) || (false || false || true))
+# x: (false || false || false) || (false || false || true)
+template: >
+  query {
+    foo(
+      x: ((2 < 1 || false || false) || (1 > 2 || false || true))
+    )
+  }
+
+expect-ast:
+  location: 0:1:1-83:5:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-83:5:2
+    selections:
+    - location: 10:2:3-81:4:4
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: foo
+      type: Int
+      argumentList:
+        location: 13:2:6-81:4:4
+        arguments:
+        - location: 19:3:5-77:3:63
+          name:
+            location: 19:3:5-20:3:6
+            name: x
+          type: Boolean
+          constraint:
+            location: 22:3:8-77:3:63
+            expressionType: logicalOR
+            expressions:
+            - location: 23:3:9-48:3:34
+              expressionType: logicalOR
+              expressions:
+              - location: 24:3:10-29:3:15
+                constraintType: equals
+                value:
+                  location: 24:3:10-29:3:15
+                  expressionType: "false"
+              - location: 33:3:19-38:3:24
+                constraintType: equals
+                value:
+                  location: 33:3:19-38:3:24
+                  expressionType: "false"
+              - location: 42:3:28-47:3:33
+                constraintType: equals
+                value:
+                  location: 42:3:28-47:3:33
+                  expressionType: "false"
+            - location: 52:3:38-76:3:62
+              expressionType: logicalOR
+              expressions:
+              - location: 53:3:39-58:3:44
+                constraintType: equals
+                value:
+                  location: 53:3:39-58:3:44
+                  expressionType: "false"
+              - location: 62:3:48-67:3:53
+                constraintType: equals
+                value:
+                  location: 62:3:48-67:3:53
+                  expressionType: "false"
+              - location: 71:3:57-75:3:61
+                constraintType: equals
+                value:
+                  location: 71:3:57-75:3:61
+                  expressionType: "true"

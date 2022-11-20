@@ -1,0 +1,40 @@
+schema: >
+  type Query { foo(x:Boolean):Int }
+
+# x: != (2 >= 1 && true && true)
+# x: != (true && true && true)
+# x: != (true)
+# x: != true
+template: >
+  query {
+    foo(
+      x: != (2 >= 1 && true && true)
+    )
+  }
+
+expect-ast:
+  location: 0:1:1-55:5:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-55:5:2
+    selections:
+    - location: 10:2:3-53:4:4
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: foo
+      type: Int
+      argumentList:
+        location: 13:2:6-53:4:4
+        arguments:
+        - location: 19:3:5-49:3:35
+          name:
+            location: 19:3:5-20:3:6
+            name: x
+          type: Boolean
+          constraint:
+            location: 22:3:8-49:3:35
+            constraintType: notEquals
+            value:
+              location: 25:3:11-49:3:35
+              expressionType: "true"

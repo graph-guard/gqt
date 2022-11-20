@@ -1,6 +1,10 @@
 schema: >
   type Query { foo(x:Int):Int }
 
+# x: ((1+2))
+# x: ((3))
+# x: (3)
+# x: 3
 template: >
   query { foo(x: ((1+2))) }
 

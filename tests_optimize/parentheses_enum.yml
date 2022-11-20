@@ -2,6 +2,9 @@ schema: >
   type Query { foo(x:Color):Int }
   enum Color { red green blue }
 
+# x: ((red))
+# x: (red)
+# x: red
 template: >
   query { foo(x: ((red))) }
 

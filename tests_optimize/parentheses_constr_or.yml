@@ -1,6 +1,9 @@
 schema: >
   type Query { foo(x:Boolean):Int }
 
+# x: (( false||true ))
+# x: ( false||true )
+# x: false||true
 template: >
   query { foo(x: (( false||true ))) }
 
@@ -26,7 +29,15 @@ expect-ast:
           type: Boolean
           constraint:
             location: 15:1:16-32:1:33
-            constraintType: equals
-            value:
-              location: 18:1:19-29:1:30
-              expressionType: "true"
+            expressionType: logicalOR
+            expressions:
+            - location: 18:1:19-23:1:24
+              constraintType: equals
+              value:
+                location: 18:1:19-23:1:24
+                expressionType: "false"
+            - location: 25:1:26-29:1:30
+              constraintType: equals
+              value:
+                location: 25:1:26-29:1:30
+                expressionType: "true"

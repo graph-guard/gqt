@@ -146,68 +146,70 @@ func Optimize(e Expression) Expression {
 		for i, x := range e.Expressions {
 			e.Expressions[i] = Optimize(x)
 		}
-		for _, x := range e.Expressions {
-			if eq, ok := x.(*ConstrEquals); ok {
-				switch eq.Value.(type) {
-				case *True:
-					constrEq := &ConstrEquals{
-						LocRange: e.LocRange,
-						Parent:   e.Parent,
+		var r Expression = e
+		if isBoolean(e.Expressions[0]) {
+			r = func() Expression {
+				for _, x := range e.Expressions {
+					switch x.(type) {
+					case *True:
+						return &True{
+							LocRange: e.LocRange,
+							Parent:   e.Parent,
+						}
+					case *False:
+						continue
+					default:
+						return e
 					}
-					constrEq.Value = &True{
-						LocRange: e.LocRange,
-						Parent:   constrEq,
-					}
-					return constrEq
-				case *False:
-					continue
-				default:
-					return e
 				}
+				return &False{
+					LocRange: e.LocRange,
+					Parent:   e.Parent,
+				}
+			}()
+		}
+		if or, ok := r.(*ExprLogicalOr); ok {
+			if len(or.Expressions) < 2 {
+				setParent(or.Expressions[0], or.Parent)
+				setLocRange(or.Expressions[0], or.LocRange)
+				return or.Expressions[0]
 			}
 		}
-		constrEq := &ConstrEquals{
-			LocRange: e.LocRange,
-			Parent:   e.Parent,
-		}
-		constrEq.Value = &False{
-			LocRange: e.LocRange,
-			Parent:   constrEq,
-		}
-		return constrEq
+		return r
 	case *ExprLogicalAnd:
 		for i, x := range e.Expressions {
 			e.Expressions[i] = Optimize(x)
 		}
-		for _, x := range e.Expressions {
-			if eq, ok := x.(*ConstrEquals); ok {
-				switch eq.Value.(type) {
-				case *True:
-					continue
-				case *False:
-					constrEq := &ConstrEquals{
-						LocRange: e.LocRange,
-						Parent:   e.Parent,
+		var r Expression = e
+		if isBoolean(e.Expressions[0]) {
+			r = func() Expression {
+				for _, x := range e.Expressions {
+					switch x.(type) {
+					case *True:
+						continue
+					case *False:
+						return &False{
+							LocRange: e.LocRange,
+							Parent:   e.Parent,
+						}
+					default:
+						return e
 					}
-					constrEq.Value = &False{
-						LocRange: e.LocRange,
-						Parent:   constrEq,
-					}
-					return constrEq
-				default:
-					return e
 				}
+				return &True{
+					LocRange: e.LocRange,
+					Parent:   e.Parent,
+				}
+			}()
+		}
+		if or, ok := r.(*ExprLogicalAnd); ok {
+			if len(or.Expressions) < 2 {
+				setParent(or.Expressions[0], or.Parent)
+				setLocRange(or.Expressions[0], or.LocRange)
+				return or.Expressions[0]
 			}
 		}
-		constrEq := &ConstrEquals{
-			LocRange: e.LocRange,
-			Parent:   e.Parent,
-		}
-		constrEq.Value = &True{
-			LocRange: e.LocRange,
-			Parent:   constrEq,
-		}
-		return constrEq
+		return r
 	case *ExprAddition:
 		e.AddendLeft = Optimize(e.AddendLeft)
 		e.AddendRight = Optimize(e.AddendRight)
@@ -270,6 +272,19 @@ func Optimize(e Expression) Expression {
 	case *ExprDivision:
 		e.Dividend = Optimize(e.Dividend)
 		e.Divisor = Optimize(e.Divisor)
+
+		// Check for division by 0
+		switch d := e.Divisor.(type) {
+		case *Int:
+			if d.Value == 0 {
+				return e
+			}
+		case *Float:
+			if d.Value == 0 {
+				return e
+			}
+		}
+
 		if isFloatOrInt(e.Dividend) && isFloatOrInt(e.Divisor) {
 			if e.Dividend.IsFloat() || e.Divisor.IsFloat() {
 				return &Float{
@@ -289,6 +304,19 @@ func Optimize(e Expression) Expression {
 	case *ExprModulo:
 		e.Dividend = Optimize(e.Dividend)
 		e.Divisor = Optimize(e.Divisor)
+
+		// Check for division by 0
+		switch d := e.Divisor.(type) {
+		case *Int:
+			if d.Value == 0 {
+				return e
+			}
+		case *Float:
+			if d.Value == 0 {
+				return e
+			}
+		}
+
 		if isFloatOrInt(e.Dividend) && isFloatOrInt(e.Divisor) {
 			if e.Dividend.IsFloat() || e.Divisor.IsFloat() {
 				return &Float{
@@ -409,9 +437,19 @@ func Optimize(e Expression) Expression {
 }
 
 func isFloatOrInt(e Expression) bool {
-	_, f := e.(*Float)
-	_, i := e.(*Int)
-	return f || i
+	switch e.(type) {
+	case *Int, *Float:
+		return true
+	}
+	return false
+}
+
+func isBoolean(e Expression) bool {
+	switch e.(type) {
+	case *True, *False:
+		return true
+	}
+	return false
 }
 
 func getFloat(e Expression) float64 {

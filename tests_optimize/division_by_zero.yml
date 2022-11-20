@@ -1,0 +1,117 @@
+# Makes sure that division by zero is ignored and doesn't cause a panic.
+schema: >
+  type Query {
+    int(div:Int, mod:Int):Int
+    float(div:Float, mod:Float):Float
+  }
+
+template: >
+  query {
+    int   ( div: (2 / 0),      mod: (2 % (2 % 1)) )
+    float ( div: (3.14 / 0.0), mod: (3.14 % (2.0 % 1.0)) )
+  }
+
+expect-ast:
+  location: 0:1:1-116:4:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-116:4:2
+    selections:
+    - location: 10:2:3-57:2:50
+      selectionType: field
+      name:
+        location: 10:2:3-13:2:6
+        name: int
+      type: Int
+      argumentList:
+        location: 16:2:9-57:2:50
+        arguments:
+        - location: 18:2:11-30:2:23
+          name:
+            location: 18:2:11-21:2:14
+            name: div
+          type: Int
+          constraint:
+            location: 23:2:16-30:2:23
+            constraintType: equals
+            value:
+              location: 24:2:17-29:2:22
+              expressionType: division
+              float: false
+              dividend:
+                location: 24:2:17-25:2:18
+                expressionType: int
+                value: 2
+              divisor:
+                location: 28:2:21-29:2:22
+                expressionType: int
+                value: 0
+        - location: 37:2:30-55:2:48
+          name:
+            location: 37:2:30-40:2:33
+            name: mod
+          type: Int
+          constraint:
+            location: 42:2:35-55:2:48
+            constraintType: equals
+            value:
+              location: 43:2:36-54:2:47
+              expressionType: modulo
+              float: false
+              dividend:
+                location: 43:2:36-44:2:37
+                expressionType: int
+                value: 2
+              divisor:
+                location: 47:2:40-54:2:47
+                expressionType: int
+                value: 0
+    - location: 60:3:3-114:3:57
+      selectionType: field
+      name:
+        location: 60:3:3-65:3:8
+        name: float
+      type: Float
+      argumentList:
+        location: 66:3:9-114:3:57
+        arguments:
+        - location: 68:3:11-85:3:28
+          name:
+            location: 68:3:11-71:3:14
+            name: div
+          type: Float
+          constraint:
+            location: 73:3:16-85:3:28
+            constraintType: equals
+            value:
+              location: 74:3:17-84:3:27
+              expressionType: division
+              float: true
+              dividend:
+                location: 74:3:17-78:3:21
+                expressionType: float
+                value: 3.14
+              divisor:
+                location: 81:3:24-84:3:27
+                expressionType: float
+                value: 0
+        - location: 87:3:30-112:3:55
+          name:
+            location: 87:3:30-90:3:33
+            name: mod
+          type: Float
+          constraint:
+            location: 92:3:35-112:3:55
+            constraintType: equals
+            value:
+              location: 93:3:36-111:3:54
+              expressionType: modulo
+              float: true
+              dividend:
+                location: 93:3:36-97:3:40
+                expressionType: float
+                value: 3.14
+              divisor:
+                location: 100:3:43-111:3:54
+                expressionType: float
+                value: 0
