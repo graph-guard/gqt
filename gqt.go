@@ -2978,7 +2978,8 @@ func (p *Parser) parseExprRelational(
 	s = s.consumeIgnored()
 
 	var ok bool
-	if s, ok = s.consume("<="); ok {
+	si := s
+	if s, ok = si.consume("<="); ok {
 		e := &ExprLessOrEqual{
 			LocRange: locRange(l),
 			Left:     left,
@@ -2995,7 +2996,7 @@ func (p *Parser) parseExprRelational(
 
 		s = s.consumeIgnored()
 		return s, e
-	} else if s, ok = s.consume(">="); ok {
+	} else if s, ok = si.consume(">="); ok {
 		e := &ExprGreaterOrEqual{
 			LocRange: locRange(l),
 			Left:     left,
@@ -3012,7 +3013,7 @@ func (p *Parser) parseExprRelational(
 
 		s = s.consumeIgnored()
 		return s, e
-	} else if s, ok = s.consume("<"); ok {
+	} else if s, ok = si.consume("<"); ok {
 		e := &ExprLess{
 			LocRange: locRange(l),
 			Left:     left,
@@ -3029,7 +3030,7 @@ func (p *Parser) parseExprRelational(
 
 		s = s.consumeIgnored()
 		return s, e
-	} else if s, ok = s.consume(">"); ok {
+	} else if s, ok = si.consume(">"); ok {
 		e := &ExprGreater{
 			LocRange: locRange(l),
 			Left:     left,
@@ -3634,12 +3635,7 @@ func (p *Parser) isNumeric(e Expression) bool {
 					t.NamedType == "Float")
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isNumeric(v.Constraint)
-		case *ObjectField:
-			return p.isNumeric(v.Constraint)
-		}
+		return p.isNumeric(getVarDeclConstraint(e))
 	case *ConstrAny, *Float, *Int,
 		*ConstrGreater, *ConstrLess,
 		*ConstrGreaterOrEqual, *ConstrLessOrEqual,
@@ -3665,12 +3661,7 @@ func (p *Parser) isBoolean(e Expression) bool {
 			return t.Elem == nil && t.NamedType == "Boolean"
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isBoolean(v.Constraint)
-		case *ObjectField:
-			return p.isBoolean(v.Constraint)
-		}
+		return p.isBoolean(getVarDeclConstraint(e))
 	case *ConstrAny, *True, *False, *ConstrGreater, *ConstrGreaterOrEqual,
 		*ConstrLess, *ConstrLessOrEqual, *ExprEqual, *ExprNotEqual,
 		*ExprLess, *ExprGreater, *ExprLessOrEqual, *ExprGreaterOrEqual,
@@ -3695,12 +3686,7 @@ func (p *Parser) isAny(e Expression) bool {
 			return false
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isAny(v.Constraint)
-		case *ObjectField:
-			return p.isAny(v.Constraint)
-		}
+		return p.isAny(getVarDeclConstraint(e))
 	case *ConstrAny:
 		return true
 	case *ConstrEquals:
@@ -3722,12 +3708,7 @@ func (p *Parser) isString(e Expression) bool {
 				(t.NamedType == "String" || t.NamedType == "ID")
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isString(v.Constraint)
-		case *ObjectField:
-			return p.isString(v.Constraint)
-		}
+		return p.isString(getVarDeclConstraint(e))
 	case *ConstrAny,
 		*String,
 		*ConstrLenGreater, *ConstrLenLess,
@@ -3753,12 +3734,7 @@ func (p *Parser) isEnum(e Expression) bool {
 			return t.Elem == nil && tp.Kind == ast.Enum
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isEnum(v.Constraint)
-		case *ObjectField:
-			return p.isEnum(v.Constraint)
-		}
+		return p.isEnum(getVarDeclConstraint(e))
 	case *ConstrAny, *Enum:
 		return true
 	case *ConstrEquals:
@@ -3779,12 +3755,7 @@ func (p *Parser) isNull(e Expression) bool {
 			return !t.NonNull
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isNull(v.Constraint)
-		case *ObjectField:
-			return p.isNull(v.Constraint)
-		}
+		return p.isNull(getVarDeclConstraint(e))
 	case *ConstrAny, *Null:
 		return true
 	case *ConstrEquals:
@@ -3805,12 +3776,7 @@ func (p *Parser) isArray(e Expression) bool {
 			return t.Elem != nil
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isArray(v.Constraint)
-		case *ObjectField:
-			return p.isArray(v.Constraint)
-		}
+		return p.isArray(getVarDeclConstraint(e))
 	case *ConstrAny,
 		*Array,
 		*ConstrLenGreater, *ConstrLenLess,
@@ -4779,12 +4745,7 @@ func find[T any](e Expression) (T, bool) {
 			}
 		}
 	case *Variable:
-		switch p := e.Declaration.Parent.(type) {
-		case *Argument:
-			return find[T](p.Constraint)
-		case *ObjectField:
-			return find[T](p.Constraint)
-		}
+		return find[T](getVarDeclConstraint(e))
 	}
 	return zero, false
 }
