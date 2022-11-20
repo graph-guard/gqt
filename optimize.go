@@ -422,6 +422,10 @@ func Optimize(e Expression) Expression {
 		}
 		return e
 	case *Variable:
+		if c, ok := getVarDeclConstraint(e).(*ConstrEquals); ok {
+			cv := Optimize(c.Value)
+			return cv
+		}
 		return e
 	case *Enum:
 		return e

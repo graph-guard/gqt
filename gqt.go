@@ -4848,3 +4848,16 @@ func (s source) lookaheadIsValOperator() bool {
 	}
 	return false
 }
+
+func getVarDeclConstraint(v *Variable) Expression {
+	switch v := v.Declaration.Parent.(type) {
+	case *Argument:
+		return v.Constraint
+	case *ObjectField:
+		return v.Constraint
+	}
+	panic(fmt.Errorf(
+		"unexpected variable declaration parent type: %T",
+		v.Declaration.Parent,
+	))
+}
