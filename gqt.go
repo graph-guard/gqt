@@ -4633,6 +4633,18 @@ func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
 		case *ExprModulo:
 			push(e.Dividend)
 			push(e.Divisor)
+		case *ExprGreater:
+			push(e.Left)
+			push(e.Right)
+		case *ExprGreaterOrEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLess:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLessOrEqual:
+			push(e.Left)
+			push(e.Right)
 		case *Array:
 			for _, i := range e.Items {
 				push(i)
