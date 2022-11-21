@@ -1,0 +1,48 @@
+# Makes sure the object type designation is printed correctly
+# while reporting a type error.
+schema: >
+  type Query { i( x:String! ):Int }
+  input In { f:Int }
+
+template: >
+  query { i( x:{ f:42 } ) }
+
+expect-errors:
+  - '1:14: expected type String! but received {f:Int}'
+
+expect-ast(schemaless):
+  location: 0:1:1-25:1:26
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-25:1:26
+    selections:
+    - location: 8:1:9-23:1:24
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: i
+      argumentList:
+        location: 9:1:10-23:1:24
+        arguments:
+        - location: 11:1:12-21:1:22
+          name:
+            location: 11:1:12-12:1:13
+            name: x
+          constraint:
+            location: 13:1:14-21:1:22
+            constraintType: equals
+            value:
+              location: 13:1:14-21:1:22
+              expressionType: object
+              fields:
+              - location: 15:1:16-19:1:20
+                name:
+                  location: 15:1:16-16:1:17
+                  name: f
+                constraint:
+                  location: 17:1:18-19:1:20
+                  constraintType: equals
+                  value:
+                    location: 17:1:18-19:1:20
+                    expressionType: int
+                    value: 42
