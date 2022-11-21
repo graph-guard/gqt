@@ -1,0 +1,32 @@
+schema: >
+  type Query { foo(x:Boolean):Boolean }
+
+template: >
+  query { foo(x: "yes" == "no") }
+
+expect-ast:
+  location: 0:1:1-31:1:32
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-31:1:32
+    selections:
+    - location: 8:1:9-29:1:30
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Boolean
+      argumentList:
+        location: 11:1:12-29:1:30
+        arguments:
+        - location: 12:1:13-28:1:29
+          name:
+            location: 12:1:13-13:1:14
+            name: x
+          type: Boolean
+          constraint: # "yes" == "no" = false
+            location: 15:1:16-28:1:29
+            constraintType: equals
+            value:
+              location: 15:1:16-28:1:29
+              expressionType: "false"

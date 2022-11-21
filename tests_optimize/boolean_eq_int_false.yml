@@ -1,0 +1,32 @@
+schema: >
+  type Query { foo(x:Boolean):Boolean }
+
+template: >
+  query { foo(x: 3 == 4) }
+
+expect-ast:
+  location: 0:1:1-24:1:25
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-24:1:25
+    selections:
+    - location: 8:1:9-22:1:23
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Boolean
+      argumentList:
+        location: 11:1:12-22:1:23
+        arguments:
+        - location: 12:1:13-21:1:22
+          name:
+            location: 12:1:13-13:1:14
+            name: x
+          type: Boolean
+          constraint: # 3 == 4 = false
+            location: 15:1:16-21:1:22
+            constraintType: equals
+            value:
+              location: 15:1:16-21:1:22
+              expressionType: "false"

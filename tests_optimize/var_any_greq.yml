@@ -1,0 +1,68 @@
+# Makes sure expressions containing variables refering to
+# non-equals constraints aren't reduced.
+schema: >
+  type Query {
+    b(x:Boolean):Int
+    v(v:Int):Int
+  }
+
+template: >
+  query {
+    b(x: 10 >= $v)
+    v(v=$v:*)
+  }
+
+expect-ast:
+  location: 0:1:1-38:4:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-38:4:2
+    selections:
+    - location: 10:2:3-24:2:17
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: b
+      type: Int
+      argumentList:
+        location: 11:2:4-24:2:17
+        arguments:
+        - location: 12:2:5-23:2:16
+          name:
+            location: 12:2:5-13:2:6
+            name: x
+          type: Boolean
+          constraint:
+            location: 15:2:8-23:2:16
+            constraintType: equals
+            value:
+              location: 15:2:8-23:2:16
+              expressionType: greaterThanOrEquals
+              left:
+                location: 15:2:8-17:2:10
+                expressionType: int
+                value: 10
+              right:
+                location: 21:2:14-23:2:16
+                expressionType: variableReference
+                name: v
+    - location: 27:3:3-36:3:12
+      selectionType: field
+      name:
+        location: 27:3:3-28:3:4
+        name: v
+      type: Int
+      argumentList:
+        location: 28:3:4-36:3:12
+        arguments:
+        - location: 29:3:5-35:3:11
+          name:
+            location: 29:3:5-30:3:6
+            name: v
+          variable:
+            location: 31:3:7-33:3:9
+            name: v
+          type: Int
+          constraint:
+            location: 34:3:10-35:3:11
+            constraintType: any

@@ -1,0 +1,10 @@
+schema: >
+  type Query { f(a: Boolean):Int }
+
+template: 'query { f(a: !=(true &&'
+
+expect-errors:
+  - '1:24: unexpected end of file, expected value'
+
+expect-errors(schemaless):
+  - '1:24: unexpected end of file, expected value'

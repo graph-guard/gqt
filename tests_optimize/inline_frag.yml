@@ -1,0 +1,42 @@
+schema: >
+  type Query { foo(x:Int):Int }
+
+template: >
+  query { ... on Query { foo(x: 40 + 2) } }
+
+expect-ast:
+  location: 0:1:1-41:1:42
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-41:1:42
+    selections:
+    - location: 8:1:9-39:1:40
+      selectionType: inlineFragment
+      typeCondition:
+        location: 15:1:16-20:1:21
+        typeName: Query
+        type: Query
+      selectionSet:
+        location: 21:1:22-39:1:40
+        selections:
+        - location: 23:1:24-37:1:38
+          selectionType: field
+          name:
+            location: 23:1:24-26:1:27
+            name: foo
+          type: Int
+          argumentList:
+            location: 26:1:27-37:1:38
+            arguments:
+            - location: 27:1:28-36:1:37
+              name:
+                location: 27:1:28-28:1:29
+                name: x
+              type: Int
+              constraint:
+                location: 30:1:31-36:1:37
+                constraintType: equals
+                value: # 40 + 2 = 42
+                  location: 30:1:31-36:1:37
+                  expressionType: int
+                  value: 42

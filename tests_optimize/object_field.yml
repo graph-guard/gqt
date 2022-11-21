@@ -1,0 +1,47 @@
+schema: >
+  type Query { foo(x:In):Int }
+  input In { i:Int! }
+
+template: >
+  query { foo(x: {i: 1 + 2}) }
+
+expect-ast:
+  location: 0:1:1-28:1:29
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-28:1:29
+    selections:
+    - location: 8:1:9-26:1:27
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Int
+      argumentList:
+        location: 11:1:12-26:1:27
+        arguments:
+        - location: 12:1:13-25:1:26
+          name:
+            location: 12:1:13-13:1:14
+            name: x
+          type: In
+          constraint:
+            location: 15:1:16-25:1:26
+            constraintType: equals
+            value:
+              location: 15:1:16-25:1:26
+              expressionType: object
+              type: In
+              fields:
+              - location: 16:1:17-24:1:25
+                name:
+                  location: 16:1:17-17:1:18
+                  name: i
+                type: Int!
+                constraint:
+                  location: 19:1:20-24:1:25
+                  constraintType: equals
+                  value:
+                    location: 19:1:20-24:1:25
+                    expressionType: int
+                    value: 3 # = 1 + 2

@@ -1,0 +1,14 @@
+# Makes sure the parser doesn't enter an endless loop trying to print
+# the type designation of an object refering to itself in a constraint.
+schema: >
+  type Query { in(i:String):Int }
+  input In { b:Boolean }
+
+template: >
+  query { in(i=$v:{b: 4 > $v}) }
+
+expect-errors:
+  - '1:25: illegal self-reference of argument "i" through variable "v" in constraint'
+
+expect-errors(schemaless):
+  - '1:25: expected number but received {b:Boolean}'

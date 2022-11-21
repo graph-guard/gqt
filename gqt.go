@@ -2978,7 +2978,8 @@ func (p *Parser) parseExprRelational(
 	s = s.consumeIgnored()
 
 	var ok bool
-	if s, ok = s.consume("<="); ok {
+	si := s
+	if s, ok = si.consume("<="); ok {
 		e := &ExprLessOrEqual{
 			LocRange: locRange(l),
 			Left:     left,
@@ -2995,7 +2996,7 @@ func (p *Parser) parseExprRelational(
 
 		s = s.consumeIgnored()
 		return s, e
-	} else if s, ok = s.consume(">="); ok {
+	} else if s, ok = si.consume(">="); ok {
 		e := &ExprGreaterOrEqual{
 			LocRange: locRange(l),
 			Left:     left,
@@ -3012,7 +3013,7 @@ func (p *Parser) parseExprRelational(
 
 		s = s.consumeIgnored()
 		return s, e
-	} else if s, ok = s.consume("<"); ok {
+	} else if s, ok = si.consume("<"); ok {
 		e := &ExprLess{
 			LocRange: locRange(l),
 			Left:     left,
@@ -3029,7 +3030,7 @@ func (p *Parser) parseExprRelational(
 
 		s = s.consumeIgnored()
 		return s, e
-	} else if s, ok = s.consume(">"); ok {
+	} else if s, ok = si.consume(">"); ok {
 		e := &ExprGreater{
 			LocRange: locRange(l),
 			Left:     left,
@@ -3634,12 +3635,7 @@ func (p *Parser) isNumeric(e Expression) bool {
 					t.NamedType == "Float")
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isNumeric(v.Constraint)
-		case *ObjectField:
-			return p.isNumeric(v.Constraint)
-		}
+		return p.isNumeric(getVarDeclConstraint(e))
 	case *ConstrAny, *Float, *Int,
 		*ConstrGreater, *ConstrLess,
 		*ConstrGreaterOrEqual, *ConstrLessOrEqual,
@@ -3665,12 +3661,7 @@ func (p *Parser) isBoolean(e Expression) bool {
 			return t.Elem == nil && t.NamedType == "Boolean"
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isBoolean(v.Constraint)
-		case *ObjectField:
-			return p.isBoolean(v.Constraint)
-		}
+		return p.isBoolean(getVarDeclConstraint(e))
 	case *ConstrAny, *True, *False, *ConstrGreater, *ConstrGreaterOrEqual,
 		*ConstrLess, *ConstrLessOrEqual, *ExprEqual, *ExprNotEqual,
 		*ExprLess, *ExprGreater, *ExprLessOrEqual, *ExprGreaterOrEqual,
@@ -3695,12 +3686,7 @@ func (p *Parser) isAny(e Expression) bool {
 			return false
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isAny(v.Constraint)
-		case *ObjectField:
-			return p.isAny(v.Constraint)
-		}
+		return p.isAny(getVarDeclConstraint(e))
 	case *ConstrAny:
 		return true
 	case *ConstrEquals:
@@ -3722,12 +3708,7 @@ func (p *Parser) isString(e Expression) bool {
 				(t.NamedType == "String" || t.NamedType == "ID")
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isString(v.Constraint)
-		case *ObjectField:
-			return p.isString(v.Constraint)
-		}
+		return p.isString(getVarDeclConstraint(e))
 	case *ConstrAny,
 		*String,
 		*ConstrLenGreater, *ConstrLenLess,
@@ -3753,12 +3734,7 @@ func (p *Parser) isEnum(e Expression) bool {
 			return t.Elem == nil && tp.Kind == ast.Enum
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isEnum(v.Constraint)
-		case *ObjectField:
-			return p.isEnum(v.Constraint)
-		}
+		return p.isEnum(getVarDeclConstraint(e))
 	case *ConstrAny, *Enum:
 		return true
 	case *ConstrEquals:
@@ -3779,12 +3755,7 @@ func (p *Parser) isNull(e Expression) bool {
 			return !t.NonNull
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isNull(v.Constraint)
-		case *ObjectField:
-			return p.isNull(v.Constraint)
-		}
+		return p.isNull(getVarDeclConstraint(e))
 	case *ConstrAny, *Null:
 		return true
 	case *ConstrEquals:
@@ -3805,12 +3776,7 @@ func (p *Parser) isArray(e Expression) bool {
 			return t.Elem != nil
 		}
 		// Check type based on constraint expression
-		switch v := e.Declaration.Parent.(type) {
-		case *Argument:
-			return p.isArray(v.Constraint)
-		case *ObjectField:
-			return p.isArray(v.Constraint)
-		}
+		return p.isArray(getVarDeclConstraint(e))
 	case *ConstrAny,
 		*Array,
 		*ConstrLenGreater, *ConstrLenLess,
@@ -4045,6 +4011,101 @@ func setParent(t, parent Expression) {
 		v.Parent = parent
 	case *ConstrAny:
 		v.Parent = parent
+	default:
+		panic(fmt.Errorf("unsupported type: %T", t))
+	}
+}
+
+func setLocRange(t Expression, l LocRange) {
+	switch v := t.(type) {
+	case *Variable:
+		v.LocRange = l
+	case *Int:
+		v.LocRange = l
+	case *Float:
+		v.LocRange = l
+	case *String:
+		v.LocRange = l
+	case *True:
+		v.LocRange = l
+	case *False:
+		v.LocRange = l
+	case *Null:
+		v.LocRange = l
+	case *Enum:
+		v.LocRange = l
+	case *Array:
+		v.LocRange = l
+	case *Object:
+		v.LocRange = l
+	case *ExprModulo:
+		v.LocRange = l
+	case *ExprDivision:
+		v.LocRange = l
+	case *ExprMultiplication:
+		v.LocRange = l
+	case *ExprAddition:
+		v.LocRange = l
+	case *ExprSubtraction:
+		v.LocRange = l
+	case *ExprEqual:
+		v.LocRange = l
+	case *ExprNotEqual:
+		v.LocRange = l
+	case *ExprLess:
+		v.LocRange = l
+	case *ExprGreater:
+		v.LocRange = l
+	case *ExprLessOrEqual:
+		v.LocRange = l
+	case *ExprGreaterOrEqual:
+		v.LocRange = l
+	case *ExprParentheses:
+		v.LocRange = l
+	case *ConstrEquals:
+		v.LocRange = l
+	case *ConstrNotEquals:
+		v.LocRange = l
+	case *ConstrLess:
+		v.LocRange = l
+	case *ConstrGreater:
+		v.LocRange = l
+	case *ConstrLessOrEqual:
+		v.LocRange = l
+	case *ConstrGreaterOrEqual:
+		v.LocRange = l
+	case *ConstrLenEquals:
+		v.LocRange = l
+	case *ConstrLenNotEquals:
+		v.LocRange = l
+	case *ConstrLenLess:
+		v.LocRange = l
+	case *ConstrLenGreater:
+		v.LocRange = l
+	case *ConstrLenLessOrEqual:
+		v.LocRange = l
+	case *ConstrLenGreaterOrEqual:
+		v.LocRange = l
+	case *ExprLogicalAnd:
+		v.LocRange = l
+	case *ExprLogicalOr:
+		v.LocRange = l
+	case *ExprLogicalNegation:
+		v.LocRange = l
+	case *ExprNumericNegation:
+		v.LocRange = l
+	case *SelectionInlineFrag:
+		v.LocRange = l
+	case *SelectionField:
+		v.LocRange = l
+	case *Argument:
+		v.LocRange = l
+	case *SelectionMax:
+		v.LocRange = l
+	case *ConstrMap:
+		v.LocRange = l
+	case *ConstrAny:
+		v.LocRange = l
 	default:
 		panic(fmt.Errorf("unsupported type: %T", t))
 	}
@@ -4511,72 +4572,8 @@ func makeAppend[T any](a []T, b ...T) (new []T) {
 // and returns false if none are found. Otherwise returns true
 // and pushes an error onto the error stack.
 func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
-	ok = true
-	stack := make([]Expression, 0, 64)
-	push := func(expression Expression) {
-		stack = append(stack, expression)
-	}
-
-	push(o)
-	for len(stack) > 0 {
-		top := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		switch e := top.(type) {
-		case *ConstrEquals:
-			push(e.Value)
-		case *ConstrNotEquals:
-			push(e.Value)
-		case *ConstrGreater:
-			push(e.Value)
-		case *ConstrGreaterOrEqual:
-			push(e.Value)
-		case *ConstrLess:
-			push(e.Value)
-		case *ConstrLessOrEqual:
-			push(e.Value)
-		case *ConstrMap:
-			push(e.Constraint)
-		case *ExprParentheses:
-			push(e.Expression)
-		case *ExprEqual:
-			push(e.Left)
-			push(e.Right)
-		case *ExprNotEqual:
-			push(e.Left)
-			push(e.Right)
-		case *ExprLogicalNegation:
-			push(e.Expression)
-		case *ExprNumericNegation:
-			push(e.Expression)
-		case *ExprLogicalOr:
-			for _, e := range e.Expressions {
-				push(e)
-			}
-		case *ExprLogicalAnd:
-			for _, e := range e.Expressions {
-				push(e)
-			}
-		case *ExprAddition:
-			push(e.AddendLeft)
-			push(e.AddendRight)
-		case *ExprSubtraction:
-			push(e.Minuend)
-			push(e.Subtrahend)
-		case *ExprMultiplication:
-			push(e.Multiplicant)
-			push(e.Multiplicator)
-		case *ExprDivision:
-			push(e.Dividend)
-			push(e.Divisor)
-		case *ExprModulo:
-			push(e.Dividend)
-			push(e.Divisor)
-		case *Array:
-			for _, i := range e.Items {
-				push(i)
-			}
-		case *Variable:
+	return traverse(o, func(e Expression) bool {
+		if e, ok := e.(*Variable); ok {
 			for pr := e.Parent; pr != nil; pr = pr.GetParent() {
 				switch pv := pr.(type) {
 				case *Argument:
@@ -4591,19 +4588,9 @@ func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
 					}
 				}
 			}
-		case *Object:
-			for _, f := range e.Fields {
-				push(f)
-			}
-		case *ObjectField:
-			push(e.Constraint)
-		case *Int, *Float, *True, *False, *Null,
-			*Enum, *String, *ConstrAny:
-		default:
-			panic(fmt.Errorf("unhandled type: %T", top))
 		}
-	}
-	return ok
+		return true
+	})
 }
 
 var typeIntNotNull = &ast.Type{
@@ -4684,12 +4671,7 @@ func find[T any](e Expression) (T, bool) {
 			}
 		}
 	case *Variable:
-		switch p := e.Declaration.Parent.(type) {
-		case *Argument:
-			return find[T](p.Constraint)
-		case *ObjectField:
-			return find[T](p.Constraint)
-		}
+		return find[T](getVarDeclConstraint(e))
 	}
 	return zero, false
 }
@@ -4742,14 +4724,155 @@ func (s source) lookaheadIsValOperator() bool {
 		return ok
 	} else if _, ok = s.consume("=="); ok {
 		return ok
-	} else if _, ok = s.consume(">"); ok {
-		return ok
-	} else if _, ok = s.consume("<"); ok {
-		return ok
 	} else if _, ok = s.consume(">="); ok {
 		return ok
 	} else if _, ok = s.consume("<="); ok {
 		return ok
+	} else if _, ok = s.consume(">"); ok {
+		return ok
+	} else if _, ok = s.consume("<"); ok {
+		return ok
 	}
 	return false
+}
+
+func getVarDeclConstraint(v *Variable) Expression {
+	switch v := v.Declaration.Parent.(type) {
+	case *Argument:
+		return v.Constraint
+	case *ObjectField:
+		return v.Constraint
+	}
+	panic(fmt.Errorf(
+		"unexpected variable declaration parent type: %T",
+		v.Declaration.Parent,
+	))
+}
+
+// traverse returns true after BFS-traversing the entire tree under e
+// calling onExpression for every discovered expression.
+func traverse(e Expression, onExpression func(Expression) bool) bool {
+	stack := make([]Expression, 0, 64)
+	push := func(expression Expression) {
+		stack = append(stack, expression)
+	}
+
+	push(e)
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if !onExpression(top) {
+			return false
+		}
+
+		switch e := top.(type) {
+		case *Operation:
+			for _, f := range e.Selections {
+				push(f)
+			}
+		case *SelectionInlineFrag:
+			for _, f := range e.Selections {
+				push(f)
+			}
+		case *SelectionField:
+			for _, f := range e.Selections {
+				push(f)
+			}
+		case *SelectionMax:
+			for _, f := range e.Options.Selections {
+				push(f)
+			}
+		case *Argument:
+			push(e.Constraint)
+		case *ConstrEquals:
+			push(e.Value)
+		case *ConstrNotEquals:
+			push(e.Value)
+		case *ConstrGreater:
+			push(e.Value)
+		case *ConstrGreaterOrEqual:
+			push(e.Value)
+		case *ConstrLess:
+			push(e.Value)
+		case *ConstrLessOrEqual:
+			push(e.Value)
+		case *ConstrLenEquals:
+			push(e.Value)
+		case *ConstrLenNotEquals:
+			push(e.Value)
+		case *ConstrLenGreater:
+			push(e.Value)
+		case *ConstrLenLess:
+			push(e.Value)
+		case *ConstrLenGreaterOrEqual:
+			push(e.Value)
+		case *ConstrLenLessOrEqual:
+			push(e.Value)
+		case *ConstrMap:
+			push(e.Constraint)
+		case *ExprParentheses:
+			push(e.Expression)
+		case *ExprEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprNotEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLogicalNegation:
+			push(e.Expression)
+		case *ExprNumericNegation:
+			push(e.Expression)
+		case *ExprLogicalOr:
+			for _, e := range e.Expressions {
+				push(e)
+			}
+		case *ExprLogicalAnd:
+			for _, e := range e.Expressions {
+				push(e)
+			}
+		case *ExprAddition:
+			push(e.AddendLeft)
+			push(e.AddendRight)
+		case *ExprSubtraction:
+			push(e.Minuend)
+			push(e.Subtrahend)
+		case *ExprMultiplication:
+			push(e.Multiplicant)
+			push(e.Multiplicator)
+		case *ExprDivision:
+			push(e.Dividend)
+			push(e.Divisor)
+		case *ExprModulo:
+			push(e.Dividend)
+			push(e.Divisor)
+		case *ExprGreater:
+			push(e.Left)
+			push(e.Right)
+		case *ExprGreaterOrEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLess:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLessOrEqual:
+			push(e.Left)
+			push(e.Right)
+		case *Array:
+			for _, i := range e.Items {
+				push(i)
+			}
+		case *Variable:
+		case *Object:
+			for _, f := range e.Fields {
+				push(f)
+			}
+		case *ObjectField:
+			push(e.Constraint)
+		case *Int, *Float, *True, *False, *Null,
+			*Enum, *String, *ConstrAny:
+		default:
+			panic(fmt.Errorf("unhandled type: %T", top))
+		}
+	}
+	return true
 }

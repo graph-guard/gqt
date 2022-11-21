@@ -116,6 +116,74 @@ func TestParse(t *testing.T) {
 	}
 }
 
+//go:embed tests_optimize
+var testsOptimizeFS embed.FS
+
+func TestOptimize(t *testing.T) {
+	type T struct {
+		Schema    string         `yaml:"schema"`
+		Template  string         `yaml:"template"`
+		ExpectAST map[string]any `yaml:"expect-ast"`
+	}
+
+	d, err := fs.ReadDir(testsOptimizeFS, "tests_optimize")
+	require.NoError(t, err)
+
+	for _, do := range d {
+		fileName := do.Name()
+		if do.IsDir() {
+			t.Run(fileName, func(t *testing.T) {
+				t.Skipf("ignoring directory %q", fileName)
+			})
+			continue
+		}
+		if !strings.HasSuffix(fileName, ".yml") {
+			t.Run(fileName, func(t *testing.T) {
+				t.Skipf("ignoring file %q", fileName)
+			})
+			continue
+		}
+		f, err := testsOptimizeFS.ReadFile(
+			filepath.Join("tests_optimize", fileName),
+		)
+		require.NoError(t, err, "reading YAML test file")
+		t.Run(fileName[:len(fileName)-len(".yml")], func(t *testing.T) {
+			var ts T
+			{
+				d := yaml.NewDecoder(bytes.NewReader(f))
+				d.KnownFields(true)
+				if err := d.Decode(&ts); err != nil {
+					t.Fatal("parsing YAML test definition", err)
+				}
+			}
+
+			p, err := gqt.NewParser([]gqt.Source{
+				{Name: "schema.graphqls", Content: ts.Schema},
+			})
+			require.NoError(t, err, "unexpected error while parsing schema")
+			opr, _, errs := p.Parse([]byte(ts.Template))
+			if compareErrors(t, nil, errs); len(errs) > 0 {
+				return
+			}
+
+			opt := gqt.Optimize(opr)
+
+			var j bytes.Buffer
+			d := yaml.NewEncoder(&j)
+			d.SetIndent(2)
+			err = d.Encode(opt)
+			require.NoError(t, err)
+			var decoded map[string]any
+			require.NoError(t, yaml.Unmarshal(j.Bytes(), &decoded))
+			if !assert.ObjectsAreEqual(ts.ExpectAST, decoded) {
+				fmt.Println("actual:")
+				fmt.Println(j.String())
+			}
+			require.Equal(t, ts.ExpectAST, decoded)
+		})
+	}
+}
+
 func compareErrors(t *testing.T, expected []string, actual []gqt.Error) {
 	if len(expected) < 1 {
 		for _, act := range actual {
@@ -237,4 +305,18 @@ func TestParseErrSchema(t *testing.T) {
 		err.Error(),
 	)
 	require.Nil(t, p)
+}
+
+func TestErrorString(t *testing.T) {
+	e := gqt.Error{}
+	require.False(t, e.IsErr())
+	require.Zero(t, e.Error())
+
+	e.LocRange = gqt.LocRange{
+		Location:    gqt.Location{0, 1, 1},
+		LocationEnd: gqt.LocationEnd{3, 1, 4},
+	}
+	e.Msg = "some error"
+	require.True(t, e.IsErr())
+	require.Equal(t, "1:1: some error", e.Error())
 }

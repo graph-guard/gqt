@@ -1,0 +1,43 @@
+schema: >
+  type Query { foo:Foo }
+  type Foo { f(x:Int):Int }
+
+template: >
+  query { foo { f(x: 4 / 2) } }
+
+expect-ast:
+  location: 0:1:1-29:1:30
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-29:1:30
+    selections:
+    - location: 8:1:9-27:1:28
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Foo
+      selectionSet:
+        location: 12:1:13-27:1:28
+        selections:
+        - location: 14:1:15-25:1:26
+          selectionType: field
+          name:
+            location: 14:1:15-15:1:16
+            name: f
+          type: Int
+          argumentList:
+            location: 15:1:16-25:1:26
+            arguments:
+            - location: 16:1:17-24:1:25
+              name:
+                location: 16:1:17-17:1:18
+                name: x
+              type: Int
+              constraint:
+                location: 19:1:20-24:1:25
+                constraintType: equals
+                value: # 4 / 2 = 2
+                  location: 19:1:20-24:1:25
+                  expressionType: int
+                  value: 2

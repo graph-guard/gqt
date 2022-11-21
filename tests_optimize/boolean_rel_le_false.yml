@@ -1,0 +1,32 @@
+schema: >
+  type Query { f(a:Boolean):Boolean }
+
+template: >
+  query { f(a: 5 < 5) }
+
+expect-ast:
+  location: 0:1:1-21:1:22
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-21:1:22
+    selections:
+    - location: 8:1:9-19:1:20
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      type: Boolean
+      argumentList:
+        location: 9:1:10-19:1:20
+        arguments:
+        - location: 10:1:11-18:1:19
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          type: Boolean
+          constraint: # 5 < 5 = false
+            location: 13:1:14-18:1:19
+            constraintType: equals
+            value:
+              location: 13:1:14-18:1:19
+              expressionType: "false"

@@ -1,0 +1,69 @@
+# Makes sure subtraction expressions containing variables refering to
+# non-equals constraints aren't reduced.
+schema: >
+  type Query {
+    b(x:Int):Int
+    v(v:Int):Int
+  }
+
+template: >
+  query {
+    b(x: 10 - $v)
+    v(v=$v:*)
+  }
+
+expect-ast:
+  location: 0:1:1-37:4:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-37:4:2
+    selections:
+    - location: 10:2:3-23:2:16
+      selectionType: field
+      name:
+        location: 10:2:3-11:2:4
+        name: b
+      type: Int
+      argumentList:
+        location: 11:2:4-23:2:16
+        arguments:
+        - location: 12:2:5-22:2:15
+          name:
+            location: 12:2:5-13:2:6
+            name: x
+          type: Int
+          constraint:
+            location: 15:2:8-22:2:15
+            constraintType: equals
+            value:
+              location: 15:2:8-22:2:15
+              expressionType: subtraction
+              float: false
+              minuend:
+                location: 15:2:8-17:2:10
+                expressionType: int
+                value: 10
+              subtrahend:
+                location: 20:2:13-22:2:15
+                expressionType: variableReference
+                name: v
+    - location: 26:3:3-35:3:12
+      selectionType: field
+      name:
+        location: 26:3:3-27:3:4
+        name: v
+      type: Int
+      argumentList:
+        location: 27:3:4-35:3:12
+        arguments:
+        - location: 28:3:5-34:3:11
+          name:
+            location: 28:3:5-29:3:6
+            name: v
+          variable:
+            location: 30:3:7-32:3:9
+            name: v
+          type: Int
+          constraint:
+            location: 33:3:10-34:3:11
+            constraintType: any
