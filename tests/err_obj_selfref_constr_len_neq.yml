@@ -1,0 +1,12 @@
+schema: >
+  type Query { i(i: String!): Int! }
+  input In { x: [Int]! }
+
+template: >
+  query { i(i: {x=$var: len != $var}) }
+
+expect-errors:
+  - '1:30: illegal self-reference of object field "x" through variable "var" in constraint'
+
+expect-errors(schemaless):
+  - '1:30: expected number but received String|array'

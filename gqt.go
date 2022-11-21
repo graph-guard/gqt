@@ -4572,84 +4572,8 @@ func makeAppend[T any](a []T, b ...T) (new []T) {
 // and returns false if none are found. Otherwise returns true
 // and pushes an error onto the error stack.
 func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
-	ok = true
-	stack := make([]Expression, 0, 64)
-	push := func(expression Expression) {
-		stack = append(stack, expression)
-	}
-
-	push(o)
-	for len(stack) > 0 {
-		top := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		switch e := top.(type) {
-		case *ConstrEquals:
-			push(e.Value)
-		case *ConstrNotEquals:
-			push(e.Value)
-		case *ConstrGreater:
-			push(e.Value)
-		case *ConstrGreaterOrEqual:
-			push(e.Value)
-		case *ConstrLess:
-			push(e.Value)
-		case *ConstrLessOrEqual:
-			push(e.Value)
-		case *ConstrMap:
-			push(e.Constraint)
-		case *ExprParentheses:
-			push(e.Expression)
-		case *ExprEqual:
-			push(e.Left)
-			push(e.Right)
-		case *ExprNotEqual:
-			push(e.Left)
-			push(e.Right)
-		case *ExprLogicalNegation:
-			push(e.Expression)
-		case *ExprNumericNegation:
-			push(e.Expression)
-		case *ExprLogicalOr:
-			for _, e := range e.Expressions {
-				push(e)
-			}
-		case *ExprLogicalAnd:
-			for _, e := range e.Expressions {
-				push(e)
-			}
-		case *ExprAddition:
-			push(e.AddendLeft)
-			push(e.AddendRight)
-		case *ExprSubtraction:
-			push(e.Minuend)
-			push(e.Subtrahend)
-		case *ExprMultiplication:
-			push(e.Multiplicant)
-			push(e.Multiplicator)
-		case *ExprDivision:
-			push(e.Dividend)
-			push(e.Divisor)
-		case *ExprModulo:
-			push(e.Dividend)
-			push(e.Divisor)
-		case *ExprGreater:
-			push(e.Left)
-			push(e.Right)
-		case *ExprGreaterOrEqual:
-			push(e.Left)
-			push(e.Right)
-		case *ExprLess:
-			push(e.Left)
-			push(e.Right)
-		case *ExprLessOrEqual:
-			push(e.Left)
-			push(e.Right)
-		case *Array:
-			for _, i := range e.Items {
-				push(i)
-			}
-		case *Variable:
+	return traverse(o, func(e Expression) bool {
+		if e, ok := e.(*Variable); ok {
 			for pr := e.Parent; pr != nil; pr = pr.GetParent() {
 				switch pv := pr.(type) {
 				case *Argument:
@@ -4664,19 +4588,9 @@ func (p *Parser) checkObjectVarRefs(o *Object) (ok bool) {
 					}
 				}
 			}
-		case *Object:
-			for _, f := range e.Fields {
-				push(f)
-			}
-		case *ObjectField:
-			push(e.Constraint)
-		case *Int, *Float, *True, *False, *Null,
-			*Enum, *String, *ConstrAny:
-		default:
-			panic(fmt.Errorf("unhandled type: %T", top))
 		}
-	}
-	return ok
+		return true
+	})
 }
 
 var typeIntNotNull = &ast.Type{
@@ -4833,4 +4747,132 @@ func getVarDeclConstraint(v *Variable) Expression {
 		"unexpected variable declaration parent type: %T",
 		v.Declaration.Parent,
 	))
+}
+
+// traverse returns true after BFS-traversing the entire tree under e
+// calling onExpression for every discovered expression.
+func traverse(e Expression, onExpression func(Expression) bool) bool {
+	stack := make([]Expression, 0, 64)
+	push := func(expression Expression) {
+		stack = append(stack, expression)
+	}
+
+	push(e)
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if !onExpression(top) {
+			return false
+		}
+
+		switch e := top.(type) {
+		case *Operation:
+			for _, f := range e.Selections {
+				push(f)
+			}
+		case *SelectionInlineFrag:
+			for _, f := range e.Selections {
+				push(f)
+			}
+		case *SelectionField:
+			for _, f := range e.Selections {
+				push(f)
+			}
+		case *SelectionMax:
+			for _, f := range e.Options.Selections {
+				push(f)
+			}
+		case *Argument:
+			push(e.Constraint)
+		case *ConstrEquals:
+			push(e.Value)
+		case *ConstrNotEquals:
+			push(e.Value)
+		case *ConstrGreater:
+			push(e.Value)
+		case *ConstrGreaterOrEqual:
+			push(e.Value)
+		case *ConstrLess:
+			push(e.Value)
+		case *ConstrLessOrEqual:
+			push(e.Value)
+		case *ConstrLenEquals:
+			push(e.Value)
+		case *ConstrLenNotEquals:
+			push(e.Value)
+		case *ConstrLenGreater:
+			push(e.Value)
+		case *ConstrLenLess:
+			push(e.Value)
+		case *ConstrLenGreaterOrEqual:
+			push(e.Value)
+		case *ConstrLenLessOrEqual:
+			push(e.Value)
+		case *ConstrMap:
+			push(e.Constraint)
+		case *ExprParentheses:
+			push(e.Expression)
+		case *ExprEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprNotEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLogicalNegation:
+			push(e.Expression)
+		case *ExprNumericNegation:
+			push(e.Expression)
+		case *ExprLogicalOr:
+			for _, e := range e.Expressions {
+				push(e)
+			}
+		case *ExprLogicalAnd:
+			for _, e := range e.Expressions {
+				push(e)
+			}
+		case *ExprAddition:
+			push(e.AddendLeft)
+			push(e.AddendRight)
+		case *ExprSubtraction:
+			push(e.Minuend)
+			push(e.Subtrahend)
+		case *ExprMultiplication:
+			push(e.Multiplicant)
+			push(e.Multiplicator)
+		case *ExprDivision:
+			push(e.Dividend)
+			push(e.Divisor)
+		case *ExprModulo:
+			push(e.Dividend)
+			push(e.Divisor)
+		case *ExprGreater:
+			push(e.Left)
+			push(e.Right)
+		case *ExprGreaterOrEqual:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLess:
+			push(e.Left)
+			push(e.Right)
+		case *ExprLessOrEqual:
+			push(e.Left)
+			push(e.Right)
+		case *Array:
+			for _, i := range e.Items {
+				push(i)
+			}
+		case *Variable:
+		case *Object:
+			for _, f := range e.Fields {
+				push(f)
+			}
+		case *ObjectField:
+			push(e.Constraint)
+		case *Int, *Float, *True, *False, *Null,
+			*Enum, *String, *ConstrAny:
+		default:
+			panic(fmt.Errorf("unhandled type: %T", top))
+		}
+	}
+	return true
 }

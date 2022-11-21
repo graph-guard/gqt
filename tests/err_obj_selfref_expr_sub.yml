@@ -1,0 +1,14 @@
+# Makes sure the parser doesn't enter an endless loop trying to print
+# the type designation of an object refering to itself in a constraint.
+schema: >
+  type Query { in(i:String):Int }
+  input In { f:Int }
+
+template: >
+  query { in(i:{f=$var: 4 - $var}) }
+
+expect-errors:
+  - '1:27: illegal self-reference of object field "f" through variable "var" in constraint'
+
+expect-errors(schemaless):
+  - '1:27: illegal self-reference of object field "f" through variable "var" in constraint'
