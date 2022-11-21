@@ -306,3 +306,17 @@ func TestParseErrSchema(t *testing.T) {
 	)
 	require.Nil(t, p)
 }
+
+func TestErrorString(t *testing.T) {
+	e := gqt.Error{}
+	require.False(t, e.IsErr())
+	require.Zero(t, e.Error())
+
+	e.LocRange = gqt.LocRange{
+		Location:    gqt.Location{0, 1, 1},
+		LocationEnd: gqt.LocationEnd{3, 1, 4},
+	}
+	e.Msg = "some error"
+	require.True(t, e.IsErr())
+	require.Equal(t, "1:1: some error", e.Error())
+}
