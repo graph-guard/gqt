@@ -269,6 +269,7 @@ func Optimize(e Expression) Expression {
 					e.Multiplicator.(*Int).Value,
 			}
 		}
+		return e
 	case *ExprDivision:
 		e.Dividend = Optimize(e.Dividend)
 		e.Divisor = Optimize(e.Divisor)
@@ -301,6 +302,7 @@ func Optimize(e Expression) Expression {
 					e.Divisor.(*Int).Value,
 			}
 		}
+		return e
 	case *ExprModulo:
 		e.Dividend = Optimize(e.Dividend)
 		e.Divisor = Optimize(e.Divisor)
@@ -334,6 +336,7 @@ func Optimize(e Expression) Expression {
 					e.Divisor.(*Int).Value,
 			}
 		}
+		return e
 	case *ExprGreater:
 		e.Left = Optimize(e.Left)
 		e.Right = Optimize(e.Right)
@@ -460,13 +463,16 @@ func getFloat(e Expression) float64 {
 	if vf, ok := e.(*Float); ok {
 		return vf.Value
 	}
-	if vf, ok := e.(*Int); ok {
-		return float64(vf.Value)
-	}
-	return 0
+	return float64(e.(*Int).Value)
 }
 
 func comparableAndEqual(left, right Expression) (comparable, equal bool) {
+	if v, ok := right.(*Variable); ok {
+		if _, ok := getVarDeclConstraint(v).(*ConstrEquals); !ok {
+			return false, false
+		}
+	}
+
 	switch l := left.(type) {
 	case *String:
 		return true, l.Value == right.(*String).Value

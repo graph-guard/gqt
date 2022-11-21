@@ -1,0 +1,33 @@
+schema: >
+  type Query { foo(x:Float):Int }
+
+template: >
+  query { foo(x: 1 + 2.3) }
+
+expect-ast:
+  location: 0:1:1-25:1:26
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-25:1:26
+    selections:
+    - location: 8:1:9-23:1:24
+      selectionType: field
+      name:
+        location: 8:1:9-11:1:12
+        name: foo
+      type: Int
+      argumentList:
+        location: 11:1:12-23:1:24
+        arguments:
+        - location: 12:1:13-22:1:23
+          name:
+            location: 12:1:13-13:1:14
+            name: x
+          type: Float
+          constraint:
+            location: 15:1:16-22:1:23
+            constraintType: equals
+            value:
+              location: 15:1:16-22:1:23
+              expressionType: float
+              value: 3.3
