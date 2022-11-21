@@ -4798,13 +4798,13 @@ func (s source) lookaheadIsValOperator() bool {
 		return ok
 	} else if _, ok = s.consume("=="); ok {
 		return ok
-	} else if _, ok = s.consume(">"); ok {
-		return ok
-	} else if _, ok = s.consume("<"); ok {
-		return ok
 	} else if _, ok = s.consume(">="); ok {
 		return ok
 	} else if _, ok = s.consume("<="); ok {
+		return ok
+	} else if _, ok = s.consume(">"); ok {
+		return ok
+	} else if _, ok = s.consume("<"); ok {
 		return ok
 	}
 	return false

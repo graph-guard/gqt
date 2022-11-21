@@ -1,0 +1,79 @@
+schema: >
+  type Query {f(a:Boolean):Int!}
+
+template: >
+  query { f(a: (4) < 2) }
+
+expect-ast:
+  location: 0:1:1-23:1:24
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-23:1:24
+    selections:
+    - location: 8:1:9-21:1:22
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      type: Int!
+      argumentList:
+        location: 9:1:10-21:1:22
+        arguments:
+        - location: 10:1:11-20:1:21
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          type: Boolean
+          constraint:
+            location: 13:1:14-20:1:21
+            constraintType: equals
+            value:
+              location: 13:1:14-20:1:21
+              expressionType: lessThan
+              left:
+                location: 13:1:14-16:1:17
+                expressionType: parentheses
+                expression:
+                  location: 14:1:15-15:1:16
+                  expressionType: int
+                  value: 4
+              right:
+                location: 19:1:20-20:1:21
+                expressionType: int
+                value: 2
+
+expect-ast(schemaless):
+  location: 0:1:1-23:1:24
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-23:1:24
+    selections:
+    - location: 8:1:9-21:1:22
+      selectionType: field
+      name:
+        location: 8:1:9-9:1:10
+        name: f
+      argumentList:
+        location: 9:1:10-21:1:22
+        arguments:
+        - location: 10:1:11-20:1:21
+          name:
+            location: 10:1:11-11:1:12
+            name: a
+          constraint:
+            location: 13:1:14-20:1:21
+            constraintType: equals
+            value:
+              location: 13:1:14-20:1:21
+              expressionType: lessThan
+              left:
+                location: 13:1:14-16:1:17
+                expressionType: parentheses
+                expression:
+                  location: 14:1:15-15:1:16
+                  expressionType: int
+                  value: 4
+              right:
+                location: 19:1:20-20:1:21
+                expressionType: int
+                value: 2
