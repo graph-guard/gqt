@@ -5,10 +5,10 @@ import (
 	"math"
 )
 
-// Optimize optimizes the operation o by reducing constant expressions.
-// For example, an addition expression where the left and right
-// addends are constants will be reduced to, or in other words,
-// replaced with a single constant containing the result of the expression.
+// Optimize recursively reduces all constant expressions inside e.
+// For example, an addition expression where the left and right addends are
+// constant or reducable expressions will be reduced to, or in other words,
+// replaced with a single constant containing the resulting sum.
 func Optimize(e Expression) Expression {
 	switch e := e.(type) {
 	case *Operation:
