@@ -47,7 +47,7 @@ func TestParse(t *testing.T) {
 		}
 		f, err := testsFS.ReadFile(filepath.Join("tests", fileName))
 		require.NoError(t, err, "reading YAML test file")
-		t.Run(fileName[:len(fileName)-len(".yml")], func(t *testing.T) {
+		t.Run(strings.TrimSuffix(fileName, ".yml"), func(t *testing.T) {
 			var ts T
 			{
 				d := yaml.NewDecoder(bytes.NewReader(f))
@@ -147,7 +147,7 @@ func TestOptimize(t *testing.T) {
 			filepath.Join("tests_optimize", fileName),
 		)
 		require.NoError(t, err, "reading YAML test file")
-		t.Run(fileName[:len(fileName)-len(".yml")], func(t *testing.T) {
+		t.Run(strings.TrimSuffix(fileName, ".yml"), func(t *testing.T) {
 			var ts T
 			{
 				d := yaml.NewDecoder(bytes.NewReader(f))
