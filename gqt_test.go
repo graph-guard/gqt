@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/graph-guard/gqt"
+	"github.com/graph-guard/gqt/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v3"

@@ -1,4 +1,4 @@
-module github.com/graph-guard/gqt
+module github.com/graph-guard/gqt/v3
 
 go 1.18
 

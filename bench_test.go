@@ -3,7 +3,7 @@ package gqt_test
 import (
 	"testing"
 
-	"github.com/graph-guard/gqt"
+	"github.com/graph-guard/gqt/v3"
 )
 
 func Benchmark(b *testing.B) {

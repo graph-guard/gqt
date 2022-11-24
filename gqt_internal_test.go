@@ -3,7 +3,7 @@ package gqt
 import (
 	"testing"
 
-	"github.com/graph-guard/gqt/internal/test"
+	"github.com/graph-guard/gqt/v3/internal/test"
 
 	"github.com/stretchr/testify/require"
 )
