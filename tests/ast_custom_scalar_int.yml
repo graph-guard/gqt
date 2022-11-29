@@ -30,9 +30,9 @@ expect-ast:
             constraintType: equals
             value:
               location: 13:1:14-15:1:16
-              expressionType: int
+              expressionType: number
               type: Custom
-              value: 42
+              value: "42"
 
 expect-ast(schemaless):
   location: 0:1:1-18:1:19
