@@ -401,11 +401,11 @@ type (
 		LocRange
 		Parent  Expression
 		Value   string
-		Float   bool
 		TypeDef *ast.Definition
 
-		vi int
-		vf float64
+		vi      int
+		vf      float64
+		isFloat bool
 	}
 
 	// String is a UTF-8 string value constant.
@@ -635,7 +635,7 @@ func (e *ExprLogicalOr) IsFloat() bool       { return false }
 
 func (e *True) IsFloat() bool     { return false }
 func (e *False) IsFloat() bool    { return false }
-func (e *Number) IsFloat() bool   { return e.Float }
+func (e *Number) IsFloat() bool   { return e.isFloat }
 func (e *String) IsFloat() bool   { return false }
 func (e *Null) IsFloat() bool     { return false }
 func (e *Enum) IsFloat() bool     { return false }
@@ -789,7 +789,7 @@ func (e *False) TypeDesignation() string {
 }
 
 func (n *Number) TypeDesignation() string {
-	if n.Float {
+	if n.isFloat {
 		if n.TypeDef != nil && n.TypeDef.Name != "Boolean" &&
 			n.TypeDef.Name != "String" &&
 			n.TypeDef.Name != "ID" &&
@@ -948,6 +948,18 @@ func (v *VariableDeclaration) GetInfo() (
 		}
 	}
 	return schemaType, constr
+}
+
+// Float returns the float64 value and true if the number is of type Float,
+// otherwise returns 0 and false.
+func (n *Number) Float() (f float64, ok bool) {
+	return n.vf, n.isFloat
+}
+
+// Int returns the integer value and true if the number is of type Int,
+// otherwise returns 0 and false.
+func (n *Number) Int() (f int, ok bool) {
+	return n.vi, !n.isFloat
 }
 
 // Parser is a GQT parser.
@@ -1279,7 +1291,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 						}
 						break
 					}
-					e.Float, e.vi, e.vf = false, int(v), 0
+					e.isFloat, e.vi, e.vf = false, int(v), 0
 				} else if t.Kind == ast.Scalar && t.Name == "Float" {
 					v, err := strconv.ParseFloat(e.Value, 64)
 					if err != nil {
@@ -1288,13 +1300,13 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 						)
 						break
 					}
-					e.Float, e.vi, e.vf = true, 0, v
+					e.isFloat, e.vi, e.vf = true, 0, v
 				}
 				break
 			}
 
 			// Infer type from value in schemaless mode
-			if e.Float {
+			if e.isFloat {
 				v, err := strconv.ParseFloat(e.Value, 64)
 				if err != nil {
 					p.newErr(
@@ -1302,7 +1314,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					)
 					break
 				}
-				e.Float, e.vi, e.vf = true, 0, v
+				e.isFloat, e.vi, e.vf = true, 0, v
 				break
 			}
 
@@ -1316,13 +1328,13 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					)
 					break
 				}
-				e.Float, e.vi, e.vf = true, 0, v
+				e.isFloat, e.vi, e.vf = true, 0, v
 				break
 			} else if err != nil {
 				p.newErr(e.LocRange, "invalid number: "+err.Error())
 				break
 			}
-			e.Float, e.vi, e.vf = false, int(v), 0
+			e.isFloat, e.vi, e.vf = false, int(v), 0
 		case *True:
 			if exp != nil && exp.Elem == nil {
 				t := p.schema.Types[exp.NamedType]
@@ -1941,7 +1953,7 @@ func (p *Parser) validateExpr(
 			push(right, nil)
 			push(left, nil)
 		case *Number:
-			if e.Float {
+			if e.isFloat {
 				if expect != nil && !p.expectationIsFloat(expect) {
 					ok = false
 					p.errUnexpType(expect, top.Expr)
@@ -3669,8 +3681,8 @@ LOOP:
 				IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
 			},
 		},
-		Value: str,
-		Float: isFloat,
+		Value:   str,
+		isFloat: isFloat,
 	}
 }
 

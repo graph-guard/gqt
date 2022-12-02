@@ -213,7 +213,7 @@ func Optimize(e Expression) Expression {
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
 					Value:    fmt.Sprintf("%f", res),
-					Float:    true,
+					isFloat:  true,
 					vf:       res,
 				}
 			}
@@ -237,7 +237,7 @@ func Optimize(e Expression) Expression {
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
 					Value:    fmt.Sprintf("%f", res),
-					Float:    true,
+					isFloat:  true,
 					vf:       res,
 				}
 			}
@@ -261,7 +261,7 @@ func Optimize(e Expression) Expression {
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
 					Value:    fmt.Sprintf("%f", res),
-					Float:    true,
+					isFloat:  true,
 					vf:       res,
 				}
 			}
@@ -290,7 +290,7 @@ func Optimize(e Expression) Expression {
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
 					Value:    fmt.Sprintf("%f", res),
-					Float:    true,
+					isFloat:  true,
 					vf:       res,
 				}
 			}
@@ -319,7 +319,7 @@ func Optimize(e Expression) Expression {
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
 					Value:    fmt.Sprintf("%f", res),
-					Float:    true,
+					isFloat:  true,
 					vf:       res,
 				}
 			}
@@ -451,7 +451,7 @@ func isBoolean(e Expression) bool {
 
 func getFloat(e Expression) float64 {
 	if n, ok := e.(*Number); ok {
-		if n.Float {
+		if n.isFloat {
 			return n.vf
 		}
 		return float64(n.vi)
@@ -502,7 +502,7 @@ func comparableAndEqual(left, right Expression) (comparable, equal bool) {
 
 func isZeroNum(e Expression) bool {
 	if n, ok := e.(*Number); ok {
-		if n.Float {
+		if n.isFloat {
 			return n.vf == 0
 		}
 		return n.vi == 0

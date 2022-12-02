@@ -509,7 +509,7 @@ func (n *Number) MarshalYAML() (any, error) {
 			Type:           n.TypeDef.Name,
 			Value:          n.Value,
 		}, nil
-	} else if n.Float {
+	} else if n.isFloat {
 		return struct {
 			Location       LocRange `yaml:"location"`
 			ExpressionType string   `yaml:"expressionType"`
