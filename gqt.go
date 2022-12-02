@@ -1295,10 +1295,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				} else if t.Kind == ast.Scalar && t.Name == "Float" {
 					v, err := strconv.ParseFloat(e.Value, 64)
 					if err != nil {
-						p.newErr(
-							e.LocRange, "invalid Float value: "+err.Error(),
-						)
-						break
+						panic(fmt.Errorf("unexpected float64 err: %v", err))
 					}
 					e.isFloat, e.vi, e.vf = true, 0, v
 				}
@@ -1309,10 +1306,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			if e.isFloat {
 				v, err := strconv.ParseFloat(e.Value, 64)
 				if err != nil {
-					p.newErr(
-						e.LocRange, "invalid Float value: "+err.Error(),
-					)
-					break
+					panic(fmt.Errorf("unexpected float64 err: %v", err))
 				}
 				e.isFloat, e.vi, e.vf = true, 0, v
 				break
