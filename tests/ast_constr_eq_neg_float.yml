@@ -29,11 +29,8 @@ expect-ast:
             constraintType: equals
             value:
               location: 13:1:14-18:1:19
-              expressionType: numericNegation
-              expression:
-                location: 14:1:15-18:1:19
-                expressionType: float
-                value: 3.14
+              expressionType: float
+              value: -3.14
 
 expect-ast(schemaless):
   location: 0:1:1-21:1:22
@@ -58,8 +55,5 @@ expect-ast(schemaless):
             constraintType: equals
             value:
               location: 13:1:14-18:1:19
-              expressionType: numericNegation
-              expression:
-                location: 14:1:15-18:1:19
-                expressionType: float
-                value: 3.14
+              expressionType: float
+              value: -3.14

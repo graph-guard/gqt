@@ -1220,9 +1220,9 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprLogicalNegation:
-			push(e.Expression, nil)
+			push(e.Expression, exp)
 		case *ExprNumericNegation:
-			push(e.Expression, nil)
+			push(e.Expression, exp)
 		case *ExprLogicalOr:
 			for _, e := range e.Expressions {
 				push(e, exp)
@@ -1276,27 +1276,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					if err != nil {
 						if errors.Is(err, strconv.ErrRange) {
 							p.errIntOverflow(e)
-							break
 						}
-						_, err := strconv.ParseFloat(e.Value, 64)
-						if err == nil {
-							if exp.NonNull {
-								p.newErr(
-									e.LocRange,
-									"expected type Int! but received Float",
-								)
-								break
-							}
-							p.newErr(
-								e.LocRange,
-								"expected type Int but received Float",
-							)
-							break
-						}
-						p.newErr(
-							e.LocRange,
-							"parsing Int value: "+err.Error(),
-						)
 						break
 					}
 					e.Float, e.vi, e.vf = false, int(v), 0
@@ -2864,10 +2844,10 @@ func (p *Parser) parseExprUnary(
 	s source,
 	expect expect,
 ) (source, Expression) {
-	l := s.Location
+	si := s
 	var ok bool
 	if s, ok = s.consume("!"); ok {
-		e := &ExprLogicalNegation{LocRange: locRange(l)}
+		e := &ExprLogicalNegation{LocRange: locRange(si.Location)}
 
 		s = s.consumeIgnored()
 
@@ -2880,12 +2860,25 @@ func (p *Parser) parseExprUnary(
 		s = s.consumeIgnored()
 		return s, e
 	} else if s, ok = s.consume("-"); ok {
-		e := &ExprNumericNegation{LocRange: locRange(l)}
+		var num *Number
+		sn := si
+		if sn, num = p.parseNumber(sn); s.stop() {
+			return stop(), nil
+		} else if num != nil {
+			// Negative number
+			return sn, num
+		}
 
 		s = s.consumeIgnored()
 
-		if s, e.Expression = p.parseValue(s, expect); s.stop() {
+		var expr Expression
+		if s, expr = p.parseValue(s, expect); s.stop() {
 			return stop(), nil
+		}
+
+		e := &ExprNumericNegation{
+			LocRange:   locRange(si.Location),
+			Expression: expr,
 		}
 		setParent(e.Expression, e)
 		e.LocationEnd = e.Expression.GetLocation().LocationEnd
@@ -3611,16 +3604,20 @@ func (p *Parser) parseNumber(s source) (source, *Number) {
 		return si, nil
 	}
 
-	isFloat := false
+	s, _ = s.consume("-")
+	s = s.consumeIgnored()
+
+	hasDigit, isFloat := false, false
 LOOP:
 	for s.Index < len(s.s) {
 		switch s.s[s.Index] {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			hasDigit = true
 		case '.':
 			isFloat = true
 		case 'e', 'E':
 			isFloat = true
-			if s.Index == si.Index {
+			if !hasDigit {
 				return si, nil
 			}
 			s.Index++
@@ -3654,10 +3651,17 @@ LOOP:
 		s.Index++
 		s.Column++
 	}
-	str := string(s.s[si.Index:s.Index])
-	if str == "" {
+	if !hasDigit {
 		return si, nil
 	}
+	str := string(s.s[si.Index:s.Index])
+
+	if isFloat {
+		if _, err := strconv.ParseFloat(str, 64); err != nil {
+			return si, nil
+		}
+	}
+
 	return s, &Number{
 		LocRange: LocRange{
 			Location: si.Location,
@@ -4078,6 +4082,8 @@ func setParent(t, parent Expression) {
 func setLocRange(t Expression, l LocRange) {
 	switch v := t.(type) {
 	case *Variable:
+		v.LocRange = l
+	case *Number:
 		v.LocRange = l
 	case *String:
 		v.LocRange = l

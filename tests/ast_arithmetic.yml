@@ -78,11 +78,8 @@ expect-ast:
                   value: 2
               divisor:
                 location: 42:1:43-47:1:48
-                expressionType: numericNegation
-                expression:
-                  location: 43:1:44-47:1:48
-                  expressionType: float
-                  value: 10.4
+                expressionType: float
+                value: -10.4
 
 expect-ast(schemaless):
   location: 0:1:1-50:1:51
@@ -156,8 +153,5 @@ expect-ast(schemaless):
                   value: 2
               divisor:
                 location: 42:1:43-47:1:48
-                expressionType: numericNegation
-                expression:
-                  location: 43:1:44-47:1:48
-                  expressionType: float
-                  value: 10.4
+                expressionType: float
+                value: -10.4

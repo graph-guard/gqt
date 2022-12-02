@@ -1,0 +1,78 @@
+schema: >
+  type Query { int(
+    max:        Int!
+    min:        Int!
+    overflow_u: Int!
+    overflow_l: Int!
+  ): Int!}
+
+template: >
+  query {int(
+    max:        2147483647,  # OK
+    min:        -2147483648, # OK
+    overflow_u: 2147483648,
+    overflow_l: -2147483649,
+  )}
+
+expect-errors:
+  - '4:15: Int constant (2147483648) overflows signed 32-bit integer value range (min/max values: -2147483648 / 2147483647)'
+  - '5:15: Int constant (-2147483649) overflows signed 32-bit integer value range (min/max values: -2147483648 / 2147483647)'
+
+expect-ast(schemaless):
+  location: 0:1:1-131:6:3
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-131:6:3
+    selections:
+    - location: 7:1:8-130:6:2
+      selectionType: field
+      name:
+        location: 7:1:8-10:1:11
+        name: int
+      argumentList:
+        location: 10:1:11-130:6:2
+        arguments:
+        - location: 14:2:3-36:2:25
+          name:
+            location: 14:2:3-17:2:6
+            name: max
+          constraint:
+            location: 26:2:15-36:2:25
+            constraintType: equals
+            value:
+              location: 26:2:15-36:2:25
+              expressionType: int
+              value: 2147483647
+        - location: 46:3:3-69:3:26
+          name:
+            location: 46:3:3-49:3:6
+            name: min
+          constraint:
+            location: 58:3:15-69:3:26
+            constraintType: equals
+            value:
+              location: 58:3:15-69:3:26
+              expressionType: int
+              value: -2147483648
+        - location: 78:4:3-100:4:25
+          name:
+            location: 78:4:3-88:4:13
+            name: overflow_u
+          constraint:
+            location: 90:4:15-100:4:25
+            constraintType: equals
+            value:
+              location: 90:4:15-100:4:25
+              expressionType: float
+              value: 2.147483648e+09
+        - location: 104:5:3-127:5:26
+          name:
+            location: 104:5:3-114:5:13
+            name: overflow_l
+          constraint:
+            location: 116:5:15-127:5:26
+            constraintType: equals
+            value:
+              location: 116:5:15-127:5:26
+              expressionType: float
+              value: -2.147483649e+09

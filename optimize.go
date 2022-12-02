@@ -128,8 +128,10 @@ func Optimize(e Expression) Expression {
 		return e
 	case *ExprNumericNegation:
 		e.Expression = Optimize(e.Expression)
-		if e, ok := e.Expression.(*Number); ok {
-			e.vf, e.vi = -e.vf, -e.vi
+		if n, ok := e.Expression.(*Number); ok {
+			n.vf, n.vi = -n.vf, -n.vi
+			setParent(n, e.Parent)
+			return n
 		}
 		return e
 	case *ExprLogicalOr:
@@ -435,10 +437,8 @@ func Optimize(e Expression) Expression {
 }
 
 func isFloatOrInt(e Expression) bool {
-	if n, ok := e.(*Number); ok {
-		return n.Float
-	}
-	return false
+	_, ok := e.(*Number)
+	return ok
 }
 
 func isBoolean(e Expression) bool {
