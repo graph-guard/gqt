@@ -90,11 +90,11 @@ type Picture { url: String! }
 ```
 
 ## Features
+- Flexible restriction of the structure of a GraphQL request including max depth.
 - Intuitive GraphQL-like syntax.
 - Schema-aware mode with full type checking and validation.
 - Schemaless mode (no validation against a GraphQL schema).
 - Arithmetic and boolean expressions in input value constraints.
 - Restriction of the maximum number of selections inside a `max` set.
-- Flexible restriction of the structure of a GraphQL request.
 
 Full documentation is available at [docs.graphguard.io/gqt](https://docs.graphguard.io/gqt.html).
