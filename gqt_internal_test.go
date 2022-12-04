@@ -413,48 +413,49 @@ func TestParseNumber(t *testing.T) {
 		ExpectAfter Location
 	}
 
-	run := test.New(t, func(t *testing.T, x T) {
-		p := &Parser{}
-		a, n := p.parseNumber(source{
-			s:        []byte(x.Input),
-			Location: x.Location,
-		})
-		require.Equal(t, x.ExpectNum, n)
-		if len(x.ExpectErr) > 0 {
-			require.Equal(t, x.ExpectErr, p.errors)
-			require.Equal(t, source{}, a)
-		} else {
-			require.Len(t, p.errors, 0)
-			require.Equal(t, source{
+	run := func(t *testing.T, name string, x T) {
+		t.Run(name, func(t *testing.T) {
+			p := &Parser{}
+			a, n := p.parseNumber(source{
 				s:        []byte(x.Input),
-				Location: x.ExpectAfter,
-			}, a)
-		}
+				Location: x.Location,
+			})
+			require.Equal(t, x.ExpectNum, n)
+			if len(x.ExpectErr) > 0 {
+				require.Equal(t, x.ExpectErr, p.errors)
+				require.Equal(t, source{}, a)
+			} else {
+				require.Len(t, p.errors, 0)
+				require.Equal(t, source{
+					s:        []byte(x.Input),
+					Location: x.ExpectAfter,
+				}, a)
+			}
+		})
+	}
 
-	})
-
-	run(T{
-		startLoc(),
-		"e5",
-		nil,
-		nil,
-		Location{0, 1, 1},
-	})
-	run(T{
+	run(t, "empty", T{
 		startLoc(),
 		"",
 		nil,
 		nil,
 		Location{0, 1, 1},
 	})
-	run(T{
+	run(t, "missing characteristic", T{
+		startLoc(),
+		"e5",
+		nil,
+		nil,
+		Location{0, 1, 1},
+	})
+	run(t, "unexpected character", T{
 		startLoc(),
 		"x",
 		nil,
 		nil,
 		Location{0, 1, 1},
 	})
-	run(T{
+	run(t, "ok term x", T{
 		startLoc(),
 		"0.1234x",
 		&Number{
@@ -468,7 +469,7 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		Location{6, 1, 7},
 	})
-	run(T{
+	run(t, "ok zero", T{
 		startLoc(),
 		"0",
 		&Number{
@@ -481,7 +482,7 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		Location{1, 1, 2},
 	})
-	run(T{
+	run(t, "ok float", T{
 		startLoc(),
 		"10.0",
 		&Number{
@@ -495,7 +496,7 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		Location{4, 1, 5},
 	})
-	run(T{
+	run(t, "ok zero with mantissa", T{
 		startLoc(),
 		"0.1234",
 		&Number{
@@ -509,7 +510,7 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		Location{6, 1, 7},
 	})
-	run(T{
+	run(t, "ok positive exponent", T{
 		startLoc(),
 		"6E+5",
 		&Number{
@@ -523,7 +524,274 @@ func TestParseNumber(t *testing.T) {
 		nil,
 		Location{4, 1, 5},
 	})
-	run(T{
+	run(t, "ok no characteristic term right curly bracket", T{
+		startLoc(),
+		".1234}x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{5, 1, 6},
+			},
+			Value:   ".1234",
+			isFloat: true,
+		},
+		nil,
+		Location{5, 1, 6},
+	})
+	run(t, "ok term right curly bracket", T{
+		startLoc(),
+		"0.1234}x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term right parenthesis", T{
+		startLoc(),
+		"0.1234)x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term right square bracket", T{
+		startLoc(),
+		"0.1234]x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term log or", T{
+		startLoc(),
+		"0.1234||",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term log and", T{
+		startLoc(),
+		"0.1234&&",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term comment", T{
+		startLoc(),
+		"0.1234#x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term comma", T{
+		startLoc(),
+		"0.1234,x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term character", T{
+		startLoc(),
+		"0.1234 x",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term tab", T{
+		startLoc(),
+		"0.1234\tx",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term line break", T{
+		startLoc(),
+		"0.1234\nx",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term carriage return", T{
+		startLoc(),
+		"0.1234\rx",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "0.1234",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "ok term operator minus", T{
+		Location{2, 1, 3},
+		"  2-321 ",
+		&Number{
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: "2",
+		},
+		nil,
+		Location{3, 1, 4},
+	})
+	run(t, "ok term operator plus", T{
+		Location{2, 1, 3},
+		"  2+321 ",
+		&Number{
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: "2",
+		},
+		nil,
+		Location{3, 1, 4},
+	})
+	run(t, "ok term operator star", T{
+		Location{2, 1, 3},
+		"  2*321",
+		&Number{
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: "2",
+		},
+		nil,
+		Location{3, 1, 4},
+	})
+	run(t, "ok term operator slash", T{
+		Location{2, 1, 3},
+		"  2/321",
+		&Number{
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: "2",
+		},
+		nil,
+		Location{3, 1, 4},
+	})
+	run(t, "ok term operator percent", T{
+		Location{2, 1, 3},
+		"  2%321",
+		&Number{
+			LocRange: LocRange{
+				Location:    Location{2, 1, 3},
+				LocationEnd: LocationEnd{3, 1, 4},
+			},
+			Value: "2",
+		},
+		nil,
+		Location{3, 1, 4},
+	})
+	run(t, "ok negative without mantissa", T{
+		startLoc(),
+		"-1",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{2, 1, 3},
+			},
+			Value: "-1",
+		},
+		nil,
+		Location{2, 1, 3},
+	})
+	run(t, "ok float out of range", T{
+		startLoc(),
+		"42e307",
+		&Number{
+			LocRange: LocRange{
+				Location:    startLoc(),
+				LocationEnd: LocationEnd{6, 1, 7},
+			},
+			Value:   "42e307",
+			isFloat: true,
+		},
+		nil,
+		Location{6, 1, 7},
+	})
+	run(t, "nothing after comma", T{
+		Location{2, 1, 3},
+		"- ",
+		nil,
+		nil,
+		Location{2, 1, 3},
+	})
+	run(t, "err missing exponent", T{
 		startLoc(),
 		"6E",
 		nil,
@@ -538,7 +806,7 @@ func TestParseNumber(t *testing.T) {
 		},
 		Location{},
 	})
-	run(T{
+	run(t, "err missing exponent", T{
 		startLoc(),
 		"6E ",
 		nil,
@@ -553,7 +821,7 @@ func TestParseNumber(t *testing.T) {
 		},
 		Location{},
 	})
-	run(T{
+	run(t, "err invalid exponent", T{
 		startLoc(),
 		"6Ee",
 		nil,
@@ -568,7 +836,7 @@ func TestParseNumber(t *testing.T) {
 		},
 		startLoc(),
 	})
-	run(T{
+	run(t, "err missing exponent after exponent sign", T{
 		startLoc(),
 		"6E-",
 		nil,
@@ -583,7 +851,7 @@ func TestParseNumber(t *testing.T) {
 		},
 		startLoc(),
 	})
-	run(T{
+	run(t, "err missing exponent after exponent sign", T{
 		startLoc(),
 		"6E- ",
 		nil,
@@ -598,7 +866,7 @@ func TestParseNumber(t *testing.T) {
 		},
 		startLoc(),
 	})
-	run(T{
+	run(t, "err invalid exponent after exponent sign", T{
 		startLoc(),
 		"6E-e",
 		nil,
@@ -612,259 +880,6 @@ func TestParseNumber(t *testing.T) {
 			},
 		},
 		startLoc(),
-	})
-	run(T{
-		startLoc(),
-		".1234}x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{5, 1, 6},
-			},
-			Value:   ".1234",
-			isFloat: true,
-		},
-		nil,
-		Location{5, 1, 6},
-	})
-	run(T{
-		startLoc(),
-		"0.1234}x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234)x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234]x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234||",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234&&",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234#x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234,x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234 x",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234\tx",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234\nx",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		startLoc(),
-		"0.1234\rx",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{6, 1, 7},
-			},
-			Value:   "0.1234",
-			isFloat: true,
-		},
-		nil,
-		Location{6, 1, 7},
-	})
-	run(T{
-		Location{2, 1, 3},
-		"  2-321 ",
-		&Number{
-			LocRange: LocRange{
-				Location:    Location{2, 1, 3},
-				LocationEnd: LocationEnd{3, 1, 4},
-			},
-			Value: "2",
-		},
-		nil,
-		Location{3, 1, 4},
-	})
-	run(T{
-		Location{2, 1, 3},
-		"  2+321 ",
-		&Number{
-			LocRange: LocRange{
-				Location:    Location{2, 1, 3},
-				LocationEnd: LocationEnd{3, 1, 4},
-			},
-			Value: "2",
-		},
-		nil,
-		Location{3, 1, 4},
-	})
-	run(T{
-		Location{2, 1, 3},
-		"  2*321",
-		&Number{
-			LocRange: LocRange{
-				Location:    Location{2, 1, 3},
-				LocationEnd: LocationEnd{3, 1, 4},
-			},
-			Value: "2",
-		},
-		nil,
-		Location{3, 1, 4},
-	})
-	run(T{
-		Location{2, 1, 3},
-		"  2/321",
-		&Number{
-			LocRange: LocRange{
-				Location:    Location{2, 1, 3},
-				LocationEnd: LocationEnd{3, 1, 4},
-			},
-			Value: "2",
-		},
-		nil,
-		Location{3, 1, 4},
-	})
-	run(T{
-		Location{2, 1, 3},
-		"  2%321",
-		&Number{
-			LocRange: LocRange{
-				Location:    Location{2, 1, 3},
-				LocationEnd: LocationEnd{3, 1, 4},
-			},
-			Value: "2",
-		},
-		nil,
-		Location{3, 1, 4},
-	})
-	run(T{
-		startLoc(),
-		"-1",
-		&Number{
-			LocRange: LocRange{
-				Location:    startLoc(),
-				LocationEnd: LocationEnd{2, 1, 3},
-			},
-			Value: "-1",
-		},
-		nil,
-		Location{2, 1, 3},
-	})
-	run(T{
-		Location{2, 1, 3},
-		"- ",
-		nil,
-		nil,
-		Location{2, 1, 3},
 	})
 }
 

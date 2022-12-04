@@ -15,8 +15,8 @@ template: >
   )}
 
 expect-errors:
-  - '4:15: Int constant (2147483648) overflows signed 32-bit integer value range (min/max values: -2147483648 / 2147483647)'
-  - '5:15: Int constant (-2147483649) overflows signed 32-bit integer value range (min/max values: -2147483648 / 2147483647)'
+  - '4:15: Int constant overflows signed 32-bit integer value range (min/max values: -2147483648 / 2147483647)'
+  - '5:15: Int constant overflows signed 32-bit integer value range (min/max values: -2147483648 / 2147483647)'
 
 expect-ast(schemaless):
   location: 0:1:1-131:6:3

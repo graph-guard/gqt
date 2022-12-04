@@ -1288,6 +1288,12 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 					if err != nil {
 						if errors.Is(err, strconv.ErrRange) {
 							p.errIntOverflow(e)
+							break
+						}
+						// Try float and return type error later
+						v, err := strconv.ParseFloat(e.Value, 64)
+						if err == nil {
+							e.isFloat, e.vi, e.vf = true, 0, v
 						}
 						break
 					}
@@ -1295,7 +1301,10 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				} else if t.Kind == ast.Scalar && t.Name == "Float" {
 					v, err := strconv.ParseFloat(e.Value, 64)
 					if err != nil {
-						panic(fmt.Errorf("unexpected float64 err: %v", err))
+						if errors.Is(err, strconv.ErrRange) {
+							p.errFloatOverflow(e)
+							break
+						}
 					}
 					e.isFloat, e.vi, e.vf = true, 0, v
 				}
@@ -1306,26 +1315,32 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			if e.isFloat {
 				v, err := strconv.ParseFloat(e.Value, 64)
 				if err != nil {
-					panic(fmt.Errorf("unexpected float64 err: %v", err))
+					if errors.Is(err, strconv.ErrRange) {
+						// Number exceeds float64 range
+						p.errFloatOverflow(e)
+					}
+					// Syntax errors are already covered by parseNumber
+					break
 				}
 				e.isFloat, e.vi, e.vf = true, 0, v
 				break
 			}
 
 			v, err := strconv.ParseInt(e.Value, 10, 32)
+			// Check only for range error since
+			// syntax errors are already covered by parseNumber.
 			if errors.Is(err, strconv.ErrRange) {
-				// If number is too big for Int then it's a Float
+				// If number is too big for 32-bit Int then it's a 64-bit Float
 				v, err := strconv.ParseFloat(e.Value, 64)
 				if err != nil {
-					p.newErr(
-						e.LocRange, "invalid Float value: "+err.Error(),
-					)
+					if errors.Is(err, strconv.ErrRange) {
+						// Number exceeds float64 range
+						p.errFloatOverflow(e)
+					}
+					// Syntax errors are already covered by parseNumber
 					break
 				}
 				e.isFloat, e.vi, e.vf = true, 0, v
-				break
-			} else if err != nil {
-				p.newErr(e.LocRange, "invalid number: "+err.Error())
 				break
 			}
 			e.isFloat, e.vi, e.vf = false, int(v), 0
@@ -2262,10 +2277,15 @@ func (p *Parser) errRedeclTypeCond(f *SelectionInlineFrag) {
 func (p *Parser) errIntOverflow(n *Number) {
 	p.newErr(
 		n.LocRange,
-		"Int constant ("+
-			n.Value+
-			") overflows signed 32-bit integer value range "+
+		"Int constant overflows signed 32-bit integer value range "+
 			"(min/max values: -2147483648 / 2147483647)",
+	)
+}
+
+func (p *Parser) errFloatOverflow(n *Number) {
+	p.newErr(
+		n.LocRange,
+		"Float constant out of range",
 	)
 }
 
@@ -3663,7 +3683,9 @@ LOOP:
 	str := string(s.s[si.Index:s.Index])
 
 	if isFloat {
-		if _, err := strconv.ParseFloat(str, 64); err != nil {
+		_, err := strconv.ParseFloat(str, 64)
+		// Range errors are to be handled later
+		if err != nil && !errors.Is(err, strconv.ErrRange) {
 			return si, nil
 		}
 	}
