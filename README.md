@@ -7,8 +7,8 @@
 <a href="https://goreportcard.com/report/github.com/graph-guard/gqt">
     <img src="https://goreportcard.com/badge/github.com/graph-guard/gqt" alt="GoReportCard">
 </a>
-<a href="https://pkg.go.dev/github.com/graph-guard/gqt/v3">
-    <img src="https://godoc.org/github.com/graph-guard/gqt/v3?status.svg" alt="GoDoc">
+<a href="https://pkg.go.dev/github.com/graph-guard/gqt/v4">
+    <img src="https://godoc.org/github.com/graph-guard/gqt/v4?status.svg" alt="GoDoc">
 </a>
 
 # GraphQL Query Template Language
