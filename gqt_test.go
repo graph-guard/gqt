@@ -320,3 +320,39 @@ func TestErrorString(t *testing.T) {
 	require.True(t, e.IsErr())
 	require.Equal(t, "1:1: some error", e.Error())
 }
+
+func TestNumber(t *testing.T) {
+	opr, _, errs := gqt.Parse([]byte("query { f(i:42, f:3.14) }"))
+	require.Nil(t, errs)
+
+	{
+		// i:42
+		ni := opr.Selections[0].(*gqt.SelectionField).Arguments[0].
+			Constraint.(*gqt.ConstrEquals).Value.(*gqt.Number)
+		{
+			i, ok := ni.Int()
+			require.Equal(t, 42, i)
+			require.True(t, ok)
+		}
+		{
+			f, ok := ni.Float()
+			require.Zero(t, f)
+			require.False(t, ok)
+		}
+	}
+	{
+		// f:3.14
+		ni := opr.Selections[0].(*gqt.SelectionField).Arguments[1].
+			Constraint.(*gqt.ConstrEquals).Value.(*gqt.Number)
+		{
+			i, ok := ni.Int()
+			require.Zero(t, i)
+			require.False(t, ok)
+		}
+		{
+			f, ok := ni.Float()
+			require.Equal(t, 3.14, f)
+			require.True(t, ok)
+		}
+	}
+}

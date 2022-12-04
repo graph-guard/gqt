@@ -496,39 +496,38 @@ func (e *False) MarshalYAML() (any, error) {
 	}, nil
 }
 
-func (i *Int) MarshalYAML() (any, error) {
-	var t string
-	if i.TypeDef != nil {
-		t = i.TypeDef.Name
+func (n *Number) MarshalYAML() (any, error) {
+	if n.TypeDef != nil {
+		return struct {
+			Location       LocRange `yaml:"location"`
+			ExpressionType string   `yaml:"expressionType"`
+			Type           string   `yaml:"type,omitempty"`
+			Value          string   `yaml:"value"`
+		}{
+			Location:       n.LocRange,
+			ExpressionType: "number",
+			Type:           n.TypeDef.Name,
+			Value:          n.Value,
+		}, nil
+	} else if n.isFloat {
+		return struct {
+			Location       LocRange `yaml:"location"`
+			ExpressionType string   `yaml:"expressionType"`
+			Value          float64  `yaml:"value"`
+		}{
+			Location:       n.LocRange,
+			ExpressionType: "float",
+			Value:          n.vf,
+		}, nil
 	}
 	return struct {
 		Location       LocRange `yaml:"location"`
 		ExpressionType string   `yaml:"expressionType"`
-		Type           string   `yaml:"type,omitempty"`
-		Value          int64    `yaml:"value"`
+		Value          int      `yaml:"value"`
 	}{
-		Location:       i.LocRange,
+		Location:       n.LocRange,
 		ExpressionType: "int",
-		Type:           t,
-		Value:          i.Value,
-	}, nil
-}
-
-func (f *Float) MarshalYAML() (any, error) {
-	var t string
-	if f.TypeDef != nil {
-		t = f.TypeDef.Name
-	}
-	return struct {
-		Location       LocRange `yaml:"location"`
-		ExpressionType string   `yaml:"expressionType"`
-		Type           string   `yaml:"type,omitempty"`
-		Value          float64  `yaml:"value"`
-	}{
-		Location:       f.LocRange,
-		ExpressionType: "float",
-		Type:           t,
-		Value:          f.Value,
+		Value:          n.vi,
 	}, nil
 }
 

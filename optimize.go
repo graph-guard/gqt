@@ -3,6 +3,7 @@ package gqt
 import (
 	"fmt"
 	"math"
+	"strconv"
 )
 
 // Optimize recursively reduces all constant expressions inside e.
@@ -127,19 +128,10 @@ func Optimize(e Expression) Expression {
 		return e
 	case *ExprNumericNegation:
 		e.Expression = Optimize(e.Expression)
-		switch e := e.Expression.(type) {
-		case *Int:
-			return &Int{
-				LocRange: e.LocRange,
-				Parent:   e.Parent,
-				Value:    -e.Value,
-			}
-		case *Float:
-			return &Float{
-				LocRange: e.LocRange,
-				Parent:   e.Parent,
-				Value:    -e.Value,
-			}
+		if n, ok := e.Expression.(*Number); ok {
+			n.vf, n.vi = -n.vf, -n.vi
+			setParent(n, e.Parent)
+			return n
 		}
 		return e
 	case *ExprLogicalOr:
@@ -213,60 +205,72 @@ func Optimize(e Expression) Expression {
 	case *ExprAddition:
 		e.AddendLeft = Optimize(e.AddendLeft)
 		e.AddendRight = Optimize(e.AddendRight)
+
 		if isFloatOrInt(e.AddendLeft) && isFloatOrInt(e.AddendRight) {
 			if e.AddendLeft.IsFloat() || e.AddendRight.IsFloat() {
-				return &Float{
+				res := getFloat(e.AddendLeft) + getFloat(e.AddendRight)
+				return &Number{
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
-					Value: getFloat(e.AddendLeft) +
-						getFloat(e.AddendRight),
+					Value:    fmt.Sprintf("%f", res),
+					isFloat:  true,
+					vf:       res,
 				}
 			}
-			return &Int{
+			res := e.AddendLeft.(*Number).vi + e.AddendRight.(*Number).vi
+			return &Number{
 				Parent:   e.Parent,
 				LocRange: e.LocRange,
-				Value: e.AddendLeft.(*Int).Value +
-					e.AddendRight.(*Int).Value,
+				Value:    strconv.Itoa(res),
+				vi:       res,
 			}
 		}
 		return e
 	case *ExprSubtraction:
 		e.Minuend = Optimize(e.Minuend)
 		e.Subtrahend = Optimize(e.Subtrahend)
+
 		if isFloatOrInt(e.Minuend) && isFloatOrInt(e.Subtrahend) {
 			if e.Minuend.IsFloat() || e.Subtrahend.IsFloat() {
-				return &Float{
+				res := getFloat(e.Minuend) - getFloat(e.Subtrahend)
+				return &Number{
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
-					Value: getFloat(e.Minuend) -
-						getFloat(e.Subtrahend),
+					Value:    fmt.Sprintf("%f", res),
+					isFloat:  true,
+					vf:       res,
 				}
 			}
-			return &Int{
+			res := e.Minuend.(*Number).vi - e.Subtrahend.(*Number).vi
+			return &Number{
 				Parent:   e.Parent,
 				LocRange: e.LocRange,
-				Value: e.Minuend.(*Int).Value -
-					e.Subtrahend.(*Int).Value,
+				Value:    strconv.Itoa(res),
+				vi:       res,
 			}
 		}
 		return e
 	case *ExprMultiplication:
 		e.Multiplicant = Optimize(e.Multiplicant)
 		e.Multiplicator = Optimize(e.Multiplicator)
+
 		if isFloatOrInt(e.Multiplicant) && isFloatOrInt(e.Multiplicator) {
 			if e.Multiplicant.IsFloat() || e.Multiplicator.IsFloat() {
-				return &Float{
+				res := getFloat(e.Multiplicant) * getFloat(e.Multiplicator)
+				return &Number{
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
-					Value: getFloat(e.Multiplicant) *
-						getFloat(e.Multiplicator),
+					Value:    fmt.Sprintf("%f", res),
+					isFloat:  true,
+					vf:       res,
 				}
 			}
-			return &Int{
+			res := e.Multiplicant.(*Number).vi * e.Multiplicator.(*Number).vi
+			return &Number{
 				Parent:   e.Parent,
 				LocRange: e.LocRange,
-				Value: e.Multiplicant.(*Int).Value *
-					e.Multiplicator.(*Int).Value,
+				Value:    strconv.Itoa(res),
+				vi:       res,
 			}
 		}
 		return e
@@ -275,31 +279,27 @@ func Optimize(e Expression) Expression {
 		e.Divisor = Optimize(e.Divisor)
 
 		// Check for division by 0
-		switch d := e.Divisor.(type) {
-		case *Int:
-			if d.Value == 0 {
-				return e
-			}
-		case *Float:
-			if d.Value == 0 {
-				return e
-			}
+		if isZeroNum(e.Divisor) {
+			return e
 		}
 
 		if isFloatOrInt(e.Dividend) && isFloatOrInt(e.Divisor) {
 			if e.Dividend.IsFloat() || e.Divisor.IsFloat() {
-				return &Float{
+				res := getFloat(e.Dividend) / getFloat(e.Divisor)
+				return &Number{
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
-					Value: getFloat(e.Dividend) /
-						getFloat(e.Divisor),
+					Value:    fmt.Sprintf("%f", res),
+					isFloat:  true,
+					vf:       res,
 				}
 			}
-			return &Int{
+			res := e.Dividend.(*Number).vi / e.Divisor.(*Number).vi
+			return &Number{
 				Parent:   e.Parent,
 				LocRange: e.LocRange,
-				Value: e.Dividend.(*Int).Value /
-					e.Divisor.(*Int).Value,
+				Value:    strconv.Itoa(res),
+				vi:       res,
 			}
 		}
 		return e
@@ -308,32 +308,27 @@ func Optimize(e Expression) Expression {
 		e.Divisor = Optimize(e.Divisor)
 
 		// Check for division by 0
-		switch d := e.Divisor.(type) {
-		case *Int:
-			if d.Value == 0 {
-				return e
-			}
-		case *Float:
-			if d.Value == 0 {
-				return e
-			}
+		if isZeroNum(e.Divisor) {
+			return e
 		}
 
 		if isFloatOrInt(e.Dividend) && isFloatOrInt(e.Divisor) {
 			if e.Dividend.IsFloat() || e.Divisor.IsFloat() {
-				return &Float{
+				res := math.Mod(getFloat(e.Dividend), getFloat(e.Divisor))
+				return &Number{
 					Parent:   e.Parent,
 					LocRange: e.LocRange,
-					Value: math.Mod(
-						getFloat(e.Dividend), getFloat(e.Divisor),
-					),
+					Value:    fmt.Sprintf("%f", res),
+					isFloat:  true,
+					vf:       res,
 				}
 			}
-			return &Int{
+			res := e.Dividend.(*Number).vi % e.Divisor.(*Number).vi
+			return &Number{
 				Parent:   e.Parent,
 				LocRange: e.LocRange,
-				Value: e.Dividend.(*Int).Value %
-					e.Divisor.(*Int).Value,
+				Value:    strconv.Itoa(res),
+				vi:       res,
 			}
 		}
 		return e
@@ -409,9 +404,7 @@ func Optimize(e Expression) Expression {
 			}
 		}
 		return e
-	case *Int:
-		return e
-	case *Float:
+	case *Number:
 		return e
 	case *True:
 		return e
@@ -444,11 +437,8 @@ func Optimize(e Expression) Expression {
 }
 
 func isFloatOrInt(e Expression) bool {
-	switch e.(type) {
-	case *Int, *Float:
-		return true
-	}
-	return false
+	_, ok := e.(*Number)
+	return ok
 }
 
 func isBoolean(e Expression) bool {
@@ -460,10 +450,13 @@ func isBoolean(e Expression) bool {
 }
 
 func getFloat(e Expression) float64 {
-	if vf, ok := e.(*Float); ok {
-		return vf.Value
+	if n, ok := e.(*Number); ok {
+		if n.isFloat {
+			return n.vf
+		}
+		return float64(n.vi)
 	}
-	return float64(e.(*Int).Value)
+	return 0
 }
 
 func comparableAndEqual(left, right Expression) (comparable, equal bool) {
@@ -476,10 +469,8 @@ func comparableAndEqual(left, right Expression) (comparable, equal bool) {
 	switch l := left.(type) {
 	case *String:
 		return true, l.Value == right.(*String).Value
-	case *Int:
-		return true, float64(l.Value) == getFloat(right)
-	case *Float:
-		return true, l.Value == getFloat(right)
+	case *Number:
+		return true, getFloat(l) == getFloat(right)
 	case *True:
 		_, ok := right.(*True)
 		return true, ok
@@ -507,4 +498,14 @@ func comparableAndEqual(left, right Expression) (comparable, equal bool) {
 		}
 	}
 	return false, false
+}
+
+func isZeroNum(e Expression) bool {
+	if n, ok := e.(*Number); ok {
+		if n.isFloat {
+			return n.vf == 0
+		}
+		return n.vi == 0
+	}
+	return false
 }

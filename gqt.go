@@ -1,6 +1,7 @@
 package gqt
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -396,20 +397,15 @@ type (
 		Expressions []Expression
 	}
 
-	// Int is a signed 32-bit integer value constant.
-	Int struct {
+	Number struct {
 		LocRange
 		Parent  Expression
-		Value   int64
+		Value   string
 		TypeDef *ast.Definition
-	}
 
-	// Float is a signed 64-bit floating point value constant.
-	Float struct {
-		LocRange
-		Parent  Expression
-		Value   float64
-		TypeDef *ast.Definition
+		vi      int
+		vf      float64
+		isFloat bool
 	}
 
 	// String is a UTF-8 string value constant.
@@ -543,8 +539,7 @@ func (e *ExprLogicalOr) GetParent() Expression       { return e.Parent }
 
 func (e *True) GetParent() Expression     { return e.Parent }
 func (e *False) GetParent() Expression    { return e.Parent }
-func (e *Int) GetParent() Expression      { return e.Parent }
-func (e *Float) GetParent() Expression    { return e.Parent }
+func (e *Number) GetParent() Expression   { return e.Parent }
 func (e *String) GetParent() Expression   { return e.Parent }
 func (e *Null) GetParent() Expression     { return e.Parent }
 func (e *Enum) GetParent() Expression     { return e.Parent }
@@ -590,8 +585,7 @@ func (e *ExprLogicalAnd) GetLocation() LocRange          { return e.LocRange }
 func (e *ExprLogicalOr) GetLocation() LocRange           { return e.LocRange }
 func (e *True) GetLocation() LocRange                    { return e.LocRange }
 func (e *False) GetLocation() LocRange                   { return e.LocRange }
-func (e *Int) GetLocation() LocRange                     { return e.LocRange }
-func (e *Float) GetLocation() LocRange                   { return e.LocRange }
+func (e *Number) GetLocation() LocRange                  { return e.LocRange }
 func (e *String) GetLocation() LocRange                  { return e.LocRange }
 func (e *Null) GetLocation() LocRange                    { return e.LocRange }
 func (e *Enum) GetLocation() LocRange                    { return e.LocRange }
@@ -641,8 +635,7 @@ func (e *ExprLogicalOr) IsFloat() bool       { return false }
 
 func (e *True) IsFloat() bool     { return false }
 func (e *False) IsFloat() bool    { return false }
-func (e *Int) IsFloat() bool      { return false }
-func (e *Float) IsFloat() bool    { return true }
+func (e *Number) IsFloat() bool   { return e.isFloat }
 func (e *String) IsFloat() bool   { return false }
 func (e *Null) IsFloat() bool     { return false }
 func (e *Enum) IsFloat() bool     { return false }
@@ -795,24 +788,23 @@ func (e *False) TypeDesignation() string {
 	return "Boolean"
 }
 
-func (e *Int) TypeDesignation() string {
-	if e.TypeDef != nil && e.TypeDef.Name != "Boolean" &&
-		e.TypeDef.Name != "String" &&
-		e.TypeDef.Name != "ID" &&
-		e.TypeDef.Name != "Float" {
-		return e.TypeDef.Name
+func (n *Number) TypeDesignation() string {
+	if n.isFloat {
+		if n.TypeDef != nil && n.TypeDef.Name != "Boolean" &&
+			n.TypeDef.Name != "String" &&
+			n.TypeDef.Name != "ID" &&
+			n.TypeDef.Name != "Int" {
+			return n.TypeDef.Name
+		}
+		return "Float"
+	}
+	if n.TypeDef != nil && n.TypeDef.Name != "Boolean" &&
+		n.TypeDef.Name != "String" &&
+		n.TypeDef.Name != "ID" &&
+		n.TypeDef.Name != "Float" {
+		return n.TypeDef.Name
 	}
 	return "Int"
-}
-
-func (e *Float) TypeDesignation() string {
-	if e.TypeDef != nil && e.TypeDef.Name != "Boolean" &&
-		e.TypeDef.Name != "String" &&
-		e.TypeDef.Name != "ID" &&
-		e.TypeDef.Name != "Int" {
-		return e.TypeDef.Name
-	}
-	return "Float"
 }
 
 func (e *String) TypeDesignation() string {
@@ -956,6 +948,18 @@ func (v *VariableDeclaration) GetInfo() (
 		}
 	}
 	return schemaType, constr
+}
+
+// Float returns the float64 value and true if the number is of type Float,
+// otherwise returns 0 and false.
+func (n *Number) Float() (f float64, ok bool) {
+	return n.vf, n.isFloat
+}
+
+// Int returns the integer value and true if the number is of type Int,
+// otherwise returns 0 and false.
+func (n *Number) Int() (f int, ok bool) {
+	return n.vi, !n.isFloat
 }
 
 // Parser is a GQT parser.
@@ -1148,6 +1152,10 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 					}
 					p.setTypesExpr(a.Constraint, exp)
 				}
+			} else {
+				for _, a := range s.Arguments {
+					p.setTypesExpr(a.Constraint, nil)
+				}
 			}
 		case *SelectionInlineFrag:
 			if p.schema != nil {
@@ -1210,7 +1218,11 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		case *ConstrLenLessOrEqual:
 			push(e.Value, nil)
 		case *ConstrMap:
-			push(e.Constraint, exp.Elem)
+			var et *ast.Type
+			if exp != nil {
+				et = exp.Elem
+			}
+			push(e.Constraint, et)
 		case *ExprParentheses:
 			push(e.Expression, exp)
 		case *ExprEqual:
@@ -1220,9 +1232,9 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			push(e.Left, nil)
 			push(e.Right, nil)
 		case *ExprLogicalNegation:
-			push(e.Expression, nil)
+			push(e.Expression, exp)
 		case *ExprNumericNegation:
-			push(e.Expression, nil)
+			push(e.Expression, exp)
 		case *ExprLogicalOr:
 			for _, e := range e.Expressions {
 				push(e, exp)
@@ -1258,30 +1270,80 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		case *ExprLessOrEqual:
 			push(e.Left, nil)
 			push(e.Right, nil)
-		case *Int:
+		case *Number:
 			if exp != nil && exp.Elem == nil {
 				t := p.schema.Types[exp.NamedType]
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
-					t.Name != "Int" &&
-					t.Name != "Float" &&
 					t.Name != "String" &&
-					t.Name != "Boolean" {
+					t.Name != "Boolean" &&
+					t.Name != "Float" &&
+					t.Name != "Int" {
 					e.TypeDef = t
 				}
-			}
-		case *Float:
-			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
-				if t.Kind == ast.Scalar &&
-					t.Name != "ID" &&
-					t.Name != "Int" &&
-					t.Name != "Float" &&
-					t.Name != "String" &&
-					t.Name != "Boolean" {
-					e.TypeDef = t
+
+				// Parse number according to schema type
+				if t.Kind == ast.Scalar && t.Name == "Int" {
+					v, err := strconv.ParseInt(e.Value, 10, 32)
+					if err != nil {
+						if errors.Is(err, strconv.ErrRange) {
+							p.errIntOverflow(e)
+							break
+						}
+						// Try float and return type error later
+						v, err := strconv.ParseFloat(e.Value, 64)
+						if err == nil {
+							e.isFloat, e.vi, e.vf = true, 0, v
+						}
+						break
+					}
+					e.isFloat, e.vi, e.vf = false, int(v), 0
+				} else if t.Kind == ast.Scalar && t.Name == "Float" {
+					v, err := strconv.ParseFloat(e.Value, 64)
+					if err != nil {
+						if errors.Is(err, strconv.ErrRange) {
+							p.errFloatOverflow(e)
+							break
+						}
+					}
+					e.isFloat, e.vi, e.vf = true, 0, v
 				}
+				break
 			}
+
+			// Infer type from value in schemaless mode
+			if e.isFloat {
+				v, err := strconv.ParseFloat(e.Value, 64)
+				if err != nil {
+					if errors.Is(err, strconv.ErrRange) {
+						// Number exceeds float64 range
+						p.errFloatOverflow(e)
+					}
+					// Syntax errors are already covered by parseNumber
+					break
+				}
+				e.isFloat, e.vi, e.vf = true, 0, v
+				break
+			}
+
+			v, err := strconv.ParseInt(e.Value, 10, 32)
+			// Check only for range error since
+			// syntax errors are already covered by parseNumber.
+			if errors.Is(err, strconv.ErrRange) {
+				// If number is too big for 32-bit Int then it's a 64-bit Float
+				v, err := strconv.ParseFloat(e.Value, 64)
+				if err != nil {
+					if errors.Is(err, strconv.ErrRange) {
+						// Number exceeds float64 range
+						p.errFloatOverflow(e)
+					}
+					// Syntax errors are already covered by parseNumber
+					break
+				}
+				e.isFloat, e.vi, e.vf = true, 0, v
+				break
+			}
+			e.isFloat, e.vi, e.vf = false, int(v), 0
 		case *True:
 			if exp != nil && exp.Elem == nil {
 				t := p.schema.Types[exp.NamedType]
@@ -1372,6 +1434,10 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 						p.setTypesExpr(f.Constraint, tp)
 					}
 				}
+				break
+			}
+			for _, f := range e.Fields {
+				p.setTypesExpr(f.Constraint, nil)
 			}
 		default:
 			panic(fmt.Errorf("unhandled type: %T", top.Expr))
@@ -1895,17 +1961,19 @@ func (p *Parser) validateExpr(
 
 			push(right, nil)
 			push(left, nil)
-		case *Int:
-			if expect != nil && !p.expectationIsNum(expect) {
-				ok = false
-				p.errUnexpType(expect, top.Expr)
-				break TYPESWITCH
-			}
-		case *Float:
-			if expect != nil && !p.expectationIsFloat(expect) {
-				ok = false
-				p.errUnexpType(expect, top.Expr)
-				break TYPESWITCH
+		case *Number:
+			if e.isFloat {
+				if expect != nil && !p.expectationIsFloat(expect) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+					break TYPESWITCH
+				}
+			} else {
+				if expect != nil && !p.expectationIsNum(expect) {
+					ok = false
+					p.errUnexpType(expect, top.Expr)
+					break TYPESWITCH
+				}
 			}
 		case *True:
 			if expect != nil && !p.expectationIsBool(expect) {
@@ -2203,6 +2271,21 @@ func (p *Parser) errRedeclTypeCond(f *SelectionInlineFrag) {
 	p.newErr(
 		f.TypeCondition.LocRange,
 		"redeclared condition for type "+f.TypeCondition.TypeName,
+	)
+}
+
+func (p *Parser) errIntOverflow(n *Number) {
+	p.newErr(
+		n.LocRange,
+		"Int constant overflows signed 32-bit integer value range "+
+			"(min/max values: -2147483648 / 2147483647)",
+	)
+}
+
+func (p *Parser) errFloatOverflow(n *Number) {
+	p.newErr(
+		n.LocRange,
+		"Float constant out of range",
 	)
 }
 
@@ -2526,7 +2609,7 @@ func (p *Parser) parseValue(
 	}
 
 	var str []byte
-	var num Expression
+	var num *Number
 	var ok bool
 	if s, ok = s.consume("("); ok {
 		e := &ExprParentheses{LocRange: locRange(l)}
@@ -2585,14 +2668,7 @@ func (p *Parser) parseValue(
 	if s, num = p.parseNumber(s); s.stop() {
 		return stop(), nil
 	} else if num != nil {
-		switch v := num.(type) {
-		case *Int:
-			return s, v
-		case *Float:
-			return s, v
-		default:
-			panic(fmt.Errorf("unexpected number type: %#v", num))
-		}
+		return s, num
 	}
 
 	if s, ok = s.consume("["); ok {
@@ -2794,10 +2870,10 @@ func (p *Parser) parseExprUnary(
 	s source,
 	expect expect,
 ) (source, Expression) {
-	l := s.Location
+	si := s
 	var ok bool
 	if s, ok = s.consume("!"); ok {
-		e := &ExprLogicalNegation{LocRange: locRange(l)}
+		e := &ExprLogicalNegation{LocRange: locRange(si.Location)}
 
 		s = s.consumeIgnored()
 
@@ -2810,12 +2886,25 @@ func (p *Parser) parseExprUnary(
 		s = s.consumeIgnored()
 		return s, e
 	} else if s, ok = s.consume("-"); ok {
-		e := &ExprNumericNegation{LocRange: locRange(l)}
+		var num *Number
+		sn := si
+		if sn, num = p.parseNumber(sn); s.stop() {
+			return stop(), nil
+		} else if num != nil {
+			// Negative number
+			return sn, num
+		}
 
 		s = s.consumeIgnored()
 
-		if s, e.Expression = p.parseValue(s, expect); s.stop() {
+		var expr Expression
+		if s, expr = p.parseValue(s, expect); s.stop() {
 			return stop(), nil
+		}
+
+		e := &ExprNumericNegation{
+			LocRange:   locRange(si.Location),
+			Expression: expr,
 		}
 		setParent(e.Expression, e)
 		e.LocationEnd = e.Expression.GetLocation().LocationEnd
@@ -3535,21 +3624,26 @@ func (p *Parser) parseConstr(
 	return s, e
 }
 
-func (p *Parser) parseNumber(s source) (_ source, number Expression) {
+func (p *Parser) parseNumber(s source) (source, *Number) {
 	si := s
 	if s.Index >= len(s.s) {
 		return si, nil
 	}
 
+	s, _ = s.consume("-")
+	s = s.consumeIgnored()
+
+	hasDigit, isFloat := false, false
+LOOP:
 	for s.Index < len(s.s) {
-		if (s.s[s.Index] < '0' || s.s[s.Index] > '9') &&
-			s.s[s.Index] != '.' &&
-			s.s[s.Index] != 'e' &&
-			s.s[s.Index] != 'E' {
-			break
-		}
-		if s.s[s.Index] == 'e' || s.s[s.Index] == 'E' {
-			if s.Index == si.Index {
+		switch s.s[s.Index] {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			hasDigit = true
+		case '.':
+			isFloat = true
+		case 'e', 'E':
+			isFloat = true
+			if !hasDigit {
 				return si, nil
 			}
 			s.Index++
@@ -3577,36 +3671,35 @@ func (p *Parser) parseNumber(s source) (_ source, number Expression) {
 				}, "exponent has no digits")
 				return stop(), nil
 			}
+		default:
+			break LOOP
 		}
-
 		s.Index++
 		s.Column++
 	}
-	str := string(s.s[si.Index:s.Index])
-	if str == "" {
+	if !hasDigit {
 		return si, nil
-	} else if v, err := strconv.ParseInt(str, 10, 64); err == nil {
-		return s, &Int{
-			LocRange: LocRange{
-				Location: si.Location,
-				LocationEnd: LocationEnd{
-					IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
-				},
-			},
-			Value: v,
-		}
-	} else if v, err := strconv.ParseFloat(str, 64); err == nil {
-		return s, &Float{
-			LocRange: LocRange{
-				Location: si.Location,
-				LocationEnd: LocationEnd{
-					IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
-				},
-			},
-			Value: v,
+	}
+	str := string(s.s[si.Index:s.Index])
+
+	if isFloat {
+		_, err := strconv.ParseFloat(str, 64)
+		// Range errors are to be handled later
+		if err != nil && !errors.Is(err, strconv.ErrRange) {
+			return si, nil
 		}
 	}
-	return si, nil
+
+	return s, &Number{
+		LocRange: LocRange{
+			Location: si.Location,
+			LocationEnd: LocationEnd{
+				IndexEnd: s.Index, LineEnd: s.Line, ColumnEnd: s.Column,
+			},
+		},
+		Value:   str,
+		isFloat: isFloat,
+	}
 }
 
 type Error struct {
@@ -3636,7 +3729,7 @@ func (p *Parser) isNumeric(e Expression) bool {
 		}
 		// Check type based on constraint expression
 		return p.isNumeric(getVarDeclConstraint(e))
-	case *ConstrAny, *Float, *Int,
+	case *ConstrAny, *Number,
 		*ConstrGreater, *ConstrLess,
 		*ConstrGreaterOrEqual, *ConstrLessOrEqual,
 		*ExprAddition, *ExprSubtraction,
@@ -3925,9 +4018,7 @@ func setParent(t, parent Expression) {
 	switch v := t.(type) {
 	case *Variable:
 		v.Parent = parent
-	case *Int:
-		v.Parent = parent
-	case *Float:
+	case *Number:
 		v.Parent = parent
 	case *String:
 		v.Parent = parent
@@ -4020,9 +4111,7 @@ func setLocRange(t Expression, l LocRange) {
 	switch v := t.(type) {
 	case *Variable:
 		v.LocRange = l
-	case *Int:
-		v.LocRange = l
-	case *Float:
+	case *Number:
 		v.LocRange = l
 	case *String:
 		v.LocRange = l
@@ -4868,7 +4957,7 @@ func traverse(e Expression, onExpression func(Expression) bool) bool {
 			}
 		case *ObjectField:
 			push(e.Constraint)
-		case *Int, *Float, *True, *False, *Null,
+		case *Number, *True, *False, *Null,
 			*Enum, *String, *ConstrAny:
 		default:
 			panic(fmt.Errorf("unhandled type: %T", top))

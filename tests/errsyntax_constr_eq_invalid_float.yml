@@ -1,0 +1,11 @@
+schema: >
+  type Query { f(a: Int): Int }
+
+template: >
+  query { f(a: 2.3.5) }
+
+expect-errors:
+  - '1:14: unexpected token, invalid value'
+
+expect-errors(schemaless):
+  - '1:14: unexpected token, invalid value'
