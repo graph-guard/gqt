@@ -204,7 +204,7 @@ func (s source) consumeString() (n source, str []byte, ok bool) {
 
 func (s source) consumeUnsignedInt() (next source, i int64, ok bool) {
 	si := s
-	for s.s[s.Index] >= '0' && s.s[s.Index] <= '9' {
+	for s.Index < len(s.s) && s.s[s.Index] >= '0' && s.s[s.Index] <= '9' {
 		s.Index++
 		s.Column++
 	}
