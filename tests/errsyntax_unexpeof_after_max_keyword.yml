@@ -1,0 +1,10 @@
+schema: >
+  type Query { a:Int b:Int }
+
+template: 'query{max'
+
+expect-errors:
+  - '1:10: unexpected end of file, expected max set'
+
+expect-errors(schemaless):
+  - '1:10: unexpected end of file, expected max set'

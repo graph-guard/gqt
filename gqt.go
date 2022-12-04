@@ -2356,6 +2356,11 @@ func (p *Parser) parseSelectionSet(s source) (source, SelectionSet) {
 		s = s.consumeIgnored()
 
 		if sel.Name.Name == "max" {
+			if s.isEOF() {
+				p.errUnexpTok(s, "expected max set")
+				return stop(), SelectionSet{}
+			}
+
 			lBeforeMaxNum := s.Location
 			var maxNum int64
 			if s, maxNum, ok = s.consumeUnsignedInt(); ok {
