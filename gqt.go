@@ -1153,6 +1153,7 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 					p.setTypesExpr(a.Constraint, exp)
 				}
 			} else {
+				p.setTypesSelSet(s.SelectionSet, nil)
 				for _, a := range s.Arguments {
 					p.setTypesExpr(a.Constraint, nil)
 				}
@@ -4691,6 +4692,7 @@ var typeIntNotNull = &ast.Type{
 	NamedType: "Int",
 	NonNull:   true,
 }
+
 var typeFloatNotNull = &ast.Type{
 	NamedType: "Float",
 	NonNull:   true,

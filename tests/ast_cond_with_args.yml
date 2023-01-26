@@ -1,0 +1,129 @@
+schema: >
+  type Query { u: U! }
+  union U = Foo | Bar
+  type Foo {
+    x( i:Int!, f:Float! ): Boolean!
+  }
+  type Bar {
+    x( i:Int!, f:Float! ): Boolean!
+  }
+
+template: >
+  query {
+    u {
+      ... on Foo {
+        x(i:>20, f:<3.14)
+      }
+    }
+  }
+
+expect-ast:
+  location: 0:1:1-66:7:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-66:7:2
+    selections:
+      - location: 10:2:3-64:6:4
+        selectionType: field
+        name:
+          location: 10:2:3-11:2:4
+          name: u
+        type: U!
+        selectionSet:
+          location: 12:2:5-64:6:4
+          selections:
+            - location: 18:3:5-60:5:6
+              selectionType: inlineFragment
+              typeCondition:
+                location: 25:3:12-28:3:15
+                typeName: Foo
+                type: Foo
+              selectionSet:
+                location: 29:3:16-60:5:6
+                selections:
+                  - location: 37:4:7-54:4:24
+                    selectionType: field
+                    name:
+                      location: 37:4:7-38:4:8
+                      name: x
+                    type: Boolean!
+                    argumentList:
+                      location: 38:4:8-54:4:24
+                      arguments:
+                        - location: 39:4:9-44:4:14
+                          name:
+                            location: 39:4:9-40:4:10
+                            name: i
+                          type: Int!
+                          constraint:
+                            location: 41:4:11-44:4:14
+                            constraintType: greaterThan
+                            value:
+                              location: 42:4:12-44:4:14
+                              expressionType: int
+                              value: 20
+                        - location: 46:4:16-53:4:23
+                          name:
+                            location: 46:4:16-47:4:17
+                            name: f
+                          type: Float!
+                          constraint:
+                            location: 48:4:18-53:4:23
+                            constraintType: lessThan
+                            value:
+                              location: 49:4:19-53:4:23
+                              expressionType: float
+                              value: 3.14
+
+expect-ast(schemaless):
+  location: 0:1:1-66:7:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-66:7:2
+    selections:
+      - location: 10:2:3-64:6:4
+        selectionType: field
+        name:
+          location: 10:2:3-11:2:4
+          name: u
+        selectionSet:
+          location: 12:2:5-64:6:4
+          selections:
+            - location: 18:3:5-60:5:6
+              selectionType: inlineFragment
+              typeCondition:
+                location: 25:3:12-28:3:15
+                typeName: Foo
+              selectionSet:
+                location: 29:3:16-60:5:6
+                selections:
+                  - location: 37:4:7-54:4:24
+                    selectionType: field
+                    name:
+                      location: 37:4:7-38:4:8
+                      name: x
+                    argumentList:
+                      location: 38:4:8-54:4:24
+                      arguments:
+                        - location: 39:4:9-44:4:14
+                          name:
+                            location: 39:4:9-40:4:10
+                            name: i
+                          constraint:
+                            location: 41:4:11-44:4:14
+                            constraintType: greaterThan
+                            value:
+                              location: 42:4:12-44:4:14
+                              expressionType: int
+                              value: 20
+                        - location: 46:4:16-53:4:23
+                          name:
+                            location: 46:4:16-47:4:17
+                            name: f
+                          constraint:
+                            location: 48:4:18-53:4:23
+                            constraintType: lessThan
+                            value:
+                              location: 49:4:19-53:4:23
+                              expressionType: float
+                              value: 3.14
