@@ -2081,11 +2081,6 @@ func (p *Parser) validateObject(
 ) (ok bool) {
 	ok = true
 
-	if len(o.Fields) < 1 {
-		p.newErr(o.LocRange, "empty input object")
-		return false
-	}
-
 	if exp != nil && !p.expectationIsObject(exp) {
 		ok = false
 		// Make sure the object doesn't contain any

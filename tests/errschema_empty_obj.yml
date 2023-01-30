@@ -1,0 +1,67 @@
+schema: >
+  type Query {
+    f1(a:Input):Int
+    f2(a:Input):Int
+  }
+  input Input {
+    optional:  Int,
+    required:  Int!
+    required2: String!
+  }
+
+template: >
+  query {
+    f1(a:{})
+    f2(a:{})
+  }
+
+expect-errors:
+  - '2:8: field "required" of type "Int!" is required but missing'
+  - '2:8: field "required2" of type "String!" is required but missing'
+  - '3:8: field "required" of type "Int!" is required but missing'
+  - '3:8: field "required2" of type "String!" is required but missing'
+
+expect-ast(schemaless):
+  location: 0:1:1-31:4:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-31:4:2
+    selections:
+      - location: 10:2:3-18:2:11
+        selectionType: field
+        name:
+          location: 10:2:3-12:2:5
+          name: f1
+        argumentList:
+          location: 12:2:5-18:2:11
+          arguments:
+            - location: 13:2:6-17:2:10
+              name:
+                location: 13:2:6-14:2:7
+                name: a
+              constraint:
+                location: 15:2:8-17:2:10
+                constraintType: equals
+                value:
+                  location: 15:2:8-17:2:10
+                  expressionType: object
+                  fields: []
+      - location: 21:3:3-29:3:11
+        selectionType: field
+        name:
+          location: 21:3:3-23:3:5
+          name: f2
+        argumentList:
+          location: 23:3:5-29:3:11
+          arguments:
+            - location: 24:3:6-28:3:10
+              name:
+                location: 24:3:6-25:3:7
+                name: a
+              constraint:
+                location: 26:3:8-28:3:10
+                constraintType: equals
+                value:
+                  location: 26:3:8-28:3:10
+                  expressionType: object
+                  fields: []

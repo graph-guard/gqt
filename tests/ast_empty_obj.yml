@@ -1,0 +1,63 @@
+schema: >
+  type Query { i(i:I!):Int }
+  input I { optional:Int optional2:String }
+
+template: >
+  query {
+    i(i:{})
+  }
+
+expect-ast:
+  location: 0:1:1-19:3:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-19:3:2
+    selections:
+      - location: 10:2:3-17:2:10
+        selectionType: field
+        name:
+          location: 10:2:3-11:2:4
+          name: i
+        type: Int
+        argumentList:
+          location: 11:2:4-17:2:10
+          arguments:
+            - location: 12:2:5-16:2:9
+              name:
+                location: 12:2:5-13:2:6
+                name: i
+              type: I!
+              constraint:
+                location: 14:2:7-16:2:9
+                constraintType: equals
+                value:
+                  location: 14:2:7-16:2:9
+                  expressionType: object
+                  type: I
+                  fields: []
+
+expect-ast(schemaless):
+  location: 0:1:1-19:3:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-19:3:2
+    selections:
+      - location: 10:2:3-17:2:10
+        selectionType: field
+        name:
+          location: 10:2:3-11:2:4
+          name: i
+        argumentList:
+          location: 11:2:4-17:2:10
+          arguments:
+            - location: 12:2:5-16:2:9
+              name:
+                location: 12:2:5-13:2:6
+                name: i
+              constraint:
+                location: 14:2:7-16:2:9
+                constraintType: equals
+                value:
+                  location: 14:2:7-16:2:9
+                  expressionType: object
+                  fields: []
