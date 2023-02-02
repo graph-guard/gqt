@@ -3756,8 +3756,7 @@ func (p *Parser) isBoolean(e Expression) bool {
 		}
 		// Check type based on constraint expression
 		return p.isBoolean(getVarDeclConstraint(e))
-	case *ConstrAny, *True, *False, *ConstrGreater, *ConstrGreaterOrEqual,
-		*ConstrLess, *ConstrLessOrEqual, *ExprEqual, *ExprNotEqual,
+	case *ConstrAny, *True, *False, *ExprEqual, *ExprNotEqual,
 		*ExprLess, *ExprGreater, *ExprLessOrEqual, *ExprGreaterOrEqual,
 		*ExprLogicalNegation, *ExprLogicalAnd, *ExprLogicalOr:
 		return true
