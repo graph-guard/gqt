@@ -1,0 +1,17 @@
+schema: >
+  type Query { f(
+    v: Int
+    nullable: Boolean!
+  ):Int }
+
+template: >
+  query { f(
+    v = $v: < 5,
+    nullable: !$v,
+  ) }
+
+expect-errors:
+  - '3:14: expected type Boolean but received Int'
+
+expect-errors(schemaless):
+  - '3:14: expected type Boolean but received number'
