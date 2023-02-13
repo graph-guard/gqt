@@ -1,0 +1,12 @@
+schema: >
+  type Query { f(a: Int, b: [In]): Int }
+  input In { f:Int }
+
+template: >
+  query { f(a: $f, b: [{f = $f:*}]) }
+
+expect-errors:
+  - '1:27: declaration of variables inside arrays is prohibited'
+
+expect-errors(schemaless):
+  - '1:27: declaration of variables inside arrays is prohibited'

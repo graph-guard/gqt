@@ -2295,10 +2295,10 @@ func (p *Parser) newErr(l LocRange, msg string) {
 type expect int8
 
 const (
-	expectConstraint      expect = 0
-	expectConstraintInMap expect = 1
-	expectValue           expect = 2
-	expectValueInMap      expect = 3
+	expectConstraint        expect = 0
+	expectConstraintInArray expect = 1
+	expectValue             expect = 2
+	expectValueInArray      expect = 3
 )
 
 func (p *Parser) parseSelectionSet(s source) (source, SelectionSet) {
@@ -2683,7 +2683,7 @@ func (p *Parser) parseValue(
 			}
 
 			var expr Expression
-			if s, expr = p.parseConstrLogicalOr(s, expectConstraint); s.stop() {
+			if s, expr = p.parseConstrLogicalOr(s, expectConstraintInArray); s.stop() {
 				return stop(), nil
 			}
 			setParent(expr, e)
@@ -2769,11 +2769,11 @@ func (p *Parser) parseValue(
 					return stop(), nil
 				}
 
-				if expect == expectValueInMap {
+				if expect == expectValueInArray {
 					p.newErr(
 						locRange(sBeforeDollar.Location),
 						"declaration of variables inside "+
-							"map constraints is prohibited",
+							"arrays is prohibited",
 					)
 					return stop(), nil
 				}
@@ -3582,7 +3582,7 @@ func (p *Parser) parseConstr(
 
 			var expr Expression
 			if s, expr = p.parseConstrLogicalOr(
-				s, expectConstraintInMap,
+				s, expectConstraintInArray,
 			); s.stop() {
 				return stop(), nil
 			}
@@ -3607,8 +3607,8 @@ func (p *Parser) parseConstr(
 		Value:    expr,
 	}
 
-	if expect == expectConstraintInMap {
-		expect = expectValueInMap
+	if expect == expectConstraintInArray {
+		expect = expectValueInArray
 	} else {
 		expect = expectValue
 	}
