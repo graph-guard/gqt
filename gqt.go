@@ -1679,7 +1679,10 @@ func (p *Parser) validateField(
 
 	var def *ast.Definition
 	if p.schema != nil {
-		def = p.schema.Types[expect.Type.NamedType]
+		e := expect.Type
+		for ; e.Elem != nil; e = e.Elem {
+		}
+		def = p.schema.Types[e.NamedType]
 	}
 	if !p.validateSelSet(f, def) {
 		ok = false

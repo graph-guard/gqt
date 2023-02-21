@@ -1,0 +1,73 @@
+# This setup caused a nil pointer dereference panic
+# when looking up the type definition of a field of array type.
+schema: >
+  type Query { hero: Character }
+  type Character {
+    id: ID!
+    friends: [Character!]
+  }
+
+template: >
+  query {
+    hero {
+      friends { id }
+    }
+  }
+
+expect-ast(schemaless):
+  location: 0:1:1-41:5:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-41:5:2
+    selections:
+      - location: 10:2:3-39:4:4
+        selectionType: field
+        name:
+          location: 10:2:3-14:2:7
+          name: hero
+        selectionSet:
+          location: 15:2:8-39:4:4
+          selections:
+            - location: 21:3:5-35:3:19
+              selectionType: field
+              name:
+                location: 21:3:5-28:3:12
+                name: friends
+              selectionSet:
+                location: 29:3:13-35:3:19
+                selections:
+                  - location: 31:3:15-33:3:17
+                    selectionType: field
+                    name:
+                      location: 31:3:15-33:3:17
+                      name: id
+
+expect-ast:
+  location: 0:1:1-41:5:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-41:5:2
+    selections:
+      - location: 10:2:3-39:4:4
+        selectionType: field
+        name:
+          location: 10:2:3-14:2:7
+          name: hero
+        type: Character
+        selectionSet:
+          location: 15:2:8-39:4:4
+          selections:
+            - location: 21:3:5-35:3:19
+              selectionType: field
+              name:
+                location: 21:3:5-28:3:12
+                name: friends
+              type: '[Character!]'
+              selectionSet:
+                location: 29:3:13-35:3:19
+                selections:
+                  - location: 31:3:15-33:3:17
+                    selectionType: field
+                    name:
+                      location: 31:3:15-33:3:17
+                      name: id
