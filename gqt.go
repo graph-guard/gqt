@@ -2400,6 +2400,9 @@ func (p *Parser) parseSelectionSet(s source) (source, SelectionSet) {
 					Limit:   int(maxNum),
 					Options: options,
 				}
+				for _, s := range e.Options.Selections {
+					setParent(s, e)
+				}
 				selset.Selections = append(selset.Selections, e)
 				continue
 			}
