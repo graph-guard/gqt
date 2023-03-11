@@ -1159,7 +1159,6 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 				}
 			}
 		case *SelectionInlineFrag:
-			fmt.Println("INFRAG")
 			if p.schema != nil {
 				s.TypeCondition.TypeDef = p.schema.Types[s.TypeCondition.TypeName]
 				var fields ast.FieldList
