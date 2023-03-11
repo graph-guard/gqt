@@ -1,0 +1,122 @@
+# This setup lacked the type for field "id" and argument "unit"
+schema: >
+  type Query {
+    human(id: ID!): Human
+  }
+  type Human {
+    id: ID!
+    height(unit: LengthUnit = METER): Float!
+  }
+  enum LengthUnit { METER, FOOT }
+
+template: >
+  query {
+    human(id: *) {
+      id
+      height(unit: METER)
+    }
+  }
+
+expect-ast(schemaless):
+  location: 0:1:1-61:6:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-61:6:2
+    selections:
+      - location: 10:2:3-59:5:4
+        selectionType: field
+        name:
+          location: 10:2:3-15:2:8
+          name: human
+        argumentList:
+          location: 15:2:8-22:2:15
+          arguments:
+            - location: 16:2:9-21:2:14
+              name:
+                location: 16:2:9-18:2:11
+                name: id
+              constraint:
+                location: 20:2:13-21:2:14
+                constraintType: any
+        selectionSet:
+          location: 23:2:16-59:5:4
+          selections:
+            - location: 29:3:5-31:3:7
+              selectionType: field
+              name:
+                location: 29:3:5-31:3:7
+                name: id
+            - location: 36:4:5-55:4:24
+              selectionType: field
+              name:
+                location: 36:4:5-42:4:11
+                name: height
+              argumentList:
+                location: 42:4:11-55:4:24
+                arguments:
+                  - location: 43:4:12-54:4:23
+                    name:
+                      location: 43:4:12-47:4:16
+                      name: unit
+                    constraint:
+                      location: 49:4:18-54:4:23
+                      constraintType: equals
+                      value:
+                        location: 49:4:18-54:4:23
+                        expressionType: enum
+                        value: METER
+
+expect-ast:
+  location: 0:1:1-61:6:2
+  operationType: Query
+  selectionSet:
+    location: 6:1:7-61:6:2
+    selections:
+      - location: 10:2:3-59:5:4
+        selectionType: field
+        name:
+          location: 10:2:3-15:2:8
+          name: human
+        type: Human
+        argumentList:
+          location: 15:2:8-22:2:15
+          arguments:
+            - location: 16:2:9-21:2:14
+              name:
+                location: 16:2:9-18:2:11
+                name: id
+              type: ID!
+              constraint:
+                location: 20:2:13-21:2:14
+                constraintType: any
+        selectionSet:
+          location: 23:2:16-59:5:4
+          selections:
+            - location: 29:3:5-31:3:7
+              selectionType: field
+              name:
+                location: 29:3:5-31:3:7
+                name: id
+              type: ID!
+            - location: 36:4:5-55:4:24
+              selectionType: field
+              name:
+                location: 36:4:5-42:4:11
+                name: height
+              type: Float!
+              argumentList:
+                location: 42:4:11-55:4:24
+                arguments:
+                  - location: 43:4:12-54:4:23
+                    name:
+                      location: 43:4:12-47:4:16
+                      name: unit
+                    type: LengthUnit
+                    constraint:
+                      location: 49:4:18-54:4:23
+                      constraintType: equals
+                      value:
+                        location: 49:4:18-54:4:23
+                        expressionType: enum
+                        value: METER
+                        type: LengthUnit

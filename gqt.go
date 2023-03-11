@@ -1138,7 +1138,7 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 		case *SelectionField:
 			s.Def = find(s.Name.Name)
 			if s.Def != nil {
-				if t := p.schema.Types[s.Def.Type.NamedType]; t != nil {
+				if t := p.schema.Types[getTypeName(s.Def.Type)]; t != nil {
 					p.setTypesSelSet(s.SelectionSet, t.Fields)
 				}
 				for _, a := range s.Arguments {
@@ -1159,6 +1159,7 @@ func (p *Parser) setTypesSelSet(s SelectionSet, defs []*ast.FieldDefinition) {
 				}
 			}
 		case *SelectionInlineFrag:
+			fmt.Println("INFRAG")
 			if p.schema != nil {
 				s.TypeCondition.TypeDef = p.schema.Types[s.TypeCondition.TypeName]
 				var fields ast.FieldList
@@ -1273,7 +1274,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			push(e.Right, nil)
 		case *Number:
 			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
+				t := p.schema.Types[getTypeName(exp)]
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
 					t.Name != "String" &&
@@ -1347,7 +1348,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			e.isFloat, e.vi, e.vf = false, int(v), 0
 		case *True:
 			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
+				t := p.schema.Types[getTypeName(exp)]
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
 					t.Name != "Int" &&
@@ -1359,7 +1360,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			}
 		case *False:
 			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
+				t := p.schema.Types[getTypeName(exp)]
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
 					t.Name != "Int" &&
@@ -1371,7 +1372,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			}
 		case *String:
 			if exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
+				t := p.schema.Types[getTypeName(exp)]
 				if t.Kind == ast.Scalar &&
 					t.Name != "Int" &&
 					t.Name != "Float" &&
@@ -1389,7 +1390,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 				if exp.Elem != nil {
 					e.Type = exp
 				} else {
-					t := p.schema.Types[exp.NamedType]
+					t := p.schema.Types[getTypeName(exp)]
 					if t.Kind == ast.Scalar &&
 						t.Name != "ID" &&
 						t.Name != "Int" &&
@@ -1406,7 +1407,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 		case *Enum:
 			e.TypeDef = p.enumVal[e.Value]
 			if e.TypeDef == nil && exp != nil && exp.Elem == nil {
-				t := p.schema.Types[exp.NamedType]
+				t := p.schema.Types[getTypeName(exp)]
 				if t.Kind == ast.Scalar &&
 					t.Name != "ID" &&
 					t.Name != "Int" &&
@@ -1418,7 +1419,7 @@ func (p *Parser) setTypesExpr(e Expression, exp *ast.Type) {
 			}
 		case *Object:
 			if exp != nil && exp.Elem == nil {
-				if t := p.schema.Types[exp.NamedType]; t != nil &&
+				if t := p.schema.Types[getTypeName(exp)]; t != nil &&
 					(t.Kind == ast.InputObject || t.Kind == ast.Scalar &&
 						t.Name != "ID" &&
 						t.Name != "Int" &&
@@ -1679,10 +1680,7 @@ func (p *Parser) validateField(
 
 	var def *ast.Definition
 	if p.schema != nil {
-		e := expect.Type
-		for ; e.Elem != nil; e = e.Elem {
-		}
-		def = p.schema.Types[e.NamedType]
+		def = p.schema.Types[getTypeName(expect.Type)]
 	}
 	if !p.validateSelSet(f, def) {
 		ok = false
@@ -2099,7 +2097,7 @@ func (p *Parser) validateObject(
 	validFields := o.Fields
 	if p.schema != nil && exp != nil {
 		validFields = make([]*ObjectField, 0, len(o.Fields))
-		d := p.schema.Types[exp.NamedType]
+		d := p.schema.Types[getTypeName(exp)]
 		if d != nil && d.Kind != ast.Scalar {
 			for _, f := range o.Fields {
 				// Check undefined fields
@@ -3829,7 +3827,7 @@ func (p *Parser) isEnum(e Expression) bool {
 	case *Variable:
 		if t, _ := e.Declaration.GetInfo(); t != nil {
 			// Check type based on schema
-			tp := p.schema.Types[t.NamedType]
+			tp := p.schema.Types[getTypeName(t)]
 			return t.Elem == nil && tp.Kind == ast.Enum
 		}
 		// Check type based on constraint expression
@@ -4544,7 +4542,7 @@ func (p *Parser) expectationIsNum(t *ast.Type) bool {
 	if p.schema == nil {
 		return t.NamedType == "Int" || t.NamedType == "Float"
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is custom scalar type?
 	return x != nil && (x.Kind == ast.Scalar &&
 		x.Name != "ID" &&
@@ -4559,7 +4557,7 @@ func (p *Parser) expectationIsFloat(t *ast.Type) bool {
 	if p.schema == nil {
 		return t.NamedType == "Float"
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is custom scalar type?
 	return x != nil && (x.Kind == ast.Scalar &&
 		x.Name != "ID" &&
@@ -4575,7 +4573,7 @@ func (p *Parser) expectationIsBool(t *ast.Type) bool {
 	if p.schema == nil {
 		return t.NamedType == "Boolean"
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is custom scalar type?
 	return x != nil && (x.Kind == ast.Scalar &&
 		x.Name != "ID" &&
@@ -4591,7 +4589,7 @@ func (p *Parser) expectationIsString(t *ast.Type) bool {
 	if p.schema == nil {
 		return t.NamedType == "String" || t.NamedType == "ID"
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is custom scalar type?
 	return x != nil && (x.Kind == ast.Scalar &&
 		x.Name != "Int" &&
@@ -4606,7 +4604,7 @@ func (p *Parser) expectationIsEnum(t *ast.Type) bool {
 	if p.schema == nil {
 		return false
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is enum type or custom scalar type?
 	return x != nil && (x.Kind == ast.Enum ||
 		(x.Kind == ast.Scalar &&
@@ -4628,7 +4626,7 @@ func (p *Parser) expectationIsObject(t *ast.Type) bool {
 			t.NamedType != "String" &&
 			t.NamedType != "Boolean"
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is input type or custom scalar type?
 	return x != nil && (x.Kind == ast.InputObject ||
 		(x.Kind == ast.Scalar &&
@@ -4646,7 +4644,7 @@ func (p *Parser) expectationIsArray(t *ast.Type) bool {
 	if p.schema == nil {
 		return true
 	}
-	x := p.schema.Types[t.NamedType]
+	x := p.schema.Types[getTypeName(t)]
 	// Is custom scalar type?
 	return x != nil && (x.Kind == ast.Scalar &&
 		x.Name != "ID" &&
@@ -4843,6 +4841,12 @@ func getVarDeclConstraint(v *Variable) Expression {
 		"unexpected variable declaration parent type: %T",
 		v.Declaration.Parent,
 	))
+}
+
+func getTypeName(t *ast.Type) string {
+	for ; t.Elem != nil; t = t.Elem {
+	}
+	return t.NamedType
 }
 
 // traverse returns true after BFS-traversing the entire tree under e
